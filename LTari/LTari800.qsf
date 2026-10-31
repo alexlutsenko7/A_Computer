@@ -1,0 +1,243 @@
+# LTari800 -- the LTari 800 (800XL, 64 KB): LTari.qsf with MODEL130 = 0 (keep both in step);
+# see rtl/LTari.v and docs/PLAN.md
+# QMTECH Cyclone IV EP4CE15 + Extra_PCB_CycloneIV I/O board (pins as LSpectrum / L64)
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE15F23C8
+set_global_assignment -name TOP_LEVEL_ENTITY LTari
+set_global_assignment -name LAST_QUARTUS_VERSION "25.1std.0 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+# Unused pins: plain inputs
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_WEAK_PULLUP "AS INPUT TRI-STATED"
+# remote update: application image at 0x280000 (LTari 800) and 0x300000 (LTari 130), AMenu/ is the factory image (docs/PLAN.md)
+set_global_assignment -name STRATIXIII_UPDATE_MODE REMOTE
+set_global_assignment -name OPTIMIZATION_TECHNIQUE SPEED
+set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"
+set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
+# 112 MHz SDRAM request path (address mux -> bank compare -> command) is the critical one: with the default
+# effort it moved between +0.7 and -0.16 ns from placement alone (2026-10-13)
+set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
+set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
+
+set_global_assignment -name VERILOG_FILE rtl/LTari.v
+set_global_assignment -name VERILOG_FILE rtl/atari_pll.v
+set_global_assignment -name VERILOG_FILE rtl/atari_vpll.v
+set_global_assignment -name VERILOG_FILE rtl/atari_system.v
+set_global_assignment -name VERILOG_FILE rtl/antic.v
+set_global_assignment -name VERILOG_FILE rtl/gtia.v
+set_global_assignment -name VERILOG_FILE rtl/pokey.v
+set_global_assignment -name VERILOG_FILE rtl/pia.v
+set_global_assignment -name VERILOG_FILE rtl/atari_keyboard.v
+set_global_assignment -name VERILOG_FILE rtl/atari_fb.v
+set_global_assignment -name VERILOG_FILE rtl/atari_sio.v
+set_global_assignment -name VERILOG_FILE ../L64/rtl/c64_video.v
+set_global_assignment -name VERILOG_FILE ../LSpectrum/rtl/vga_clkmux.v
+set_global_assignment -name VERILOG_FILE ../LSpectrum/rtl/sdram_ram.v
+set_global_assignment -name VERILOG_FILE ../LSpectrum/rtl/rom_loader.v
+set_global_assignment -name VERILOG_FILE ../LSpectrum/rtl/flash_if.v
+set_global_assignment -name VERILOG_FILE ../LSpectrum/rtl/tape_loader.v
+set_global_assignment -name VERILOG_FILE ../LSpectrum/rtl/esp_link.v
+set_global_assignment -name VERILOG_FILE ../LSpectrum/rtl/sd_dac.v
+set_global_assignment -name VERILOG_FILE ../LSpectrum/rtl/bt_i2s.v
+set_global_assignment -name VHDL_FILE ../T65/T65_Pack.vhd
+set_global_assignment -name VHDL_FILE ../T65/T65_ALU.vhd
+set_global_assignment -name VHDL_FILE ../T65/T65_MCode.vhd
+set_global_assignment -name VHDL_FILE ../T65/T65.vhd
+set_global_assignment -name SDC_FILE LTari.sdc
+
+set_instance_assignment -name ALLOW_SYNCH_CTRL_USAGE OFF -to "atari_system:u_sys|sdram_ram:u_ram"
+
+
+# SDRAM: registers in the I/O cells (as DDR_TEST)
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_ADDR[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_BA[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_RAS_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_CAS_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_WE_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_LDQM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_UDQM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[*]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[*]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[*]
+
+# On-board
+set_location_assignment PIN_T2 -to CLOCK_50
+set_location_assignment PIN_W13 -to RESET_N
+set_location_assignment PIN_Y13 -to KEY1
+set_location_assignment PIN_E4 -to LEDR
+
+# SDRAM W9825G6KH
+set_location_assignment PIN_AB4 -to DRAM_WE_N
+set_location_assignment PIN_W7 -to DRAM_UDQM
+set_location_assignment PIN_AB3 -to DRAM_RAS_N
+set_location_assignment PIN_AA5 -to DRAM_LDQM
+set_location_assignment PIN_AA10 -to DRAM_DQ[0]
+set_location_assignment PIN_AB9 -to DRAM_DQ[1]
+set_location_assignment PIN_AA9 -to DRAM_DQ[2]
+set_location_assignment PIN_AB8 -to DRAM_DQ[3]
+set_location_assignment PIN_AA8 -to DRAM_DQ[4]
+set_location_assignment PIN_AB7 -to DRAM_DQ[5]
+set_location_assignment PIN_AA7 -to DRAM_DQ[6]
+set_location_assignment PIN_AB5 -to DRAM_DQ[7]
+set_location_assignment PIN_Y7 -to DRAM_DQ[8]
+set_location_assignment PIN_W8 -to DRAM_DQ[9]
+set_location_assignment PIN_Y8 -to DRAM_DQ[10]
+set_location_assignment PIN_V9 -to DRAM_DQ[11]
+set_location_assignment PIN_V10 -to DRAM_DQ[12]
+set_location_assignment PIN_Y10 -to DRAM_DQ[13]
+set_location_assignment PIN_W10 -to DRAM_DQ[14]
+set_location_assignment PIN_V11 -to DRAM_DQ[15]
+set_location_assignment PIN_AA3 -to DRAM_CS_N
+set_location_assignment PIN_Y6 -to DRAM_CLK
+set_location_assignment PIN_W6 -to DRAM_CKE
+set_location_assignment PIN_AA4 -to DRAM_CAS_N
+set_location_assignment PIN_Y1 -to DRAM_BA[0]
+set_location_assignment PIN_W2 -to DRAM_BA[1]
+set_location_assignment PIN_V2 -to DRAM_ADDR[0]
+set_location_assignment PIN_V1 -to DRAM_ADDR[1]
+set_location_assignment PIN_U2 -to DRAM_ADDR[2]
+set_location_assignment PIN_U1 -to DRAM_ADDR[3]
+set_location_assignment PIN_V3 -to DRAM_ADDR[4]
+set_location_assignment PIN_V4 -to DRAM_ADDR[5]
+set_location_assignment PIN_Y2 -to DRAM_ADDR[6]
+set_location_assignment PIN_AA1 -to DRAM_ADDR[7]
+set_location_assignment PIN_Y3 -to DRAM_ADDR[8]
+set_location_assignment PIN_V5 -to DRAM_ADDR[9]
+set_location_assignment PIN_W1 -to DRAM_ADDR[10]
+set_location_assignment PIN_Y4 -to DRAM_ADDR[11]
+set_location_assignment PIN_V6 -to DRAM_ADDR[12]
+
+
+
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLOCK_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RESET_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY1
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR
+# Block RAMs are placed as written (FIFOs, line buffers, font, OSD text, palette), no automatic balancing into logic
+set_global_assignment -name AUTO_RAM_BLOCK_BALANCING OFF
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[*]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_BA[*]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CAS_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CKE
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CS_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[*]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_LDQM
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_RAS_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_UDQM
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_WE_N
+
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+
+
+
+# Extra_PCB_CycloneIV I/O board: its J1 is wired to U8 with each pin pair swapped
+# (J1 pin 2k-1 -> U8 pin 2k, J1 pin 2k -> U8 pin 2k-1). Comment: I/O board J1 pin / U8 pin.
+set_location_assignment PIN_AB13 -to ESP_SCK        # J1.7 / U8.8
+set_location_assignment PIN_AA13 -to ESP_MOSI       # J1.8 / U8.7
+set_location_assignment PIN_AB14 -to ESP_CS_N       # J1.9 / U8.10
+set_location_assignment PIN_AA14 -to ESP_MISO       # J1.10 / U8.9
+set_location_assignment PIN_AB15 -to ESP_IRQ        # J1.11 / U8.12
+set_location_assignment PIN_AA15 -to BT_BCLK        # J1.12 / U8.11
+set_location_assignment PIN_AB16 -to BT_LRCK        # J1.13 / U8.14
+set_location_assignment PIN_AA16 -to BT_DATA        # J1.14 / U8.13
+set_location_assignment PIN_AB17 -to BT_TX          # J1.15 / U8.16
+set_location_assignment PIN_AA17 -to BT_RX          # J1.16 / U8.15
+set_location_assignment PIN_AB18 -to KB_IN          # J1.17 / U8.18
+set_location_assignment PIN_AA18 -to AUDIO_AY       # J1.18 / U8.17
+set_location_assignment PIN_AB19 -to KB_OUT         # J1.19 / U8.20
+set_location_assignment PIN_AA19 -to AUDIO_BEEP     # J1.20 / U8.19
+set_location_assignment PIN_AB20 -to JOY1_UP_N      # J1.21 / U8.22
+set_location_assignment PIN_AA20 -to JOY1_DOWN_N    # J1.22 / U8.21
+set_location_assignment PIN_Y21 -to JOY1_LEFT_N    # J1.23 / U8.24
+set_location_assignment PIN_Y22 -to JOY1_RIGHT_N   # J1.24 / U8.23
+set_location_assignment PIN_W21 -to JOY1_FIRE_N    # J1.25 / U8.26
+set_location_assignment PIN_W22 -to JOY2_UP_N      # J1.26 / U8.25
+set_location_assignment PIN_V21 -to JOY2_DOWN_N    # J1.27 / U8.28
+set_location_assignment PIN_V22 -to JOY2_LEFT_N    # J1.28 / U8.27
+set_location_assignment PIN_U21 -to JOY2_RIGHT_N   # J1.29 / U8.30
+set_location_assignment PIN_U22 -to JOY2_FIRE_N    # J1.30 / U8.29
+set_location_assignment PIN_H21 -to VGA_VS         # J1.45 / U8.46
+set_location_assignment PIN_F21 -to VGA_HS         # J1.47 / U8.48
+# sync pins at the weakest drive (3.3-V LVCMOS, 2 mA: slower edges): the HSYNC edge coupled onto the colour lines (~30 mV spike 40 pixels after the
+# active area), and monitors auto-adjusted to it as the picture edge (a line at the right)
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to VGA_HS
+set_instance_assignment -name CURRENT_STRENGTH_NEW 2MA -to VGA_VS
+set_location_assignment PIN_E21 -to VGA_R[3]       # J1.49 / U8.50
+set_location_assignment PIN_E22 -to VGA_R[1]       # J1.50 / U8.49
+set_location_assignment PIN_D21 -to VGA_R[2]       # J1.51 / U8.52
+set_location_assignment PIN_D22 -to VGA_R[0]       # J1.52 / U8.51
+set_location_assignment PIN_C21 -to VGA_G[3]       # J1.53 / U8.54
+set_location_assignment PIN_C22 -to VGA_G[1]       # J1.54 / U8.53
+set_location_assignment PIN_B21 -to VGA_G[2]       # J1.55 / U8.56
+set_location_assignment PIN_B22 -to VGA_G[0]       # J1.56 / U8.55
+set_location_assignment PIN_N19 -to VGA_B[3]       # J1.57 / U8.58
+set_location_assignment PIN_N20 -to VGA_B[1]       # J1.58 / U8.57
+set_location_assignment PIN_M19 -to VGA_B[2]       # J1.59 / U8.60
+set_location_assignment PIN_M20 -to VGA_B[0]       # J1.60 / U8.59
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ESP_SCK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ESP_MOSI
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ESP_CS_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ESP_MISO
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ESP_IRQ
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BT_BCLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BT_LRCK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BT_DATA
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BT_TX
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BT_RX
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KB_IN
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUDIO_AY
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KB_OUT
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUDIO_BEEP
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to JOY1_UP_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to JOY1_DOWN_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to JOY1_LEFT_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to JOY1_RIGHT_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to JOY1_FIRE_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to JOY2_UP_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to JOY2_DOWN_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to JOY2_LEFT_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to JOY2_RIGHT_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to JOY2_FIRE_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to VGA_VS
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to VGA_HS
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[0]
+# Weak pull-ups on the inputs (the ESP32 may not be plugged in; the joysticks have 3k3 on the board)
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ESP_SCK
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ESP_MOSI
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ESP_CS_N
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to BT_BCLK
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to BT_LRCK
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to BT_RX
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to KB_IN
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to KB_OUT
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_*
+
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+# every register without a reset powers up 0 (not chosen by synthesis), the same in every build
+set_global_assignment -name ALLOW_POWER_UP_DONT_CARE OFF
+# ESP32 SPI link (esp_link): the first synchroniser stages and the MISO register sit in the pins' I/O cells,
+# so the link's pin timing is the same in every build (the pins have no SDC timing: asynchronous / false path)
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to ESP_SCK
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to ESP_MOSI
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to ESP_CS_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ESP_MISO
+set_parameter -name MODEL130 0

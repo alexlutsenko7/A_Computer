@@ -1,0 +1,132 @@
+# DDR_TEST -- 128K x 8 RAM on W9825G6KH SDRAM, QMTECH Cyclone IV EP4CE15F23C8N board
+# Pinout taken from the vendor SDRAM demo (verified working on this board).
+
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE15F23C8
+set_global_assignment -name TOP_LEVEL_ENTITY DDR_TEST
+set_global_assignment -name LAST_QUARTUS_VERSION "25.1std.0 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_WEAK_PULLUP "AS INPUT TRI-STATED"
+set_global_assignment -name OPTIMIZATION_TECHNIQUE SPEED
+set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"
+set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
+
+# Sources
+set_global_assignment -name VERILOG_FILE rtl/DDR_TEST.v
+set_global_assignment -name VERILOG_FILE rtl/sys_pll.v
+set_global_assignment -name VERILOG_FILE rtl/sdram_ram.v
+set_global_assignment -name VERILOG_FILE rtl/ram_tester.v
+set_global_assignment -name SDC_FILE DDR_TEST.sdc
+
+# SDRAM I/O registers in the IOEs (fixed, short clock-to-out / setup).
+# No sync clear/load in the controller, otherwise its address regs cannot be packed.
+set_instance_assignment -name ALLOW_SYNCH_CTRL_USAGE OFF -to "sdram_ram:u_ram"
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_ADDR[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_BA[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_RAS_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_CAS_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_WE_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_LDQM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_UDQM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[*]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[*]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[*]
+
+# Pins
+set_location_assignment PIN_W13 -to RESET_N
+set_location_assignment PIN_Y13 -to KEY
+set_location_assignment PIN_E4 -to LEDR
+set_location_assignment PIN_AB4 -to DRAM_WE_N
+set_location_assignment PIN_W7 -to DRAM_UDQM
+set_location_assignment PIN_AB3 -to DRAM_RAS_N
+set_location_assignment PIN_AA5 -to DRAM_LDQM
+set_location_assignment PIN_AA10 -to DRAM_DQ[0]
+set_location_assignment PIN_AB9 -to DRAM_DQ[1]
+set_location_assignment PIN_AA9 -to DRAM_DQ[2]
+set_location_assignment PIN_AB8 -to DRAM_DQ[3]
+set_location_assignment PIN_AA8 -to DRAM_DQ[4]
+set_location_assignment PIN_AB7 -to DRAM_DQ[5]
+set_location_assignment PIN_AA7 -to DRAM_DQ[6]
+set_location_assignment PIN_AB5 -to DRAM_DQ[7]
+set_location_assignment PIN_Y7 -to DRAM_DQ[8]
+set_location_assignment PIN_W8 -to DRAM_DQ[9]
+set_location_assignment PIN_Y8 -to DRAM_DQ[10]
+set_location_assignment PIN_V9 -to DRAM_DQ[11]
+set_location_assignment PIN_V10 -to DRAM_DQ[12]
+set_location_assignment PIN_Y10 -to DRAM_DQ[13]
+set_location_assignment PIN_W10 -to DRAM_DQ[14]
+set_location_assignment PIN_V11 -to DRAM_DQ[15]
+set_location_assignment PIN_AA3 -to DRAM_CS_N
+set_location_assignment PIN_T2 -to CLOCK_50
+set_location_assignment PIN_Y6 -to DRAM_CLK
+set_location_assignment PIN_W6 -to DRAM_CKE
+set_location_assignment PIN_AA4 -to DRAM_CAS_N
+set_location_assignment PIN_Y1 -to DRAM_BA[0]
+set_location_assignment PIN_W2 -to DRAM_BA[1]
+set_location_assignment PIN_V2 -to DRAM_ADDR[0]
+set_location_assignment PIN_V1 -to DRAM_ADDR[1]
+set_location_assignment PIN_U2 -to DRAM_ADDR[2]
+set_location_assignment PIN_U1 -to DRAM_ADDR[3]
+set_location_assignment PIN_V3 -to DRAM_ADDR[4]
+set_location_assignment PIN_V4 -to DRAM_ADDR[5]
+set_location_assignment PIN_Y2 -to DRAM_ADDR[6]
+set_location_assignment PIN_AA1 -to DRAM_ADDR[7]
+set_location_assignment PIN_Y3 -to DRAM_ADDR[8]
+set_location_assignment PIN_V5 -to DRAM_ADDR[9]
+set_location_assignment PIN_W1 -to DRAM_ADDR[10]
+set_location_assignment PIN_Y4 -to DRAM_ADDR[11]
+set_location_assignment PIN_V6 -to DRAM_ADDR[12]
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLOCK_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_BA[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_BA[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CAS_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CKE
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CS_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[15]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[14]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[13]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RESET_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_WE_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_UDQM
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_RAS_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_LDQM
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[2]
+
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

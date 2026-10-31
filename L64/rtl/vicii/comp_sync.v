@@ -1,0 +1,434 @@
+// This file is part of the vicii-kawari distribution
+// (https://github.com/randyrossi/vicii-kawari)
+// Copyright (c) 2022 Randy Rossi.
+// 
+// This program is free software: you can redistribute it and/or modify  
+// it under the terms of the GNU General Public License as published by  
+// the Free Software Foundation, version 3.
+//
+// This program is distributed in the hope that it will be useful, but 
+// WITHOUT ANY WARRANTY; without even the implied warranty of 
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License 
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+`include "common.vh"
+
+// NOTE: We reproduce the offscreen white pixel at hvisible_start
+// that the real VICII's produces.  You can't see it on CRTs but it
+// will show up on upscalers. It can be removed by getting rid of
+// the three raster_x == hvisible_start conditions below for luma,
+// phase and amplitude.
+
+// Rev 4+ boards have luma sink capabilities to properly
+// sink most current during h/v sync periods. Rev 3 board
+// couldn't do this and the sync period was too 'hot' but
+// still worked on most monitors.
+`define HAVE_LUMA_SINK 1
+
+// A module that produces a luma/chroma signals.
+module comp_sync(
+           input clk_dot4x,
+           input clk_col16x,
+           input [9:0] raster_x,
+           input [8:0] raster_y,
+`ifdef GEN_LUMA_CHROMA
+           input white_line,
+           input ntsc_50,
+           //input pal_60,
+`ifdef HAVE_LUMA_SINK
+           output reg luma_sink,
+`endif
+           output [5:0] luma_out,
+           output reg [5:0] chroma_out,
+           input [5:0] lumareg_o, // from registers base on pixel_color3
+           input [7:0] phasereg_o, // from registers base on pixel_color3
+           input [3:0] amplitudereg_o, // from registers base on pixel_color3
+`ifdef CONFIGURABLE_LUMAS
+           input [5:0] blanking_level,
+           input [3:0] burst_amplitude,
+`endif
+`endif
+           input [1:0] chip
+       );
+
+reg [5:0] luma;
+reg [9:0] hvisible_end;
+//reg [9:0] hsync_start; // now always 10'd10
+reg [9:0] hsync_end;
+reg [9:0] hvisible_start;
+reg [8:0] vvisible_end;
+reg [8:0] vblank_start;
+//reg [8:0] vblank_end;
+reg [8:0] vvisible_start;
+reg hSync;
+reg vSync;
+reg native_active;
+
+`ifdef GEN_LUMA_CHROMA
+`ifdef HAVE_LUMA_SINK
+assign luma_out = ~luma;
+`else
+assign luma_out = luma;
+`endif
+`endif
+
+always @(posedge clk_dot4x)
+begin
+    // NOTE hsync_start is hard coded to 10'd10 to save a register. If this ever
+    // changes, serration.v and equalization.v must also change.
+    hSync <= raster_x >= 10'd10 /* hsync_start */ && raster_x < hsync_end;
+    vSync <= (raster_y >= vvisible_end && raster_y <= vvisible_start);
+    native_active <= ~(
+                      (raster_x >= hvisible_end | raster_x < hvisible_start) |
+                      (
+                          ((raster_y == vvisible_end & raster_x < hvisible_end) | raster_y > vvisible_end) &
+                          ((raster_y == vvisible_start & raster_x <= hvisible_start) | raster_y < vvisible_start)
+                      )
+                  );
+end
+
+// NTSC: Each x is ~122.2 ns (.1222 us)
+// PAL : Each x is ~126.8 ns (.1268 us)
+`ifdef SIMULATOR_BOARD
+always @(posedge clk_dot4x)
+`else
+always @(chip)
+`endif
+case(chip)
+    `CHIP6567R8:
+    begin
+        // 520x263
+        hvisible_end = 10'd510;
+        //hsync_start = 10'd10;
+        hsync_end = 10'd49;      // .0075H
+        hvisible_start = 10'd90;
+        vvisible_end = 9'd13;
+        vblank_start = 9'd14; // visible_end +9'd1
+        //vblank_end = 9'd22; // vblank_start + 9'd8;
+        vvisible_start = 9'd23; // vblank_end + 9'd1;
+    end
+    `CHIP6567R56A:
+    begin
+        // 512x262
+        hvisible_end = 10'd502;
+        //hsync_start = 10'd10;
+        hsync_end = 10'd48;       // .0075H
+        hvisible_start = 10'd90;
+        vvisible_end = 9'd13;
+        vblank_start = 9'd14; // visible_end +9'd1
+        //vblank_end = 9'd22; // vblank_start + 9'd8;
+        vvisible_start = 9'd23; // vblank_end + 9'd1;
+    end
+    `CHIP6569R1, `CHIP6569R3:
+    begin
+        // 504x312
+        hvisible_end = 10'd494;
+        //hsync_start = 10'd10;
+        hsync_end = 10'd48;       // .0075H
+        hvisible_start =  10'd90;
+        vvisible_end = 9'd300;
+        vblank_start = 9'd301; // visible_end +9'd1
+        //vblank_end = 9'd309; // vblank_start + 9'd8;
+        vvisible_start = 9'd310; // vblank_end + 9'd1;
+    end
+endcase
+
+// NTSC
+// 2.69us = 2690 ns
+// 3.579545 Mhz = 279.3 ns period
+// 2690 / 279.3 = 9.6 (need only 9 cycles of color clock)
+//
+// PAL
+// 2.97us = 2970 ns
+// 4.43361875 Mhz = 225.5 ns period
+// 2970 / 225.5 = 13.1 (need only 9 cycles of color clock)
+
+// Compute Equalization pulses
+wire EQ, SE;
+EqualizationPulse ueqp1
+                  (
+                      .clk_dot4x(clk_dot4x),
+                      .raster_x(raster_x),
+                      .chip(chip),
+                      .EQ(EQ)
+                  );
+
+// Compute Serration pulses
+SerrationPulse usep1
+               (
+                   .clk_dot4x(clk_dot4x),
+                   .raster_x(raster_x),
+                   .chip(chip),
+                   .SE(SE)
+               );
+
+`ifdef GEN_LUMA_CHROMA
+
+// Luma level of white burst on first visible pixel
+`define WHITE_BURST 6'h3b
+
+// If configurable, use register value.
+// Otherwise, hard coded values.
+`ifdef CONFIGURABLE_LUMAS
+`define BLANKING_LEVEL blanking_level
+`else
+`define BLANKING_LEVEL (chip[0] ? 6'h08 : 6'h18)
+`endif
+
+always @(posedge clk_dot4x)
+begin
+    begin
+        case(raster_y)
+            vblank_start: begin
+               luma <= ~EQ ? `BLANKING_LEVEL : 6'd0;
+`ifdef HAVE_LUMA_SINK
+               luma_sink <= EQ;
+`endif
+            end
+            vblank_start+1: begin
+               luma <= ~EQ ? `BLANKING_LEVEL : 6'd0;
+`ifdef HAVE_LUMA_SINK
+               luma_sink <= EQ;
+`endif
+            end
+            vblank_start+2: begin
+               luma <= ~EQ ? `BLANKING_LEVEL : 6'd0;
+`ifdef HAVE_LUMA_SINK
+               luma_sink <= EQ;
+`endif
+            end
+            vblank_start+3: begin
+               luma <= ~SE ? `BLANKING_LEVEL : 6'd0;
+`ifdef HAVE_LUMA_SINK
+               luma_sink <= SE;
+`endif
+            end
+            vblank_start+4: begin
+               luma <= ~SE ? `BLANKING_LEVEL : 6'd0;
+`ifdef HAVE_LUMA_SINK
+               luma_sink <= SE;
+`endif
+            end
+            vblank_start+5: begin
+               luma <= ~SE ? `BLANKING_LEVEL : 6'd0;
+`ifdef HAVE_LUMA_SINK
+               luma_sink <= SE;
+`endif
+            end
+            vblank_start+6: begin
+               luma <= ~EQ ? `BLANKING_LEVEL : 6'd0;
+`ifdef HAVE_LUMA_SINK
+               luma_sink <= EQ;
+`endif
+            end
+            vblank_start+7: begin
+               luma <= ~EQ ? `BLANKING_LEVEL : 6'd0;
+`ifdef HAVE_LUMA_SINK
+               luma_sink <= EQ;
+`endif
+            end
+            vblank_start+8: begin
+               luma <= ~EQ ? `BLANKING_LEVEL : 6'd0;
+`ifdef HAVE_LUMA_SINK
+               luma_sink <= EQ;
+`endif
+            end
+            // This is visible start but it should be a blank line
+            vblank_start+9: begin
+               luma <= ~hSync ? `BLANKING_LEVEL : 6'd0;
+`ifdef HAVE_LUMA_SINK
+               luma_sink <= hSync;
+`endif
+            end
+            default: begin
+                luma <= ~hSync ? (~native_active ? `BLANKING_LEVEL : ((raster_x == hvisible_start && white_line) ? `WHITE_BURST : lumareg_o)) : 6'd0;
+`ifdef HAVE_LUMA_SINK
+                luma_sink <= hSync;
+`endif
+            end
+        endcase
+    end
+end
+
+// Phase counter forms the first 4 bits of the index into our
+// sine table of 256 entries.  Hence, it takes 16 samples from
+// the sine table for every period of our 16x color clock and
+// produces a 1x color clock wave.  The wave phase can be shifted
+// by applying a phase offset of 8 bits.  The amplitude is selected
+// out of the sine wave table rom by prefixing the 8 bits with
+// an additional 4 bits of amplitude.
+reg [3:0] phaseCounter;
+reg [8:0] prev_raster_y;
+reg [3:0] amplitude2;
+reg [3:0] amplitude3;
+reg [3:0] amplitude4;
+
+always @(posedge clk_col16x)
+begin
+    phaseCounter <= phaseCounter + 4'd1;
+end
+
+`define NO_MODULATION 4'b0000
+
+`ifdef CONFIGURABLE_LUMAS
+`define BURST_AMPLITUDE burst_amplitude_16
+`else
+`define BURST_AMPLITUDE 4'd12
+`endif
+
+// Make this hsync_end + 4 ticks
+// !!! Keep this valid for hsync_end set below:
+// 6567R8 = 49 + 4 = 53
+// 6567R56A = 48 + 4 = 52
+// 6569R* = 48 + 4 = 52
+`define BURST_START (chip_1_16x == `CHIP6567R8 ? 10'd53 : 10'd52)
+
+(* async_reg = "true" *) reg [8:0] raster_y_16_1;
+(* async_reg = "true" *) reg [8:0] raster_y_16;
+(* async_reg = "true" *) reg [9:0] raster_x_16_1;
+(* async_reg = "true" *) reg [9:0] raster_x_16;
+(* async_reg = "true" *) reg native_active_16_1;
+(* async_reg = "true" *) reg native_active_16;
+(* async_reg = "true" *) reg vSync_16_1;
+(* async_reg = "true" *) reg vSync_16;
+
+// Handle domain crossing for registers we need from dot4x in a co16x block.
+always @(posedge clk_col16x) raster_y_16_1 <= raster_y;
+always @(posedge clk_col16x) raster_y_16 <= raster_y_16_1;
+always @(posedge clk_col16x) raster_x_16_1 <= raster_x;
+always @(posedge clk_col16x) raster_x_16 <= raster_x_16_1;
+always @(posedge clk_col16x) native_active_16_1 <= native_active;
+always @(posedge clk_col16x) native_active_16 <= native_active_16_1;
+always @(posedge clk_col16x) vSync_16_1 <= vSync;
+always @(posedge clk_col16x) vSync_16 <= vSync_16_1;
+
+reg [7:0] burstCount;
+reg [7:0] sineWaveAddr;
+// Combinational ROM address.  It is intentionally NOT registered: the rom's
+// own output register provides the single cycle of latency this path needs.
+wire [11:0] sineROMAddr = {amplitude2, sineWaveAddr};
+reg in_burst;
+reg need_burst;
+wire oddline;
+assign oddline = raster_y_16[0];
+
+(* async_reg = "true" *) reg [9:0] hvisible_start_16_1;
+(* async_reg = "true" *) reg [9:0] hvisible_start_16;
+always @(posedge clk_col16x) hvisible_start_16_1 <= hvisible_start;
+always @(posedge clk_col16x) hvisible_start_16 <= hvisible_start_16_1;
+
+// Handle domain crossing from dot4x to col16x
+(* async_reg = "true" *) reg [7:0] phasereg_o2;
+(* async_reg = "true" *) reg [7:0] phasereg_16;
+always @(posedge clk_col16x) phasereg_o2 <= phasereg_o;
+always @(posedge clk_col16x) phasereg_16 <= (raster_x_16 == hvisible_start_16 && white_line_16) ? 8'h0 : phasereg_o2;
+
+(* async_reg = "true" *) reg [3:0] amplitudereg_o2;
+(* async_reg = "true" *) reg [3:0] amplitudereg_16;
+always @(posedge clk_col16x) amplitudereg_o2 <=  amplitudereg_o;
+always @(posedge clk_col16x) amplitudereg_16 <= (raster_x_16 == hvisible_start_16 && white_line_16) ? 4'h0 : amplitudereg_o2;
+
+`ifdef CONFIGURABLE_LUMAS
+(* async_reg = "true" *) reg [3:0] burst_amplitude_ms;
+(* async_reg = "true" *) reg [3:0] burst_amplitude_16;
+always @(posedge clk_col16x) burst_amplitude_ms <=  burst_amplitude;
+always @(posedge clk_col16x) burst_amplitude_16 <= burst_amplitude_ms;
+`endif
+
+(* async_reg = "true" *) reg colsel_0;
+(* async_reg = "true" *) reg colsel_1;
+always @(posedge clk_col16x) colsel_0 <= chip[0] ? (~ntsc_50) : 1'b0; // was (pal_60);
+always @(posedge clk_col16x) colsel_1 <= colsel_0;
+
+(* async_reg = "true" *) reg[1:0] chip_0_16x;
+(* async_reg = "true" *) reg[1:0] chip_1_16x;
+always @(posedge clk_col16x) chip_0_16x <= chip;
+always @(posedge clk_col16x) chip_1_16x <= chip_0_16x;
+
+(* async_reg = "true" *) reg white_line_ms;
+(* async_reg = "true" *) reg white_line_16;
+always @(posedge clk_col16x) white_line_ms <= white_line;
+always @(posedge clk_col16x) white_line_16 <= white_line_ms;
+
+wire [8:0] chroma9;
+
+always @(posedge clk_col16x)
+begin
+    if (raster_y_16 != prev_raster_y) begin
+        need_burst <= 1;
+    end
+    prev_raster_y <= raster_y_16;
+
+    if (raster_x_16 >= `BURST_START && need_burst)
+        in_burst <= 1;
+
+    if (in_burst)
+    begin
+        // This is supposed to be 9 periods according to video specs but the
+        // original chip does more like 20. I noticed that if we only do 9 and
+        // use the PAL clock from the motherboard, we produce a B/W image.
+        // Increased to 15 periods for PAL
+        // One less for NTSC
+        if ((chip_1_16x[0] && burstCount == 240) || (~chip_1_16x[0] && burstCount == 224))
+        begin
+            in_burst <= 0;
+            need_burst <= 0;
+            burstCount <= 0;
+        end else begin
+            burstCount <= burstCount + 1'b1;
+        end
+    end
+
+    // Use amplitude from table lookup inside active region.  For burst, use
+    // 4'b0100. Otherwise, amplitude should be 4'b0000 representing no
+    // modulation.
+    amplitude2 = vSync_16 ?
+               `NO_MODULATION :
+               (native_active_16 ?
+                amplitudereg_16 :
+                (in_burst ? `BURST_AMPLITUDE : `NO_MODULATION));
+
+    amplitude3 <= amplitude2;
+    amplitude4 <= amplitude3;
+    // Figure out the entry within one of the sine wave tables.
+    // For NTSC: Burst phase is always 180 degrees (128 offset)
+    // For PAL: Burst phase alternates between 135 and -135 (96 & 160 offsets).
+    /* verilator lint_off WIDTH */
+    sineWaveAddr = {phaseCounter, 4'b0} +
+                 (
+                     native_active_16 ?
+                     (colsel_1 ?
+                      (oddline ? 8'd255 - phasereg_16 :  phasereg_16) : /* pal */
+                      phasereg_16) :                                    /* ntsc */
+                     (colsel_1 ?
+                      (oddline ? 8'd160 : 8'd96) :                      /* pal */
+                      8'd128                                            /* ntsc */
+                     )
+                 );
+
+    /* verilator lint_on WIDTH */
+
+    // Chroma is centered at 32 for no amplitude. (top 6 bits of 256 offset)
+    // Make the decision to output chroma or zero level baseed on the amplitude that
+    // was used to determine the chroma9 lookup (which was two ticks ago, one tick to set
+    // the address and another to get the data)
+    chroma_out <= (amplitude4 == `NO_MODULATION) ? 6'd32 : chroma9[8:3];
+end
+
+// Retrieve wave value from the sine/chroma wave rom using the address
+// calculated from amplitude, phaseCounter and phaseOffset.  hdl/sine.bin is
+// bit-for-bit identical to the 4096-entry case statement this replaced.
+// The address is combinational and the rom registers its own output, so the
+// total latency is unchanged: the rom output register plays exactly the role
+// the old 'sineROMAddr' register used to play.
+SINE_WAVES sine_waves(
+    .clk(clk_col16x),
+    .addr(sineROMAddr),
+    .dout(chroma9)
+);
+`endif
+
+endmodule

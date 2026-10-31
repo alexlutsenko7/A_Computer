@@ -1,0 +1,75 @@
+# VGA_TEST -- colour bars on the QM_Atrix adapter (prototype: adapter J2 in U8, J1 wired to U7)
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE15F23C8
+set_global_assignment -name TOP_LEVEL_ENTITY VGA_TEST
+set_global_assignment -name LAST_QUARTUS_VERSION "25.1std.0 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+# Unused pins must stay plain inputs: AB17/AA17 are grounded by the adapter
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_WEAK_PULLUP "AS INPUT TRI-STATED"
+
+set_global_assignment -name VERILOG_FILE rtl/VGA_TEST.v
+set_global_assignment -name VERILOG_FILE rtl/vga_timing.v
+set_global_assignment -name VERILOG_FILE rtl/vga_pll.v
+set_global_assignment -name VERILOG_FILE rtl/vga_clkmux.v
+set_global_assignment -name SDC_FILE VGA_TEST.sdc
+
+# On-board
+set_location_assignment PIN_T2  -to CLOCK_50
+set_location_assignment PIN_W13 -to RESET_N
+set_location_assignment PIN_E4  -to LEDR
+set_location_assignment PIN_Y13 -to KEY1
+
+# U8 <- adapter J2 (J2 pin k on U8 pin 65-k)
+set_location_assignment PIN_E22 -to VGA_R
+set_location_assignment PIN_D22 -to VGA_R_LOW
+set_location_assignment PIN_C22 -to VGA_G
+set_location_assignment PIN_B22 -to VGA_G_LOW
+set_location_assignment PIN_N20 -to VGA_B
+set_location_assignment PIN_M20 -to VGA_B_LOW
+set_location_assignment PIN_F22 -to VGA_HSYNC
+set_location_assignment PIN_H22 -to VGA_VSYNC
+# J2.49 / J2.50 = adapter GND: inputs only, never drive
+set_location_assignment PIN_AB17 -to GND_TIE[0]
+set_location_assignment PIN_AA17 -to GND_TIE[1]
+
+# U7 <- adapter J1 (wired)
+set_location_assignment PIN_D2 -to SW_50_60
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLOCK_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RESET_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R_LOW
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G_LOW
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B_LOW
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_HSYNC
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_VSYNC
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GND_TIE[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GND_TIE[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW_50_60
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY1
+
+# RGB pins: default current strength (8 mA, the 3.3-V LVTTL maximum on Cyclone IV); the DAC draws up to ~14 mA per pin, within the pin limits
+
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_R
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_R_LOW
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_G
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_G_LOW
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_B
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_B_LOW
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_HSYNC
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_VSYNC
+
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+# S1 not wired yet (2026-10-06): weak pull-up keeps D2 from floating (reads 50 Hz; KEY1 swaps)
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SW_50_60
