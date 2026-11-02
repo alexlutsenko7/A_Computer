@@ -1027,3 +1027,6 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   printed by headless Edge (Windows fonts: Segoe UI, Microsoft YaHei, Malgun Gothic, Yu Gothic), US Letter.
   make_github.py builds INSTALL/ from the public images, keeps github/.git, drops esp32.ino.map (Windows user path)
   and puts back files whose only change is line endings.
+- (2026-11-02) Manuals for a closed box (user): no KEY0 / KEY1 / board LED anywhere in docs/manuals (all nine
+  languages); keyboard equivalents (Ctrl + Alt + Del, start the machine again = complete restart, F1 / Alt + F4 held
+  while starting the machine from the menu: not yet checked on hardware).
