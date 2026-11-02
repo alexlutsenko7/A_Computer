@@ -140,7 +140,7 @@ atari_fb #(.PAL_HEX("../rtl/atari_palette.hex")) u_fb (
     .pclk(pclk), .prst_n(prst_n), .m60(VM60), .rgb(v_rgb), .hsync(v_hs), .vsync(v_vs), .active(v_act)
 );
 
-flash_model #(.BASE(24'h380000), .LEN(28672), .REVERSE(1), .FILE("atarirom.mem")) u_flash (
+flash_model #(.BASE(24'h540000), .LEN(28672), .REVERSE(1), .FILE("atarirom.mem")) u_flash (
     .dclk(f_dclk), .ncs(f_ncs), .mosi(f_mosi), .miso(f_miso));
 
 // pins as seen by the SDRAM (transport delays, as tb_lspectrum / tb_l64)

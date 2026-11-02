@@ -4,8 +4,8 @@
  *   0    "LUPDATE1"
  *   8    image length (bytes from flash address 0, a multiple of 4096)
  *   12   CRC-32 of the image (zlib)
- *   16   skip start, 20 skip end: never written (the C64 ROMs the ESP32 installed, 0x200000-0x27FFFF)
- *   24   menu end (0x080000): the factory image, written last
+ *   16   skip start, 20 skip end: never written (the C64 ROMs the ESP32 installed, 0x580000-0x5FFFFF)
+ *   24   menu end (0x100000): the factory image's slot, written last
  *   28   label, 64 bytes, NUL padded
  *   252  CRC-32 of bytes 0-251
  *   256  the image: the flash contents as read over SPI (Quartus' .rpd with the bits of each byte reversed)
@@ -27,7 +27,7 @@
 #define PROG_MS   50u       /* page program (maximum 5 ms) */
 #define FL_MAX    0x800000u
 
-static const uint32_t slot[4] = { 0x080000u, 0x180000u, 0x280000u, 0x300000u };   /* AMenu MACHINE_ADDR */
+static const uint32_t slot[4] = { 0x100000u, 0x200000u, 0x300000u, 0x400000u };   /* AMenu MACHINE_ADDR (1 MB slots) */
 
 /* The buffers are allocated the first time an update file is read: only the menu mode does that, so
  * the machines keep this RAM for the Bluetooth stack (static, it made A2DP stutter on hardware). */

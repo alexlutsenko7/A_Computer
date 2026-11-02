@@ -12,12 +12,14 @@ ROOT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else '.')
 DST = os.path.join(ROOT, 'github')
 
 TOP = ['AMenu', 'LSpectrum', 'L64', 'LTari', 'T65', 'T80', 'DDR_TEST', 'VGA_TEST', 'docs', 'tests', 'tools',
-       'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md']
+       'Extra_PCB_CycloneIV', 'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md']
 
 SKIP_DIRS = {'db', 'incremental_db', 'greybox_tmp', '.qsys_edit', '__pycache__', 'node_modules', '.git',
              'roms_local',          # C64 ROMs (copyright)
              'ref',                 # LTari/ref: Altirra manual PDF + files from atari800
-             'syn_check'}           # LTari scratch synthesis check
+             'syn_check',           # LTari scratch synthesis check
+             '.history', 'Extra_PCB_CycloneIV-backups',   # KiCad local history and backups
+             'old'}                 # Extra_PCB_CycloneIV/old: a superseded routing
 SKIP_DIR_GLOBS = ['work*']          # Questa libraries, host-test work folders
 
 SKIP_FILES = ['*.log', 'transcript', '*.rpt', '*.summary', '*.smsg', '*.done', '*.jdi', '*.pin', '*.sld', '*.qws',
@@ -27,14 +29,20 @@ SKIP_FILES = ['*.log', 'transcript', '*.rpt', '*.summary', '*.smsg', '*.done', '
               'Monitor_at_work.txt',           # local monitor data (serial number)
               'sw_img.hex',                    # generated from a game snapshot (Sidewize): copyrighted
               '*.vstf',                        # Questa crash dumps
-              '*.ino.map']                     # ESP32 linker map: holds the Windows user's home path
+              '*.ino.map',                     # ESP32 linker map: holds the Windows user's home path
+              '*.kicad_prl', 'fp-info-cache', '*.lck', '*.dsn', '*.ses']   # KiCad local state, routing files
 # generated simulation pictures (sim/*.png); documentation pictures stay
 SKIP_PATH_RE = [r'(^|/)sim/[^/]*\.png$', r'(^|/)sim/.*\.bmp$', r'^tests/.*/output_files/',
                 r'^docs/manuals/(build|pdf)/']   # manual previews / PDFs (the PDFs go into INSTALL/)
 # build outputs: only the programming files
 KEEP_OUTPUT = ['*.sof', 'L.jic']             # (LUPDATE.BIN and L_loader.jic are made below from the public image)
 
+# own documents that are PDFs (the '*.pdf' rule above is for third-party files)
+KEEP_PDF = ['Extra_PCB_CycloneIV/Extra_PCB_CycloneIV.pdf']   # the I/O board's schematic, plotted by KiCad
+
 def skip_file(rel, name):
+    if rel in KEEP_PDF:
+        return False
     if any(fnmatch.fnmatch(name, g) for g in SKIP_FILES):
         return True
     if any(re.search(r, rel) for r in SKIP_PATH_RE):
@@ -160,3 +168,22 @@ if os.path.isdir(os.path.join(DST, '.git')):
     if eol:
         subprocess.run(git + ['checkout', '--'] + eol, check=True)
     print('git: %d files with line-ending-only changes put back as committed' % len(eol))
+    # changed text files get the line endings of their committed version (Quartus rewrites .qsf / .qpf with
+    # CRLF): the diff then shows only the real changes
+    fixed = 0
+    for l in st.splitlines():
+        f = l[3:]
+        if not l.startswith(' M ') or f in eol:
+            continue
+        old = subprocess.run(git + ['show', 'HEAD:' + f], capture_output=True).stdout
+        path = os.path.join(DST, f)
+        new = open(path, 'rb').read()
+        if b'\0' in old[:8192] or b'\0' in new[:8192]:
+            continue                                  # binary
+        crlf_old, crlf_new = b'\r\n' in old, b'\r\n' in new
+        if crlf_old == crlf_new:
+            continue
+        lf = new.replace(b'\r\n', b'\n')
+        open(path, 'wb').write(lf.replace(b'\n', b'\r\n') if crlf_old else lf)
+        fixed += 1
+    print('git: %d changed files given their committed line endings' % fixed)

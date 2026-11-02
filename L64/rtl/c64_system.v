@@ -10,7 +10,7 @@
 //
 // Memory (SDRAM, 20-bit byte addresses):
 //   0x00000-0x0FFFF  64 KB RAM (cleared to 0 after each ROM load, before the C64 starts)
-//   0x10000          ROM image from flash 0x200000 (rom_loader, 48 KB): 0x10000 header
+//   0x10000          ROM image from flash 0x580000 (rom_loader, 48 KB): 0x10000 header
 //                    (byte 0 F3, byte 13 = 1: a 1541 ROM is included), 0x11000 CHAR (4 KB),
 //                    0x12000 BASIC (8 KB), 0x14000 KERNAL (8 KB), 0x18000 1541 DOS ROM
 //                    (16 KB, also copied into the drive's block RAM while loading).
@@ -301,7 +301,7 @@ assign f_dclk = fl_own ? fl_dclk : ld_dclk;
 assign f_ncs  = fl_own ? fl_ncs  : ld_ncs;
 assign f_mosi = fl_own ? fl_mosi : ld_mosi;
 
-rom_loader #(.FLASH_ADDR(24'h200000), .SD_BASE(18'h10000), .LEN(49152), .DIV(FLASH_DIV)) u_loader (
+rom_loader #(.FLASH_ADDR(24'h580000), .SD_BASE(18'h10000), .LEN(49152), .DIV(FLASH_DIV)) u_loader (
     .clk       (clk_sd),
     .rst_n     (ld_rst_n),
     .f_dclk    (ld_dclk),
@@ -1040,7 +1040,9 @@ wire       osd_we;
 wire [9:0] osd_addr;
 wire [7:0] osd_data;
 
-tape_loader #(.BAUD_DIV(821), .CORE_ID(32'h4336_0001)) u_tape (
+// core ID 4336_0002: link version 2 = C64 ROMs at flash 0x580000 (1 MB slots); an ESP32 firmware that
+// installs them at the old 0x200000 (inside this image now) does not recognise it
+tape_loader #(.BAUD_DIV(821), .CORE_ID(32'h4336_0002)) u_tape (
     .clk         (clk_sd),
     .rst_n       (rst_sd_n),
     .keys        (lkeys),

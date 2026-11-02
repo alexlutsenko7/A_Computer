@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""mk_roms48k.py ZX128.ROM [DIAG.ROM] OUT.hex [OUT.mem] -- LSpectrum's 48 KB ROM image for flash 0x100000.
+"""mk_roms48k.py ZX128.ROM [DIAG.ROM] OUT.hex [OUT.mem] -- LSpectrum's 48 KB ROM image for flash 0x500000.
 
   0x0000-0x7FFF  ZX Spectrum 128 ROMs (ROM 0 editor, ROM 1 48K BASIC; (c) Amstrad, redistribution for
                  emulator use allowed with the copyright messages unchanged, not for sale)

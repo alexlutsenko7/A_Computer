@@ -4,7 +4,7 @@
  * /ROMS/C64/ (file names starting KERNAL, BASIC, CHAR and, for the 1541 drive, DOS1541 or
  * 1541, e.g. VICE's kernal-901227-03.bin, basic-901226-01.bin, chargen-901225-01.bin,
  * dos1541-325302-01+901229-05.bin; 8 / 8 / 4 / 16 KB). They are written into the
- * configuration flash at 0x200000 through the FPGA's flash pass-through (tape loader
+ * configuration flash at 0x580000 through the FPGA's flash pass-through (tape loader
  * register FLASH, SPI byte engine): 48 KB image = 4 KB header (F3 "L64 ROMS" + 4 spaces, byte 13
  * = 1 with a 1541 ROM), CHAR, BASIC, KERNAL, 8 KB FF, 1541 ROM (16 KB, or FF)
  * (L64/tools/mk_c64rom.py makes the same image). After the write is verified,
@@ -51,7 +51,7 @@
 #define C_MWR    2
 #define C_REG    3
 #define C_CTL    4
-#define ROM_BASE 0x200000u
+#define ROM_BASE 0x580000u
 #define ROM_LEN  49152u
 #define ERASE_MS 2000u      /* 4 KB erase, above the datasheet maximum (0.4 s) */
 #define PROG_MS  50u        /* page program (maximum 5 ms) */

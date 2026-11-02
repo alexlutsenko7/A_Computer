@@ -84,17 +84,17 @@ C.push(p("At power-up the FPGA always loads the **machine menu** from flash addr
 C.push(h2("Flash layout"));
 C.push(table([1700, 1700, 5960], ["Address", "Size", "Contents"], [
   ["0x000000", "~500 KB", "**AMenu**, the machine menu (factory image)"],
-  ["0x080000", "~500 KB", "**LSpectrum**, ZX Spectrum 128K (application image)"],
-  ["0x100000", "48 KB", "Spectrum ROMs: 128K ROM set + the F1 diagnostics slot (`LSpectrum/roms48k.hex`; the public copy has 48K BASIC there)"],
-  ["0x180000", "~500 KB", "**L64**, Commodore 64 (application image)"],
-  ["0x200000", "48 KB", "C64 ROMs: CHAR, BASIC, KERNAL and 1541 DOS. **Not in the .jic**: written by the ESP32 from your files on the SD card"],
-  ["0x280000", "~500 KB", "**LTari 800**, Atari 800XL (revision LTari800)"],
-  ["0x300000", "~500 KB", "**LTari 130**, Atari 130XE (revision LTari)"],
-  ["0x380000", "28 KB", "LTari ROMs: AltirraOS + Altirra BASIC (free; `LTari/roms/atarirom.hex`)"],
-  ["0x387000 ...", "free", "room for further machines"],
+  ["0x100000", "~500 KB", "**LSpectrum**, ZX Spectrum 128K (application image)"],
+  ["0x200000", "~500 KB", "**L64**, Commodore 64 (application image)"],
+  ["0x300000", "~500 KB", "**LTari 800**, Atari 800XL (revision LTari800)"],
+  ["0x400000", "~500 KB", "**LTari 130**, Atari 130XE (revision LTari)"],
+  ["0x500000", "48 KB", "Spectrum ROMs: 128K ROM set + the F1 diagnostics slot (`LSpectrum/roms48k.hex`; the public copy has 48K BASIC there)"],
+  ["0x540000", "28 KB", "LTari ROMs: AltirraOS + Altirra BASIC (free; `LTari/roms/atarirom.hex`)"],
+  ["0x580000", "48 KB", "C64 ROMs: CHAR, BASIC, KERNAL and 1541 DOS. **Not in the .jic**: written by the ESP32 from your files on the SD card"],
+  ["0x600000 ...", "free", "room for further machines"],
 ]));
 C.push(gap());
-C.push(p("The addresses are fixed in three places that must agree: the menu (`AMenu/rtl/AMenu.v`, parameter MACHINE_ADDR), the .cof file (`AMenu/L.cof`) and the machines' ROM loaders (`rom_loader.v` FLASH_ADDR: its default 0x100000 for the Spectrum, 0x200000 set in `c64_system.v`, 0x380000 in `atari_system.v`). The two LTari images are two revisions of one project: LTari800 (0x280000, 800XL) and LTari (0x300000, 130XE)."));
+C.push(p("Every image has a 1 MB slot, so boards with a larger FPGA use the same layout. The addresses are fixed in three places that must agree: the menu (`AMenu/rtl/AMenu.v`, parameter MACHINE_ADDR), the .cof file (`AMenu/L.cof`) and the machines' ROM loaders (`rom_loader.v` FLASH_ADDR: its default 0x500000 for the Spectrum, 0x580000 set in `c64_system.v`, 0x540000 in `atari_system.v`), plus the ESP32 (`update.cpp` slots, `c64.cpp` ROM_BASE) and `AMenu/tools/mk_update.py` (skipped C64 area, menu end). The two LTari images are two revisions of one project: LTari800 (0x300000, 800XL) and LTari (0x400000, 130XE)."));
 
 // ------------------------------------------------------------------ 2
 C.push(h1("2. Tools"));
@@ -134,11 +134,11 @@ C.push(gap());
 C.push(table([2900, 6460], ["Part of L.cof", "Setting"], [
   ["Device", "EPCS64 (the W25Q64 behaves as one), FPGA EP4CE15, Active Serial"],
   ["Page_0", "`output_files/AMenu.sof` at 0x000000"],
-  ["Page_1", "`../LSpectrum/output_files/LSpectrum.sof`, start address 0x080000"],
-  ["Page_2", "`../L64/output_files/L64.sof`, start address 0x180000"],
-  ["Page_3", "`../LTari/output_files/LTari800.sof`, start address 0x280000"],
-  ["Page_4", "`../LTari/output_files/LTari.sof`, start address 0x300000"],
-  ["Hex data", "`../LSpectrum/roms48k.hex` at 0x100000 and `../LTari/roms/atarirom.hex` at 0x380000 (relative)"],
+  ["Page_1", "`../LSpectrum/output_files/LSpectrum.sof`, start address 0x100000"],
+  ["Page_2", "`../L64/output_files/L64.sof`, start address 0x200000"],
+  ["Page_3", "`../LTari/output_files/LTari800.sof`, start address 0x300000"],
+  ["Page_4", "`../LTari/output_files/LTari.sof`, start address 0x400000"],
+  ["Hex data", "`../LSpectrum/roms48k.hex` at 0x500000 and `../LTari/roms/atarirom.hex` at 0x540000 (relative)"],
   ["Options", "EPCS ID check off; a .map file with the addresses"],
 ]));
 C.push(gap());
@@ -192,16 +192,16 @@ C.push(code([
 // ------------------------------------------------------------------ 6
 C.push(h1("6. How the ROMs are used"));
 C.push(h2("6.1 ZX Spectrum"));
-C.push(b("The 128K ROMs and the F1 diagnostics slot are in the flash at 0x100000 (from the .jic). The public image has a copy of the 48K BASIC ROM in that slot (DiagROM's licence is not known); `LSpectrum/tools/mk_roms48k.py` builds it with your own DiagROM."));
+C.push(b("The 128K ROMs and the F1 diagnostics slot are in the flash at 0x500000 (from the .jic). The public image has a copy of the 48K BASIC ROM in that slot (DiagROM's licence is not known); `LSpectrum/tools/mk_roms48k.py` builds it with your own DiagROM."));
 C.push(b("At every start and reset (power-up via the menu, KEY0) the FPGA's ROM loader copies the 48 KB from the flash into the SDRAM, then starts the Z80. F1 held at that moment selects the diagnostics slot."));
 C.push(b("If the flash holds no ROM image (first byte wrong), the board LED blinks fast: program the .jic."));
 C.push(h2("6.2 Commodore 64"));
-C.push(stepOf("check")("When L64 starts, its ROM loader copies 48 KB from flash 0x200000 into the SDRAM (CHAR, BASIC, KERNAL) and the 1541 DOS ROM into the drive's own memory. The image starts with the header \"L64 ROMS\"; byte 13 says whether a 1541 ROM is included."));
+C.push(stepOf("check")("When L64 starts, its ROM loader copies 48 KB from flash 0x580000 into the SDRAM (CHAR, BASIC, KERNAL) and the 1541 DOS ROM into the drive's own memory. The image starts with the header \"L64 ROMS\"; byte 13 says whether a 1541 ROM is included."));
 C.push(stepOf("check")("The ESP32 checks that header. **If the flash has no C64 ROMs yet**, it shows \"No ROMs in the flash yet\", reads KERNAL*, BASIC*, CHAR* and DOS1541* / 1541* from /ROMS/C64/, builds the 48 KB image, writes it into the flash through the FPGA (flash pass-through, sector erase + page program), reads it back to verify, and tells the FPGA to reload: the C64 starts with its ROMs. This takes a few seconds and happens once."));
 C.push(stepOf("check")("From then on L64 starts **without the SD card**: the ROMs come from the flash every time L64 is started and after KEY0."));
 C.push(stepOf("check")("If the files are missing, the screen says where to put them; add them and press KEY0. Without a DOS1541 file the C64 works but has no disk drive (DEVICE NOT PRESENT); the board LED blinks fast while there is no ROM image at all."));
 C.push(p("**Changing the C64 ROMs later** (for example adding the 1541 ROM afterwards) is not automatic yet: the ESP32 installs only when the flash has no C64 ROMs. To make it install again, erase the flash before programming the .jic (Programmer: tick **Erase** as well as Program/Configure), or erase only the sectors at 0x200000; at the next L64 start the files are installed from the card. Keep the ROM files on the card for that reason."));
-C.push(p("For local tests only, `L64/tools/mk_c64rom.py KERNAL BASIC CHAR [DOS1541] OUT` makes the same 48 KB image as Intel HEX (to add to a private copy of the .cof at 0x200000) and as a .mem file for the simulation. Such files contain the Commodore ROMs: keep them in the git-ignored `L64/roms_local/` and never publish a .jic that contains them."));
+C.push(p("For local tests only, `L64/tools/mk_c64rom.py KERNAL BASIC CHAR [DOS1541] OUT` makes the same 48 KB image as Intel HEX (to add to a private copy of the .cof at 0x580000) and as a .mem file for the simulation. Such files contain the Commodore ROMs: keep them in the git-ignored `L64/roms_local/` and never publish a .jic that contains them."));
 
 // ------------------------------------------------------------------ 7, 8
 C.push(h1("7. Updating from the SD card (LUPDATE.BIN)"));
@@ -215,7 +215,7 @@ C.push(table([3000, 6360], ["Situation", "What happens"], [
   ["The power fails during the update", "The file is still on the card; the update runs again at the next start and finishes the job"],
   ["The power fails while the menu's own sectors are written", "The only risky moment (only when the menu changed, written last): the board may need the USB-Blaster and `L.jic` again"],
   ["The flash is already up to date", "Nothing is written; \"(the flash was up to date)\"; the file is deleted"],
-  ["C64 ROMs installed by the ESP32", "Never touched (flash 0x200000-0x27FFFF is skipped)"],
+  ["C64 ROMs installed by the ESP32", "Never touched (flash 0x580000-0x5FFFFF is skipped)"],
 ]));
 C.push(gap());
 C.push(p("Making the file, after building the images (section 3), in `AMenu/`:"));

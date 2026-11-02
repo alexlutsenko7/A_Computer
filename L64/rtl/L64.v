@@ -2,7 +2,7 @@
 // L64 -- Commodore 64 (PAL) on the QMTECH Cyclone IV EP4CE15 core board with
 //            the Extra_PCB_CycloneIV I/O board (same pins as LSpectrum)
 //
-// Application image at flash 0x180000 of the machine menu (AMenu/, docs/PLAN.md).
+// Application image at flash 0x200000 of the machine menu (AMenu/, docs/PLAN.md).
 //
 // Clocks (c64_pll, one VCO 756.25 MHz):
 //   clk    31.510 MHz  VIC-II dot4x: the C64
@@ -18,7 +18,7 @@
 //   KEY1 (Y13)    back to the machine menu (reconfigures to the factory image)
 //   keyboard      c64_keyboard.v (Esc = RUN/STOP, Page Up = RESTORE, Alt+F1..F8 = C64 F1..F8)
 //   F8            video 60 Hz (power-up) / 50 Hz; the C64 runs on undisturbed
-//   LED           fast blink = no C64 ROM image in flash (0x200000)
+//   LED           fast blink = no C64 ROM image in flash (0x580000)
 //=============================================================================
 `default_nettype none
 

@@ -312,8 +312,25 @@ static char pin_fixed[17];           // "" = auto (AUTO_PINS)
 static volatile int pin_try;         // index into AUTO_PINS
 static volatile bool link_up;
 
+// Audio stream state, written in the BT task, reported by loop()
+static volatile int audio_state = -1;      // last ESP_A2D_AUDIO_STATE_EVT state (-1 = none yet)
+static volatile uint32_t audio_events;     // ESP_A2D_AUDIO_STATE_EVT count
+static volatile uint32_t media_restarts;   // streams started again by us (kick_media)
+
 class ZxA2DP : public BluetoothA2DPSource {
  public:
+  // The library (1.8.11) starts the stream once per connection: a sink that suspends it (Bose
+  // headphones did, 1-2 s after connecting during a tape load) leaves the link "connected" with
+  // no audio pulled, for good. Its media state back to idle makes the heart beat (1 s) check and
+  // start the stream again. Called by loop() when no audio was asked for 3 s while connected.
+  bool kick_media() {
+    if (s_media_state != 2) return false;   // APP_AV_MEDIA_STATE_STARTED (not starting / stopping)
+    s_media_state = 0;                     // APP_AV_MEDIA_STATE_IDLE
+    media_restarts = media_restarts + 1;
+    return true;
+  }
+  int media_state() { return s_media_state; }
+
   // set_pin_code() copies with strcpy into a 16-byte array: a 16-digit PIN overflows
   void use_pin(const char *pin) {
     size_t n = strlen(pin);
@@ -372,6 +389,10 @@ class ZxA2DP : public BluetoothA2DPSource {
   }
 
   void app_a2d_callback(esp_a2d_cb_event_t event_id, esp_a2d_cb_param_t *param) override {
+    if (event_id == ESP_A2D_AUDIO_STATE_EVT) {
+      audio_state = param->audio_stat.state;
+      audio_events = audio_events + 1;
+    }
     if (event_id == ESP_A2D_CONNECTION_STATE_EVT) {
       if (param->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
         link_up = true;
@@ -475,6 +496,9 @@ static void status(Print &out) {
              square_wave ? "square" : "sine", level_pct, (unsigned)codec_forced);
   out.printf("   audio steps: late=%u (> %u ms) longest=%u ms\r\n", (unsigned)cb_late,
              (unsigned)(LATE_US / 1000), (unsigned)(cb_max_us / 1000));
+  out.printf("   stream: media state %d, audio state %d (%u events), restarts=%u, last audio %ld ms ago\r\n",
+             a2dp.media_state(), (int)audio_state, (unsigned)audio_events, (unsigned)media_restarts,
+             cb_last ? (long)((esp_timer_get_time() - cb_last) / 1000) : -1L);
   out.printf("   i2s backlog=%d frames, overflows=%u, drift fixes: dropped=%u repeated=%u\r\n",
              (int)(i2s_rx_frames - i2s_rd_frames), (unsigned)i2s_overflows, (unsigned)i2s_drops, (unsigned)i2s_dups);
   i2s_peak = 0;
@@ -495,6 +519,7 @@ static void help(Print &out) {
   out.print(
       "OK commands:\r\n"
       "  status                  connection, target, audio (i2s peak since last status)\r\n"
+      "  loader                  SD loader task: state, last link frame, code addresses on its stack\r\n"
       "  info                    one line: OK info <state> <scan> <MAC> <vol> <pin> <src> <name>\r\n"
       "  scan                    drop the link, search for speakers (EV found ... lines)\r\n"
       "  list                    devices found so far (index MAC rssi name)\r\n"
@@ -525,6 +550,8 @@ static void command(char *line, Print &out) {
     help(out);
   } else if (!strcasecmp(cmd, "status")) {
     status(out);
+  } else if (!strcasecmp(cmd, "loader")) {
+    loader_info(out);
   } else if (!strcasecmp(cmd, "list")) {
     list_devs(out);
   } else if (!strcasecmp(cmd, "info")) {
@@ -691,6 +718,7 @@ void setup() {
 
 void loop() {
   loader_poll();
+  loader_check();
   usb_in.poll();
   uart_in.poll();
 
@@ -748,6 +776,19 @@ void loop() {
       volume = v;
       event("volume %u (set on the speaker)", (unsigned)volume);
     }
+  }
+
+  // Audio stream events, and a stream that stopped while the link stays (see kick_media)
+  static int last_audio = -1;
+  if (audio_state != last_audio) {
+    last_audio = audio_state;
+    event("audio %s", last_audio == ESP_A2D_AUDIO_STATE_STARTED ? "started" : "suspended");
+  }
+  static uint32_t kick_ms;
+  if (conn == ESP_A2D_CONNECTION_STATE_CONNECTED && millis() - conn_ms > 3000 && millis() - kick_ms > 3000 &&
+      esp_timer_get_time() - cb_last > 3000000) {
+    kick_ms = millis();
+    if (a2dp.kick_media()) event("audio stream stopped: starting it again (%u)", (unsigned)media_restarts);
   }
 
   static uint32_t last_forced = 0;

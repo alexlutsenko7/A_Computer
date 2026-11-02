@@ -34,7 +34,7 @@ module menu_boot (
     input  wire [23:0] boot_addr,       // static before start_tgl toggles
     output reg         ready,           // trig / prev_addr valid
     output reg  [4:0]  trig,
-    output reg  [23:0] prev_addr,
+    output reg  [25:0] prev_addr,       // 26 bits: a 24-bit address shifted left by 2 keeps its top bits
     output reg  [4:0]  trig2,           // trigger conditions of the configuration before (read_source 10)
     output reg  [1:0]  mode             // master state machine mode (param 000): 0 factory, 1/3 application
 );
@@ -93,7 +93,7 @@ always @(posedge clk or negedge rst_n)
         data_in     <= 24'd0;
         ready       <= 1'b0;
         trig        <= 5'd0;
-        prev_addr   <= 24'd0;
+        prev_addr   <= 26'd0;
         trig2       <= 5'd0;
         mode        <= 2'd0;
     end else begin
@@ -113,7 +113,7 @@ always @(posedge clk or negedge rst_n)
                     op_run <= 1'b0;
                     case (state)
                         S_RTRIG:  begin trig  <= data_out[4:0]; state <= S_RADDR;  end
-                        S_RADDR:  begin prev_addr <= data_out[23:0]; state <= S_RTRIG2; end
+                        S_RADDR:  begin prev_addr <= data_out[25:0]; state <= S_RTRIG2; end
                         S_RTRIG2: begin trig2 <= data_out[4:0]; state <= S_RMODE;  end
                         default:  begin mode  <= data_out[1:0]; ready <= 1'b1; state <= S_IDLE; end
                     endcase

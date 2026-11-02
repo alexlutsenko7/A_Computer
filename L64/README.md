@@ -45,7 +45,7 @@ For the disk drive, add the 1541 DOS ROM (16 KB, name starting `DOS1541` or `154
 `dos1541-325302-01+901229-05.bin`); without it there is no drive (`DEVICE NOT PRESENT`).
 
 When L64 starts and there are no ROMs in the flash yet (or the flash has no 1541 ROM and the card has one),
-the ESP32 writes them to flash 0x200000 and
+the ESP32 writes them to flash 0x580000 and
 restarts the C64. After that, the machine boots without the card. The image's header (offset 0,
 `F3 "L64 ROMS"` (+ 4 spaces; the ESP32 also accepts the old "ADORE64 ROMS"), which the FPGA's ROM loader and the ESP32 check) is erased first and written last, after
 the ROM data checked out, so an install that stops anywhere is simply done again at the next start. A flash

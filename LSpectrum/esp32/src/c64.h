@@ -10,7 +10,7 @@
 #define C64_ENOROM -22      /* no ROM files on the card */
 #define C64_EFLASH -23      /* flash verify failed */
 
-/* ROM image in flash (0x200000, rtl/c64_system.v): 1 = present */
+/* ROM image in flash (0x580000, rtl/c64_system.v): 1 = present */
 int  c64_rom_present(void);        /* 2 = with the 1541 ROM */
 int  c64_rom_card_1541(void);      /* 1 = /ROMS/C64/ on the card has all ROMs, the 1541 one too */
 /* Install /ROMS/C64/ KERNAL*, BASIC*, CHAR* (8 / 8 / 4 KB) into flash, then reload the C64.

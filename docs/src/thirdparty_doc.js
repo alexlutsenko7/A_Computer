@@ -153,7 +153,7 @@ C.push(b("Retroleum ZX Spectrum diagnostics (16 KB, F1 at start). Its licence is
 C.push(h2("4.3 Commodore 64 and 1541 ROMs"));
 C.push(b("KERNAL, BASIC, character ROM and 1541 DOS: copyrighted (Commodore; today the rights holder licenses them, e.g. to emulator distributions). **Not part of the project, the repository or the .jic.** Users put their own ROM files on the SD card (`/ROMS/C64/`); the ESP32 writes them into the configuration flash. Local test copies live in the git-ignored `L64/roms_local/`."));
 C.push(h2("4.4 AltirraOS and Altirra BASIC"));
-C.push(b("`LTari/roms/altirraos_xl.rom` (16 KB, AltirraOS 3.11) and `altirra_basic.rom` (8 KB, Altirra BASIC 1.59), free replacement ROMs by Avery Lee, taken from the atari800 emulator's source (`src/roms/`), in `LTari/roms/atarirom.hex` and the .jic at 0x380000."));
+C.push(b("`LTari/roms/altirraos_xl.rom` (16 KB, AltirraOS 3.11) and `altirra_basic.rom` (8 KB, Altirra BASIC 1.59), free replacement ROMs by Avery Lee, taken from the atari800 emulator's source (`src/roms/`), in `LTari/roms/atarirom.hex` and the .jic at 0x540000."));
 C.push(b("**Licence:** \"Copying and distribution of this file, with or without modification, are permitted in any medium without royalty provided the copyright notice and this notice are preserved. This file is offered as-is, without any warranty.\" (copyright Avery Lee 2008-2018 / 2008-2022; `LTari/roms/README.md`)."));
 C.push(b("The Altirra Hardware Reference Manual (Avery Lee; a free download, not in the repository) is the documentation the LTari chips are written from; no other Atari FPGA core's HDL was used."));
 C.push(h2("4.5 Other material"));

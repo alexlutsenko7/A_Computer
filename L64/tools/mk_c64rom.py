@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """mk_c64rom.py -- builds the L64 ROM image (48 KB) from the user's own ROM files.
 
-Layout (c64_system.v, loaded from flash 0x200000 to SDRAM 0x10000 by rom_loader):
+Layout (c64_system.v, loaded from flash 0x580000 to SDRAM 0x10000 by rom_loader):
   0x0000  header, 4 KB: byte 0 = F3 (the loader's bit-order mark), 1..12 "L64 ROMS" + 4 spaces,
           13 = 1 if a 1541 ROM is included, rest FF
   0x1000  CHAR    4 KB  (chargen / characters.901225-01.bin)

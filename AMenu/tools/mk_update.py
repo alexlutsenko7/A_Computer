@@ -14,7 +14,7 @@
       erased first or not. The board shows "No machines installed" until LUPDATE.BIN is on the card
 
 File: 256-byte header ("LUPDATE1", image length, CRC-32 of the image, skip range = the C64 ROM area
-0x200000-0x27FFFF that the ESP32 installs itself, menu end 0x080000, a 64-byte label, CRC-32 of the
+0x580000-0x5FFFFF that the ESP32 installs itself, menu end 0x100000, a 64-byte label, CRC-32 of the
 header), then the flash image from address 0 as the flash returns it over SPI, cut after its last used
 4 KB sector. The .rpd holds every byte bit-reversed (LSB first): seen on hardware 2026-10-30, the ESP32 reads
 56 EF EF EF at an image's start where the .rpd has 6A F7 F7 F7 (sync byte 6A), so the bits are reversed here.
@@ -24,8 +24,8 @@ import argparse, datetime, os, re, struct, subprocess, sys, zlib
 
 CPF = os.environ.get('QUARTUS_CPF', '/mnt/c/Altera/quartus/bin64/quartus_cpf.exe')
 SECTOR = 4096
-SKIP = (0x200000, 0x280000)
-MENU_END = 0x080000
+SKIP = (0x580000, 0x600000)
+MENU_END = 0x100000            # the factory slot (1 MB slots: docs/PLAN.md)
 
 
 def cpf(*args):

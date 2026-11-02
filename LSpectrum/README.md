@@ -11,7 +11,7 @@ Architecture and decisions: `../docs/PLAN.md`, CPU clock-enable analysis: `../do
 | CPU | T80 (MiSTer @af0e6723, `../T80/`) in `cpu_t80` (single clock enable), 3.5469 MHz, or 28 MHz while the SD tape loader plays or saves (F6: normal speed) |
 | System clock | 112 MHz (sys_pll); CPU stepped by a phase accumulator; SDRAM stalls hold the clock enable (turbo only) |
 | RAM + ROM | W9825G6KH SDRAM via `sdram_ram` (DDR_TEST, proven at 112 MHz): RAM pages 0-7, ROM 0/1, DiagROM |
-| ROMs | in the configuration flash at 0x100000 (in the .jic), copied to SDRAM at power-up/reset by `rom_loader` (~14 ms) |
+| ROMs | in the configuration flash at 0x500000 (in the .jic), copied to SDRAM at power-up/reset by `rom_loader` (~14 ms) |
 | Video | 640x480@60 (25.208 MHz, 60.02 Hz) or 720x576@50 (27.009 MHz, 50.017 Hz) VGA (CEA-861 VIC 1 / 17 timing, clocks +0.033 %), 4-bit RGB DAC (ZX normal = E, bright = F per colour), from block-RAM shadows of pages 5/7 |
 | Sound | AY-3-8912 (JT49, GPL-3) at 1.7734 MHz -> sigma-delta on AUDIO_AY; beeper on AUDIO_BEEP (both to the 3.5 mm jack); the same mix as I2S (`bt_i2s`) to the ESP32, which sends it to Bluetooth headphones / speakers (`esp32/`) |
 | Keyboard | USB keyboard via the CH9350-style UART module (115200), packet format as the DE10-Lite reference |
@@ -45,7 +45,7 @@ At power-up the CPU waits for the first keyboard packet (at most 1.5 s) so a hel
 | Path | Role |
 |---|---|
 | `LSpectrum.qpf/.qsf/.sdc` | Quartus project, pins, constraints (SDRAM I/O as DDR_TEST, CPU multicycles, clock groups) |
-| `roms48k.hex` | ROMs (128K set + a diagnostics ROM, 48 KB) for flash 0x100000, made by `tools/mk_roms48k.py` (the public copy has 48K BASIC in the diagnostics slot: DiagROM's licence is not known); the `.jic` is built by `../AMenu/L.cof` (menu at 0, this bitstream at 0x080000, ROMs) |
+| `roms48k.hex` | ROMs (128K set + a diagnostics ROM, 48 KB) for flash 0x500000, made by `tools/mk_roms48k.py` (the public copy has 48K BASIC in the diagnostics slot: DiagROM's licence is not known); the `.jic` is built by `../AMenu/L.cof` (menu at 0, this bitstream at 0x100000, ROMs at 0x500000) |
 | `sta_report.tcl` | `quartus_sta -t sta_report.tcl`: unconstrained ports, worst paths, CPU multicycle check |
 | `rtl/LSpectrum.v` | top: PLLs, resets (power-up / machine / tape loader), SDRAM clock (DDIO) and DQ, video clock switch (as VGA_TEST), F8/S1 handling |
 | `rtl/zx_system.v` | the machine without PLLs: SDRAM, loader, bus, AY, keyboard, video, LED |

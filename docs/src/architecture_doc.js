@@ -157,7 +157,7 @@ C.push(b("**T1, second clock:** the cycle type (memory or I/O, read or write) is
 C.push(b("**T2:** for writes, the data is sampled and the write is posted: the CPU does not wait for it. The next read waits until earlier writes are done, so a read always sees them. Writes to the screen areas of pages 5 and 7 also go to the screen shadows."));
 C.push(b("**End of T2:** the CEN that lets the CPU take the data is held until the read has completed (only possible in turbo)."));
 C.push(h2("5.4 ROM loading"));
-C.push(p("The ROMs are stored in the configuration flash at 0x100000 (128K set, 32 KB) and 0x108000 (DiagROM, 16 KB), written together with the bitstream as one .jic file. After every machine reset `rom_loader.v` reads the 48 KB with SPI READ commands through the Cyclone IV ASMI block and writes them into SDRAM (about 14 ms), then the CPU starts. The .jic tool stores user data bit-reversed; the loader recognises this from the first byte (F3 = DI, or CF = F3 reversed) and corrects it. A missing ROM image makes the LED blink fast."));
+C.push(p("The ROMs are stored in the configuration flash at 0x500000 (128K set, 32 KB) and 0x508000 (DiagROM, 16 KB), written together with the bitstream as one .jic file. After every machine reset `rom_loader.v` reads the 48 KB with SPI READ commands through the Cyclone IV ASMI block and writes them into SDRAM (about 14 ms), then the CPU starts. The .jic tool stores user data bit-reversed; the loader recognises this from the first byte (F3 = DI, or CF = F3 reversed) and corrects it. A missing ROM image makes the LED blink fast."));
 C.push(p("At power-up the CPU additionally waits for the first USB keyboard packet (at most 1.5 s), so that a held F1 key is already known when the ROM is chosen."));
 
 // ---------------------------------------------------------------- 6
@@ -202,7 +202,7 @@ C.push(b("PC keys mapped to Spectrum combinations: Backspace = DELETE, arrows = 
 C.push(b("**Machine keys** handled in hardware: F1 held at start (DiagROM), F8 (50/60 Hz), Ctrl+Alt+Del (back to the machine menu, as KEY1)."));
 C.push(b("**Loader keys** passed to the loader (read by the ESP32 over the link) as a bit vector: F12 / numpad keys / arrows / Enter / Esc / F2 (snapshot) / F3 (Bluetooth menu) / F4 (joystick menu) / F5 (contention) / F6 (speed) / F7 (stop) / F9-F11 / Page Up / Page Down (browser paging, or the 50 Hz interrupt position); plus the raw keyboard report for typing file names."));
 C.push(b("While the browser is open the Spectrum's key matrix is released, so it sees no keys."));
-C.push(p("The complete key list with usage cases is in the separate document LSpectrum_Keys.docx. Board buttons: KEY0 resets everything; KEY1 (or Ctrl+Alt+Del on the keyboard) returns to the machine menu (the factory image AMenu, loaded at power-up; LSpectrum is the application image at flash 0x080000)."));
+C.push(p("The complete key list with usage cases is in the separate document LSpectrum_Keys.docx. Board buttons: KEY0 resets everything; KEY1 (or Ctrl+Alt+Del on the keyboard) returns to the machine menu (the factory image AMenu, loaded at power-up; LSpectrum is the application image at flash 0x100000)."));
 
 // ---------------------------------------------------------------- 9
 C.push(h1("9. SD card tape loader"));

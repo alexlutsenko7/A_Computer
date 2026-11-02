@@ -156,10 +156,16 @@ machine is its own bitstream in the 8 MB config flash; a small **menu core** is 
 | Flash | Contents |
 |---|---|
 | 0x000000 | factory image: menu core `AMenu/` (VGA 640x480@60, text screen, keyboard, joysticks, remote-update block) |
-| 0x080000 | LSpectrum (application image) |
-| 0x100000 | ZX ROMs (`roms48k.hex`, unchanged: `rom_loader` keeps its address) |
-| 0x180000 | L64 (application image) |
-| 0x200000.. | C64 ROMs (KERNAL, BASIC, CHAR, 1541), installed from the SD card by the ESP32; then further cores |
+| 0x100000 | LSpectrum (application image) |
+| 0x200000 | L64 (application image) |
+| 0x300000 | LTari 800 (application image) |
+| 0x400000 | LTari 130 (application image) |
+| 0x500000 | ZX ROMs, 48 KB (`roms48k.hex`) |
+| 0x540000 | Atari ROMs, 28 KB (`LTari/roms/atarirom.hex`) |
+| 0x580000-0x5FFFFF | C64 ROMs (KERNAL, BASIC, CHAR, 1541), installed from the SD card by the ESP32 (never in the .jic / LUPDATE.BIN) |
+| 0x600000-0x7FFFFF | free |
+
+Every image has a 1 MB slot, so larger FPGAs (10CL025: bigger bitstream) use the same layout and update file.
 
 - Power-up always loads the factory image. The menu (drawn by the FPGA itself, no ESP32 needed) is shown every time;
   Up/Down + Enter, the digit, or a joystick picks a machine. The menu core disables the watchdog, writes the boot
@@ -1030,3 +1036,32 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
 - (2026-11-02) Manuals for a closed box (user): no KEY0 / KEY1 / board LED anywhere in docs/manuals (all nine
   languages); keyboard equivalents (Ctrl + Alt + Del, start the machine again = complete restart, F1 / Alt + F4 held
   while starting the machine from the menu: not yet checked on hardware).
+- (2026-11-02) 1 MB flash slots (user), so other boards (QMTECH 10CL025, larger bitstream) share one layout:
+  menu 0, LSpectrum 0x100000, L64 0x200000, LTari 800 0x300000, LTari 130 0x400000, ZX ROMs 0x500000, Atari ROMs
+  0x540000, C64 ROMs (ESP32) 0x580000-0x5FFFFF. Changed: AMenu MACHINE_ADDR + L.cof, rom_loader / c64_system /
+  atari_system flash addresses, mk_update.py (skip 0x580000-0x600000, menu end 0x100000), ESP32 update.cpp slots +
+  c64.cpp ROM_BASE, sims and host tests. The remote update block reads the previous boot address back shifted left
+  by 2: 0x100000 << 2 = 0x400000 = LTari 130's address, and 0x400000 << 2 needs bit 24, so menu_boot keeps 26 bits
+  and the shifted match wins (tb_amenu FAIL case tests exactly that). L64 core ID 4336_0002: an older ESP32
+  firmware would install the C64 ROMs at 0x200000, inside the new L64 image; it does not recognise the new ID.
+  The C64 ROMs are installed again automatically at the first L64 start (from /ROMS/C64/ on the card).
+  Builds: all five images timing-clean (L64 needed SEED 3: 14,907 LEs, setup +0.923 ns, hold +0.159 ns; seed 2 had
+  -0.026 ns on clk[3]). L.jic and LUPDATE.BIN ("L 2026-11-02", 5404 KB to 0x547000) rebuilt; AMenu sim, c64rom and
+  update host tests PASS. Not yet on hardware.
+- (2026-11-02) Bluetooth headphones (Bose) connected while a tape loaded in LSpectrum: 1-2 s of sound, then silence
+  with the link still "connected", and the SD loader dead (no F12 / OSD in any machine, KEY0 did not restart the
+  ESP32: the loader task sent no link frame at all, so neither the machine-change nor the KEY0 check ran). Seen on
+  the live ESP32 over USB: get_frames no longer called (I2S DMA overflowing every buffer). ESP32-A2DP 1.8.11 starts
+  the stream once per connection; a sink that suspends it leaves the link silent for good. Now: no audio asked for
+  3 s while connected -> ZxA2DP::kick_media() sets the library's media state back to idle, its 1 s heart beat starts
+  the stream again ("EV audio stream stopped: starting it again"; audio start / suspend events reported; `status`
+  shows the stream state). Loader: loop() calls loader_check(): no link frame for 3 s on a machine (not the menu)
+  = "loader: STALLED" with the task state and the code addresses on its stack (addr2line with esp32.ino.elf), after
+  15 s the ESP32 restarts (as KEY0). New USB command `loader`. The stuck place is not known yet (the console's last
+  output before was many lines "084"). Firmware 1,200,727 B, static RAM 77,052 B; AMenu/output_files/LESP32.BIN.
+  User: sound good, machine switches with F12 work. Neither the stream restart nor the stall report has fired yet.
+- (2026-11-02) The I/O board in the public repo (user): Extra_PCB_CycloneIV/ as **revision 1** (the files ordered from
+  JLCPCB 2026-10-14: KiCad project, schematic PDF re-plotted from the current schematic, project symbols / footprints,
+  jlcpcb/ Gerbers + drill + BOM + CPL, tools/). Left out: .history, backups, old/, .kicad_prl, routing .dsn / .ses.
+  KiCad-library footprints noted as CC-BY-SA 4.0 + library exception. make_github.py also gives changed text files
+  their committed line endings (Quartus rewrites .qsf / .qpf with CRLF).

@@ -12,7 +12,7 @@ set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS R
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
 # Unused pins: plain inputs
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS_WEAK_PULLUP "AS INPUT TRI-STATED"
-# remote update: application image at 0x180000, AMenu/ is the factory image (docs/PLAN.md)
+# remote update: application image at 0x200000, AMenu/ is the factory image (docs/PLAN.md)
 set_global_assignment -name STRATIXIII_UPDATE_MODE REMOTE
 set_global_assignment -name OPTIMIZATION_TECHNIQUE SPEED
 set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"
@@ -21,7 +21,7 @@ set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
 # effort it moved between +0.7 and -0.16 ns from placement alone (2026-10-13)
 set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
 # fitter seed: the default placement after the rename (2026-10-30) missed setup by 0.19 ns at 96 % full
-set_global_assignment -name SEED 2
+set_global_assignment -name SEED 3
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 
 set_global_assignment -name SEARCH_PATH rtl/vicii

@@ -43,9 +43,9 @@ AltirraOS and Altirra BASIC by Avery Lee, which are free to distribute (`roms/RE
 
 | Address | Contents |
 |---|---|
-| 0x280000 | LTari 800 image (revision `LTari800`, **800XL**, 64 KB) |
-| 0x300000 | LTari 130 image (revision `LTari`, **130XE**, 128 KB) |
-| 0x380000 | ROM image, 28 KB (`roms/atarirom.hex`, from `tools/mk_atarirom.py`) |
+| 0x300000 | LTari 800 image (revision `LTari800`, **800XL**, 64 KB) |
+| 0x400000 | LTari 130 image (revision `LTari`, **130XE**, 128 KB) |
+| 0x540000 | ROM image, 28 KB (`roms/atarirom.hex`, from `tools/mk_atarirom.py`) |
 
 Both images come from the same sources; the revision sets the top-level parameter `MODEL130` (`set_parameter` at the
 end of `LTari.qsf` / `LTari800.qsf`, otherwise identical: keep them in step). An application image cannot learn

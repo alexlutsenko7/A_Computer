@@ -67,6 +67,7 @@ Pin assignments: `docs/BOARD_PINOUT.md`.
 | `T80/` | Z80 core (VHDL), from the MiSTer ZX Spectrum core, unchanged (`T80/SOURCE.md`) |
 | `DDR_TEST/` | stand-alone SDRAM controller + memory test (the controller used by LSpectrum) |
 | `VGA_TEST/` | stand-alone VGA test (colour bars, both video modes) |
+| `Extra_PCB_CycloneIV/` | **the I/O board, revision 1**: KiCad 10 project (schematic + PDF, routed 2-layer layout, project symbols / footprints), JLCPCB order files (`jlcpcb/`: Gerbers, drill, BOM, CPL), wiring to the core board (`README.md`) |
 | `docs/` | design notes, user documents, data sheets (see below) |
 
 ## Building
@@ -88,8 +89,9 @@ cd ../LSpectrum
 arduino-cli compile -b esp32:esp32:esp32 -u -p COM10 esp32       # ESP32 firmware (loader + Bluetooth)
 ```
 
-Flash layout: menu at 0, LSpectrum at 0x080000, the Spectrum ROM images (`roms48k.hex`) at 0x100000, L64 at
-0x180000, the C64 ROMs (installed by the ESP32) at 0x200000; ROMs are copied into SDRAM at every reset.
+Flash layout (1 MB per image): menu at 0, LSpectrum at 0x100000, L64 at 0x200000, LTari 800 at 0x300000, LTari 130 at
+0x400000, the Spectrum ROMs (`roms48k.hex`) at 0x500000, the Atari ROMs at 0x540000, the C64 ROMs (installed by the
+ESP32) at 0x580000; ROMs are copied into SDRAM at every reset.
 A change in `LSpectrum/esp32/` needs only the ESP32 flashed again; a change in `LSpectrum/rtl/` a new compile.
 
 ## Programming
@@ -176,6 +178,7 @@ The project's own files are under the MIT licence (`LICENSE`). Third-party parts
 | ROM images in `LSpectrum/roms48k.hex` and `LSpectrum/sim/roms.mem` | ZX Spectrum 128 ROMs (c) Amstrad, distributed for emulator use with permission, copyright messages unchanged. Retroleum's DiagROM is not included (its licence is not known): the published image has a copy of the 48K BASIC ROM in that slot; `LSpectrum/tools/mk_roms48k.py` builds the image with your own copy |
 | `LTari/roms/` (AltirraOS, Altirra BASIC, Avery Lee) | permissive notice: copying and distribution permitted, notice preserved |
 | Commodore 64 / 1541 ROMs | **not included**: copyrighted; bring your own (`L64/README.md`) |
+| `Extra_PCB_CycloneIV/Extra_PCB_CycloneIV.pretty/`: footprints adapted from the KiCad libraries (D-Sub 15 HD, pin headers) | CC-BY-SA 4.0 with the KiCad library exception (designs made with them, the board files and Gerbers included, are not bound by it); the rest of the board is MIT |
 
 Because of the GPL-3 parts, the LSpectrum and L64 bitstreams (and `L.jic`) are GPL-3 works. Details, the
 notices the BSD-style cores require, and what was changed in external code: [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md);

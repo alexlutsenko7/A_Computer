@@ -13,7 +13,7 @@ set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS R
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
 # Unused pins: plain inputs
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS_WEAK_PULLUP "AS INPUT TRI-STATED"
-# remote update: application image at 0x280000 (LTari 800) and 0x300000 (LTari 130), AMenu/ is the factory image (docs/PLAN.md)
+# remote update: application image at 0x300000 (LTari 800) and 0x400000 (LTari 130), AMenu/ is the factory image (docs/PLAN.md)
 set_global_assignment -name STRATIXIII_UPDATE_MODE REMOTE
 set_global_assignment -name OPTIMIZATION_TECHNIQUE SPEED
 set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"

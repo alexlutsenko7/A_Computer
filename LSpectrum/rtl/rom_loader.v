@@ -3,9 +3,10 @@
 //               after power-up / reset, then releases the CPU (done = 1)
 //
 // Flash layout (see docs/PLAN.md, programmed with the .jic):
-//   0x100000  128K ROM set, 32 KB  -> SDRAM 0x20000 (ROM 0 + ROM 1)
-//   0x108000  DiagROM,      16 KB  -> SDRAM 0x28000
-// One continuous READ (0x03) of 48 KB from 0x100000 to SDRAM 0x20000.
+//   0x500000  128K ROM set, 32 KB  -> SDRAM 0x20000 (ROM 0 + ROM 1)
+//   0x508000  DiagROM,      16 KB  -> SDRAM 0x28000
+// One continuous READ (0x03) of 48 KB from 0x500000 to SDRAM 0x20000.
+// (L64 and LTari use the same module with their own FLASH_ADDR / SD_BASE / LEN.)
 //
 // SPI mode 0, DCLK = clk / (2 * DIV) (112 / 8 = 14 MHz). MISO is sampled at
 // the end of the high phase, MOSI changes in the low phase.
@@ -17,7 +18,7 @@
 `default_nettype none
 
 module rom_loader #(
-    parameter [23:0] FLASH_ADDR = 24'h100000,
+    parameter [23:0] FLASH_ADDR = 24'h500000,
     parameter [17:0] SD_BASE    = 18'h20000,
     parameter integer LEN       = 49152,
     parameter integer DIV       = 4

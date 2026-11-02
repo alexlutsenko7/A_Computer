@@ -30,9 +30,9 @@
 #undef main
 
 #define FL_SIZE  0x800000u
-#define MENU_END 0x080000u
-#define SKIP_LO  0x200000u
-#define SKIP_HI  0x280000u
+#define MENU_END 0x100000u
+#define SKIP_LO  0x580000u
+#define SKIP_HI  0x600000u
 
 static uint8_t  flash[FL_SIZE], img[FL_SIZE], old[FL_SIZE];
 static uint32_t img_len;
@@ -231,7 +231,7 @@ int main(int argc, char **argv)
     /* the "old" flash: the image with a few machine sectors and one menu sector changed, the C64
        ROM area holding installed ROMs, the rest of the flash erased */
     memcpy(old, img, FL_SIZE);
-    static const uint32_t changed[] = { 0x081000u, 0x0F0000u, 0x185000u, 0x300000u, 0x386000u };
+    static const uint32_t changed[] = { 0x101000u, 0x1F0000u, 0x205000u, 0x400000u, 0x541000u };
     for (uint32_t k = 0; k < 5; k++) old[changed[k] + 17] ^= 0x5A;
     old[0x01000 + 3] ^= 0xFF;                                   /* menu */
     for (uint32_t i = SKIP_LO; i < SKIP_LO + 49152; i++) old[i] = (uint8_t)(i * 7);

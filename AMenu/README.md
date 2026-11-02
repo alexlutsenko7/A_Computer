@@ -33,13 +33,15 @@ the menu.
 | Address | Contents |
 |---|---|
 | 0x000000 | AMenu (factory) |
-| 0x080000 | LSpectrum |
-| 0x100000 | ZX ROMs (`../LSpectrum/roms48k.hex`) |
-| 0x180000 | L64 |
-| 0x200000 | C64 ROMs (installed by the ESP32) |
-| 0x280000 | LTari (started from here: LTari 800) |
-| 0x300000 | LTari, the same image (started from here: LTari 130) |
-| 0x380000 | LTari ROMs (`../LTari/roms/atarirom.hex`) |
+| 0x100000 | LSpectrum |
+| 0x200000 | L64 |
+| 0x300000 | LTari 800 (revision `LTari800`) |
+| 0x400000 | LTari 130 (revision `LTari`) |
+| 0x500000 | ZX ROMs (`../LSpectrum/roms48k.hex`) |
+| 0x540000 | LTari ROMs (`../LTari/roms/atarirom.hex`) |
+| 0x580000 | C64 ROMs (installed by the ESP32; skipped by LUPDATE.BIN) |
+
+1 MB per image, so boards with a larger FPGA use the same layout.
 
 The machine addresses are AMenu's `MACHINE_ADDR` parameter. The menu text comes from
 `tools/menu_text.py`, which writes `rtl/menu_text.hex`. Keep the two in the same order.
@@ -53,7 +55,7 @@ The machine addresses are AMenu's `MACHINE_ADDR` parameter. The menu text comes 
 | `rtl/menu_video.v` | 32 x 24 text screen, highlighted entry, error line |
 | `rtl/menu_text.hex` | text screen (generated) |
 | `tools/menu_text.py` | writes `menu_text.hex` |
-| `sim/tb_amenu.sv`, `sim/run_sim.sh` | Questa: power-up case (Down + Enter -> 0x180000) and failed-image case (cursor + error, '1' -> 0x080000); writes `menu.png` / `menu_fail.png` |
+| `sim/tb_amenu.sv`, `sim/run_sim.sh` | Questa: power-up case (Down + Enter -> 0x200000) and failed-image case (previous address 0x400000 = 0x100000 shifted: cursor on LSpectrum + error, '4' -> 0x400000); writes `menu.png` / `menu_fail.png` |
 | `L.cof` | **the one .jic for the board**: AMenu + all machines + ZX ROMs |
 
 ## Remote update notes
@@ -66,8 +68,9 @@ The machine addresses are AMenu's `MACHINE_ADDR` parameter. The menu text comes 
 - **Writes must use `read_source = 00`**: the generated block decodes no other combination for a write and drops it
   silently (that made every machine start fail at first: the boot address stayed 0).
 - After a failed start the menu shows three red rows: the reason (02 watchdog, ...), the address the chip tried, its
-  mode and the reason before. A machine's address that reads back shifted left by 2 is shown as written (`180000`,
-  not `600000`).
+  mode and the reason before. A machine's address that reads back shifted left by 2 is shown as written (`200000`,
+  not `800000`). menu_boot keeps 26 bits of the read-back (0x400000 << 2 needs bit 24); when a shifted address equals
+  another machine's written one (0x100000 << 2 = 0x400000), the shifted match wins (seen on hardware: shifted).
 - Trigger bits as seen on this board: 02 = watchdog (an image ran without a watchdog reset); the others as reported
   for Cyclone IV: [2] nSTATUS (no image), [3] CRC error, [4] nCONFIG / reconfiguration request; 0 = power-up.
   The menu shows the error for bits 1..3.

@@ -35,6 +35,7 @@ listed below; their licence texts and copyright headers are kept in the files.
 | AltirraOS 3.11 + Altirra BASIC 1.59 | LTari | permissive notice (Avery Lee) | no |
 | Commodore 64 + 1541 ROMs | L64 | (c) Commodore | **not included** (section 3) |
 | Retroleum DiagROM | LSpectrum (F1) | not known | **not included** (section 3) |
+| KiCad library footprints | I/O board (`Extra_PCB_CycloneIV.pretty/`: D-Sub 15 HD, pin headers) | CC-BY-SA 4.0 + KiCad library exception (the board design and its Gerbers are not bound) | adapted (CONNFLY DS1038 pins, rows swapped, keyboard module) |
 
 **What GPL / CERN-OHL-S mean for the bitstreams:** the L64 image contains GPL-3 and CERN-OHL-S parts and the
 LSpectrum image contains JT49 (GPL-3). Whoever passes on those `.sof` files or `L.jic` must make the complete
@@ -106,6 +107,7 @@ its notice for the bitstream is in [Appendix A](#appendix-a-notices-for-the-bits
 
 | Area | Files | What |
 |---|---|---|
+| I/O board | `Extra_PCB_CycloneIV/` | KiCad 10 project, revision 1 (ordered 2026-10-14): VGA DAC, two DB9, audio, keyboard module, microSD and ESP32 sockets; JLCPCB order files |
 | Machine menu | `AMenu/` | Factory image at flash 0: menu screen, joystick / keyboard choice, remote update into a machine, error report after a failed start |
 | SDRAM controller | `LSpectrum/rtl/sdram_ram.v`, `DDR_TEST/` | Byte / 16-bit RAM over the W9825G6KH at up to 112 MHz, open-row policy, refresh; tested on hardware (`DDR_TEST`, `docs/SDRAM_CONTROLLER.md`) |
 | Shared infrastructure | `LSpectrum/rtl/` (`rom_loader`, `flash_if`, `tape_loader`, `esp_link`, `bt_i2s`, `sd_dac`, `vga_*`) | Flash ROM loader, ESP32 SPI link and register bus, on-screen display, Bluetooth audio I2S, sigma-delta audio, video clock switch |
@@ -173,13 +175,15 @@ Flash layout (`AMenu/L.cof`):
 | Address | Contents |
 |---|---|
 | 0x000000 | AMenu, the machine menu (factory image, loaded at power-up) |
-| 0x080000 | LSpectrum |
-| 0x100000 | Spectrum ROMs, 48 KB (`LSpectrum/roms48k.hex`) |
-| 0x180000 | L64 |
-| 0x200000 | C64 ROMs, 48 KB — **not in the .jic**, written by the ESP32 from the SD card |
-| 0x280000 | LTari 800 (revision `LTari800`, 800XL, 64 KB) |
-| 0x300000 | LTari 130 (revision `LTari`, 130XE, 128 KB) |
-| 0x380000 | Atari ROMs, 28 KB (`LTari/roms/atarirom.hex`) |
+| 0x100000 | LSpectrum |
+| 0x200000 | L64 |
+| 0x300000 | LTari 800 (revision `LTari800`, 800XL, 64 KB) |
+| 0x400000 | LTari 130 (revision `LTari`, 130XE, 128 KB) |
+| 0x500000 | Spectrum ROMs, 48 KB (`LSpectrum/roms48k.hex`) |
+| 0x540000 | Atari ROMs, 28 KB (`LTari/roms/atarirom.hex`) |
+| 0x580000 | C64 ROMs, 48 KB — **not in the .jic**, written by the ESP32 from the SD card |
+
+Each machine has a 1 MB slot (room for larger FPGAs' images).
 
 Ready-made files: every `output_files/*.sof`, `AMenu/output_files/L.jic`, the SD card update
 `AMenu/output_files/LUPDATE.BIN` and the loader `AMenu/output_files/L_loader.jic` are in the repository, so you can
@@ -279,7 +283,7 @@ card; no USB-Blaster is needed:
 3. When everything checked out, the ESP32 deletes `LUPDATE.BIN`. If the menu itself changed, the screen asks to
    switch the board off and on; otherwise the menu comes back and the new machines start at once.
 
-The C64 ROMs the ESP32 installed (flash 0x200000-0x27FFFF) are never touched. A damaged file is rejected before
+The C64 ROMs the ESP32 installed (flash 0x580000-0x5FFFFF) are never touched. A damaged file is rejected before
 anything is written. If the power fails during the update, the file is still on the card and the update simply
 runs again at the next start; only a power failure while the menu's own sectors are written (rare: only when the
 menu changed) can leave a board that needs the USB-Blaster again.
@@ -302,7 +306,9 @@ C64 ROMs as in 4.5.
 
 ### 4.8 Hardware
 
-The FPGA pin assignments are in each `.qsf`; `docs/BOARD_PINOUT.md` maps the core board's headers to FPGA pins and
+The I/O board (revision 1) is `Extra_PCB_CycloneIV/`: KiCad 10 project and the JLCPCB order files in `jlcpcb/`
+(Gerber zip, BOM, CPL; J1, the ESP32 dev board and the keyboard module are fitted by hand). Its README has the
+J1-to-U8 wiring (each pin pair swapped). The FPGA pin assignments are in each `.qsf`; `docs/BOARD_PINOUT.md` maps the core board's headers to FPGA pins and
 describes the I/O board wiring (VGA, two DB9 joysticks, audio, keyboard UART, ESP32 link). `docs/L_Build_and_Install.docx`
 and `docs/LSpectrum_Connection.docx` have the same steps and the wiring with pictures; the keys of each machine are
 in `docs/LSpectrum_Keys.docx`, `docs/L64_Keys.docx` and `docs/LTari_Keys.docx`.

@@ -24,8 +24,8 @@ int fl_stream(const uint8_t *hdr, uint32_t nh, const uint8_t *data, uint8_t *rx,
 { (void)hdr; (void)nh; (void)data; (void)rx; (void)n; return -1; }
 #undef main                                     /* hw.h: main is the ESP32 loader task */
 
-#define FL_SIZE  0x400000u
-#define ROM_BASE 0x200000u
+#define FL_SIZE  0x800000u
+#define ROM_BASE 0x580000u
 #define ROM_LEN  49152u
 
 static uint8_t  flash[FL_SIZE], expect[ROM_LEN];

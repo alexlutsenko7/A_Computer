@@ -1,7 +1,8 @@
 // tb_amenu -- machine menu: remote-update sequence, keys, error display, one video frame (menu.ppm)
-//   +define+FAIL: the previous image failed (trigger CRC, previous address 0x180000 << 2):
-//                 the cursor must be on machine 2 with the error shown; key '1' starts machine 1.
-//   otherwise:    power-up; Down + Enter must start machine 2 (0x180000).
+//   +define+FAIL: the previous image failed (trigger CRC, previous address 0x100000 << 2 = 0x400000,
+//                 which is also machine 4's address as written): the cursor must be on machine 1
+//                 (the shifted match wins) with the error shown; key '4' starts machine 4 (0x400000).
+//   otherwise:    power-up; Down + Enter must start machine 2 (0x200000).
 `timescale 1ns/1ps
 `default_nettype none
 
@@ -60,11 +61,11 @@ endmodule
 
 module tb_amenu;
 `ifdef FAIL
-    localparam [28:0] TRIG = 29'h08, PREV = 29'h600000;
-    localparam [23:0] EXPECT = 24'h080000;
+    localparam [28:0] TRIG = 29'h08, PREV = 29'h400000;
+    localparam [23:0] EXPECT = 24'h400000;
 `else
     localparam [28:0] TRIG = 29'h00, PREV = 29'h000000;
-    localparam [23:0] EXPECT = 24'h180000;
+    localparam [23:0] EXPECT = 24'h200000;
 `endif
     reg [26:0] wr_log [$];
     reg reconf = 0;
@@ -125,9 +126,9 @@ module tb_amenu;
         #1000;
         $display("%t ready: sel %0d err %0d", $time, dut.sel, dut.err);
 `ifdef FAIL
-        if (dut.sel != 1 || !dut.err) begin $display("FAIL: expected sel 1, err 1"); errors++; end
+        if (dut.sel != 0 || !dut.err) begin $display("FAIL: expected sel 0, err 1"); errors++; end
         grab;
-        key_frame(8'h1E);                   // '1'
+        key_frame(8'h21);                   // '4'
 `else
         if (dut.sel != 0 || dut.err) begin $display("FAIL: expected sel 0, err 0"); errors++; end
         key_frame(8'h51); key_frame(8'h00); // Down

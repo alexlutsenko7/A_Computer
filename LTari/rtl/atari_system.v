@@ -38,7 +38,7 @@
 
 module atari_system #(
     parameter integer SD_MHZ    = 85,
-    parameter [23:0]  ROM_FLASH = 24'h380000,   // ROM image in the configuration flash
+    parameter [23:0]  ROM_FLASH = 24'h540000,   // ROM image in the configuration flash
     parameter integer FLASH_DIV = 4
 )(
     input  wire        clk,

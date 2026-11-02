@@ -27,7 +27,7 @@
 
 module AMenu #(
     parameter integer N_MACHINES = 4,
-    parameter [95:0]  MACHINE_ADDR = {24'h300000, 24'h280000, 24'h180000, 24'h080000},   // machine i at [24*i +: 24]
+    parameter [95:0]  MACHINE_ADDR = {24'h400000, 24'h300000, 24'h200000, 24'h100000},   // machine i at [24*i +: 24] (1 MB slots)
     parameter         FONT_HEX = "rtl/menu_font.hex",          // Spleen 8x16 (font/, tools/mk_menufont.py)
     parameter         TEXT_HEX = "rtl/menu_text.hex"
 )(
@@ -159,7 +159,7 @@ end
 //-----------------------------------------------------------------------------
 wire        ru_ready;
 wire [4:0]  ru_trig;
-wire [23:0] ru_prev;
+wire [25:0] ru_prev;                // previous boot address, as written or shifted left by 2
 wire [4:0]  ru_trig2;
 wire [1:0]  ru_mode;
 reg  [1:0]  rdy_s;
@@ -176,23 +176,26 @@ function [23:0] maddr(input [2:0] m);
     maddr = MACHINE_ADDR[24 * m +: 24];
 endfunction
 
-function prev_is(input [2:0] m);
-    reg [23:0] a;
-    begin
-        a       = maddr(m);
-        prev_is = ru_prev == a || ru_prev == {a[21:0], 2'b00};
-    end
+// The previous boot address reads back as written or shifted left by 2 (on hardware: shifted,
+// 0x180000 -> 0x600000). With 1 MB slots a shifted address can equal another machine's written one
+// (0x100000 << 2 = 0x400000): the shifted match wins (checked last).
+function prev_wr(input [2:0] m);
+    prev_wr = ru_prev == {2'b00, maddr(m)};
 endfunction
 
-// shown address: a machine's address that read back shifted left by 2 is shown as written
-reg [23:0] prev_show, ma;
+function prev_sh(input [2:0] m);
+    prev_sh = ru_prev == {maddr(m), 2'b00};
+endfunction
+
+// shown address: a machine's address that read back shifted is shown as written
+reg [23:0] prev_show;
 integer m;
 always @* begin
-    prev_show = ru_prev;
-    for (m = 0; m < N_MACHINES; m = m + 1) begin
-        ma = maddr(m);
-        if (ru_prev == {ma[21:0], 2'b00}) prev_show = ma;
-    end
+    prev_show = ru_prev[23:0];
+    for (m = 0; m < N_MACHINES; m = m + 1)
+        if (prev_wr(m)) prev_show = maddr(m);
+    for (m = 0; m < N_MACHINES; m = m + 1)
+        if (prev_sh(m)) prev_show = maddr(m);
 end
 
 wire       l_osd_on;                    // tape_loader below
@@ -222,9 +225,12 @@ always @(posedge CLOCK_50 or negedge rst_n)
         if (rdy_s[1] && !init_done) begin   // why are we here: cursor on the machine that ran / failed
             init_done <= 1'b1;
             err       <= |ru_trig[3:1];
-            if (ru_trig != 5'd0)
+            if (ru_trig != 5'd0) begin
                 for (k = 0; k < N_MACHINES; k = k + 1)
-                    if (prev_is(k)) sel <= k;
+                    if (prev_wr(k)) sel <= k;
+                for (k = 0; k < N_MACHINES; k = k + 1)
+                    if (prev_sh(k)) sel <= k;
+            end
         end else if (init_done && !started && !osd_lock) begin
             if (press[0] && sel != 3'd0) begin
                 sel <= sel - 3'd1;

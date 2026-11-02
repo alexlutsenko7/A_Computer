@@ -9,7 +9,7 @@
 `timescale 1ns/1ps
 
 module flash_model #(
-    parameter [23:0] BASE    = 24'h100000,
+    parameter [23:0] BASE    = 24'h500000,
     parameter integer LEN    = 49152,
     parameter        REVERSE = 1,
     parameter        FILE    = "roms.mem"

@@ -30,7 +30,7 @@ static const int L_SCK = 14, L_MOSI = 13, L_CS = 33, L_MISO = 35, L_IRQ = 34;
 static const int SD_SCK = 18, SD_MISO = 19, SD_MOSI = 23, SD_CS = 5;
 static const uint32_t LINK_HZ = 8000000;
 static const uint32_t ID_ZX  = 0x5A580001;       // LSpectrum ("ZX"), link version 1
-static const uint32_t ID_C64 = 0x43360001;       // L64 ("C6"), link version 1
+static const uint32_t ID_C64 = 0x43360002;       // L64 ("C6"), link version 2: C64 ROMs at flash 0x580000
 static const uint32_t ID_AT  = 0x41540001;       // LTari ("AT"), link version 1
 static const uint32_t ID_MN  = 0x4D4E0001;       // the machine menu ("MN"): flash update, link version 1
 static const uint32_t ID_MN2 = 0x4D4E0002;       // the same, link version 2: + flash stream frames (FLS)
@@ -49,6 +49,9 @@ static SPIClass linkspi(HSPI);
 static SPIClass sdspi(VSPI);
 static bool link_up;
 static volatile bool running;                     // a loader task runs (cleared by the menu task when it ends)
+static TaskHandle_t loader_th;                    // the loader task (stall report, loader_check)
+static volatile uint32_t frame_ms;                // millis() of the last link frame (stall check)
+static volatile uint32_t frames;                  // link frames sent
 
 //-----------------------------------------------------------------------------
 // link frames
@@ -65,6 +68,8 @@ static void frame(size_t n)
     digitalWrite(L_CS, HIGH);
     linkspi.endTransaction();
     delayMicroseconds(1);
+    frame_ms = millis();
+    frames = frames + 1;
 }
 
 static void link_wr(uint8_t r, uint32_t v)
@@ -393,6 +398,7 @@ static void loader_task(void *)
     link_reset();
     loader_reset_all();
     t_probe = millis();
+    loader_th = nullptr;
     running = false;                              // loader_poll probes for the machine
     vTaskDelete(nullptr);
 }
@@ -430,7 +436,8 @@ static void start_if_found()
                   machine_menu ? "the menu" : machine_c64 ? "L64" : machine_atari ? "LTari" : "LSpectrum",
                   machine_menu ? "flash update ready (LUPDATE.BIN)" : "SD loader running (F12)", (unsigned)ESP.getFreeHeap(),
                   (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-    xTaskCreatePinnedToCore(loader_task, "loader", 16384, nullptr, 1, nullptr, 1);
+    frame_ms = millis();
+    xTaskCreatePinnedToCore(loader_task, "loader", 16384, nullptr, 1, &loader_th, 1);
 }
 
 void loader_begin(void)
@@ -457,6 +464,59 @@ void loader_poll(void)
 }
 
 bool loader_running(void) { return running; }
+
+// The loader task's state and the code addresses on its stack (a rough call chain: decode with
+// xtensa-esp32-elf-addr2line -e esp32.ino.elf). The saved context starts at pxTopOfStack (the
+// TCB's first word): exit, pc, ps, ...
+static void loader_report(Print &out)
+{
+    static const char *const st[] = {"running", "ready", "blocked", "suspended", "deleted", "invalid"};
+    TaskHandle_t th = loader_th;
+    out.printf("loader: running=%d core %08lx frames=%lu last frame %lu ms ago\r\n", (int)running,
+               (unsigned long)core_id, (unsigned long)frames, (unsigned long)(millis() - frame_ms));
+    if (!running || !th) return;
+    eTaskState ts = eTaskGetState(th);
+    out.printf("loader: task %s, stack left %u bytes\r\n", st[ts <= 5 ? ts : 5],
+               (unsigned)uxTaskGetStackHighWaterMark(th));
+    if (ts == eRunning) return;                   // on the other core's view: no saved context
+    uint32_t *sp = *(uint32_t **)th;
+    if ((uint32_t)sp < 0x3FFB0000u || (uint32_t)sp >= 0x40000000u) return;
+    out.printf("loader: pc %08lx, code on the stack:", (unsigned long)sp[1]);
+    int n = 0;
+    for (int i = 2; i < 1024 && n < 24; i++) {
+        uint32_t *w = sp + i;
+        if ((uint32_t)w >= 0x40000000u) break;
+        uint32_t a = (*w & 0x3FFFFFFFu) | 0x40000000u;   // windowed call: top 2 bits = window size
+        if ((*w >> 30) && ((a >= 0x400D0000u && a < 0x40400000u) || (a >= 0x40080000u && a < 0x400A0000u))) {
+            out.printf(" %08lx", (unsigned long)a);
+            n++;
+        }
+    }
+    out.print("\r\n");
+}
+
+void loader_info(Print &out) { loader_report(out); }
+
+// loop(): a loader that sends no link frame for 3 s on a machine is stuck (every loop of the
+// loader reads registers): report where, and after 15 s restart the ESP32 as KEY0 would. The
+// machine menu is left out (the ESP32 firmware update writes flash for a while without frames).
+void loader_check(void)
+{
+    static uint32_t t_rep;
+    if (!running || machine_menu) { t_rep = 0; return; }
+    uint32_t idle = millis() - frame_ms;
+    if (idle < 3000) { t_rep = 0; return; }
+    if (!t_rep || millis() - t_rep >= 5000) {
+        t_rep = millis();
+        Serial.print("\r\nloader: STALLED (no link frame)\r\n");
+        loader_report(Serial);
+    }
+    if (idle >= 15000) {
+        Serial.print("loader: stalled for 15 s, restarting the ESP32\r\n");
+        delay(50);
+        esp_restart();
+    }
+}
 
 //-----------------------------------------------------------------------------
 // espupd.h: the ESP32's own firmware from the SD card (the Arduino Update class = esp_ota_*)
