@@ -1019,3 +1019,11 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   menu-mode code: key_events ignores all-ones reads (FPGA reconfiguring), the menu loop stops as soon as the menu is
   left, bt_service stops on all-ones / after 512 bytes. Root cause not confirmed.
 - (2026-11-02) User: everything above works on hardware (.atr prompt, fast SD update, F3 in the menu, Bluetooth kept across machine switches, audio drift fix).
+- (2026-11-02) INSTALL/ in the public repo (user): for buyers of a ready board set (ESP32 programmed, machine menu in the
+  FPGA) only LUPDATE.BIN and README.txt, plus the Installation Guide (SD card install/update, "Software not included":
+  games, programs and the C64 ROMs come from elsewhere, with example archives and a copyright note) and the User Manual
+  as PDF in nine languages (EN SP PT DE UA RU CN KR JP). Source: docs/manuals/build_manuals.py + lang_<code>.py (one
+  content file per language, same block structure; English is the reference; on-screen texts stay English), HTML
+  printed by headless Edge (Windows fonts: Segoe UI, Microsoft YaHei, Malgun Gothic, Yu Gothic), US Letter.
+  make_github.py builds INSTALL/ from the public images, keeps github/.git, drops esp32.ino.map (Windows user path)
+  and puts back files whose only change is line endings.

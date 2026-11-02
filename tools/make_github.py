@@ -29,7 +29,8 @@ SKIP_FILES = ['*.log', 'transcript', '*.rpt', '*.summary', '*.smsg', '*.done', '
               '*.vstf',                        # Questa crash dumps
               '*.ino.map']                     # ESP32 linker map: holds the Windows user's home path
 # generated simulation pictures (sim/*.png); documentation pictures stay
-SKIP_PATH_RE = [r'(^|/)sim/[^/]*\.png$', r'(^|/)sim/.*\.bmp$', r'^tests/.*/output_files/']
+SKIP_PATH_RE = [r'(^|/)sim/[^/]*\.png$', r'(^|/)sim/.*\.bmp$', r'^tests/.*/output_files/',
+                r'^docs/manuals/(build|pdf)/']   # manual previews / PDFs (the PDFs go into INSTALL/)
 # build outputs: only the programming files
 KEEP_OUTPUT = ['*.sof', 'L.jic']             # (LUPDATE.BIN and L_loader.jic are made below from the public image)
 
@@ -49,7 +50,12 @@ for e in os.listdir(DST):
         continue
     p = os.path.join(DST, e)
     if os.path.isdir(p) and not os.path.islink(p):
-        shutil.rmtree(p)
+        try:
+            shutil.rmtree(p)
+        except PermissionError:          # a folder open in Explorer / Sourcetree: it stays, but empty
+            for e2 in os.listdir(p):
+                q = os.path.join(p, e2)
+                shutil.rmtree(q) if os.path.isdir(q) and not os.path.islink(q) else os.remove(q)
     else:
         os.remove(p)
 n = size = 0
@@ -107,6 +113,34 @@ import datetime
 subprocess.run([sys.executable, '-I', 'tools/mk_update.py', '--label', 'L %s' % datetime.date.today().isoformat()],
                cwd=os.path.join(DST, 'AMenu'), check=True)
 subprocess.run([sys.executable, '-I', 'tools/mk_update.py', '--loader'], cwd=os.path.join(DST, 'AMenu'), check=True)
+# INSTALL/: for buyers of a ready board set (ESP32 programmed, machine menu in the FPGA): only the machines'
+# image for the SD card and the manuals (docs/manuals/build_manuals.py). The developer files (L_loader.jic,
+# the ESP32 binaries) stay in AMenu/output_files and LSpectrum/esp32/build.
+inst = os.path.join(DST, 'INSTALL')
+os.makedirs(inst, exist_ok=True)
+shutil.copy2(os.path.join(DST, 'AMenu', 'output_files', 'LUPDATE.BIN'), os.path.join(inst, 'LUPDATE.BIN'))
+man = os.path.join(ROOT, 'docs', 'manuals', 'pdf')
+for lang in sorted(os.listdir(man)):
+    os.makedirs(os.path.join(inst, lang), exist_ok=True)
+    for f in sorted(os.listdir(os.path.join(man, lang))):
+        if f.endswith('.pdf'):
+            shutil.copy2(os.path.join(man, lang, f), os.path.join(inst, lang, f))
+with open(os.path.join(inst, 'README.txt'), 'w', newline='\n') as f:
+    f.write("""L - installing the machines
+
+1. Format a microSD card as FAT32 or FAT16 (not exFAT).
+2. Copy LUPDATE.BIN to the root folder of the card.
+3. Put the card into the board and switch it on. Wait for "Update complete." (about one minute).
+
+Step by step and in your language: <language>/L_Installation_Guide_<language>.pdf.
+Keys, menus, joysticks: <language>/L_User_Manual_<language>.pdf.
+Languages: EN English, SP Espanol, PT Portugues, DE Deutsch, UA Ukrainska, RU Russkiy, CN Zhongwen, KR Hangugeo,
+JP Nihongo.
+
+Not included: games and other programs, and the Commodore 64 ROMs (copyrighted). Get them yourself; see section 4
+of the installation guide.
+""")
+print('INSTALL/ built: %d languages' % len(os.listdir(man)))
 sig = b'RETRO' + b'LEUM'                         # DiagROM's signature, as is and bit-reversed (flash images)
 sig_rev = bytes(int('{:08b}'.format(x)[::-1], 2) for x in sig)
 for d, _, fs in os.walk(DST):
@@ -115,3 +149,14 @@ for d, _, fs in os.walk(DST):
         if sig in data or sig_rev in data:
             sys.exit('DiagROM data left in ' + os.path.join(d, f))
 print('public roms48k.hex, sim/roms.mem, AMenu/output_files/L.jic, LUPDATE.BIN and L_loader.jic built (no DiagROM)')
+
+# github/ as a git working copy: files that differ from the last commit only in line endings are put back as
+# committed, so the commit shows only real changes
+if os.path.isdir(os.path.join(DST, '.git')):
+    git = ['git', '-C', DST, '-c', 'core.filemode=false']
+    st = subprocess.run(git + ['status', '--porcelain'], capture_output=True, text=True, check=True).stdout
+    eol = [l[3:] for l in st.splitlines() if l.startswith(' M ')
+           and subprocess.run(git + ['diff', '--quiet', '--ignore-cr-at-eol', '--', l[3:]]).returncode == 0]
+    if eol:
+        subprocess.run(git + ['checkout', '--'] + eol, check=True)
+    print('git: %d files with line-ending-only changes put back as committed' % len(eol))
