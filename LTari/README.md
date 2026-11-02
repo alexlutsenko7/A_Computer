@@ -26,6 +26,10 @@ AltirraOS and Altirra BASIC by Avery Lee, which are free to distribute (`roms/RE
   not describe them.
 - **GTIA:** players / missiles, priorities (the manual's equations, fifth player, multicolour), collisions,
   GTIA modes 9 / 10 / 11 (`sim/run_gtia_sim.sh`: unit test).
+- **BASIC on / off:** Enter on an .atr asks "How do you want to load it: <F1> No BASIC <F2> with BASIC" (three OSD
+  lines; Esc = back). F1: the ESP32 sets MCTL[24], which holds OPTION through the cold start until the first SIO
+  command (at most 5 s), so the OS starts without BASIC. .xex and .car are not asked (the .xex loader switches
+  BASIC off itself).
 - **Disk change:** Shift + Enter on an .atr changes the disk without a cold start (multi-disk programs).
 - **Snapshots (F2 / .a8s):** freeze at an instruction boundary (the whole machine stops at a cycle boundary
   before a CPU opcode fetch), I/O shadow at SDRAM 0x3D000 (every CPU write to $D000-$D7FF), PIA and
@@ -69,12 +73,12 @@ cd ../AMenu && quartus_cpf -c L.cof        # the board's .jic (menu + all machin
 | arrows | Atari cursor keys (Control + `-` `=` `+` `*`) |
 | Home / Delete / Insert | Clear / delete character / insert character |
 | Shift, Ctrl | Shift, Control |
-| Alt+F2 / Alt+F3 / Alt+F4 | START / SELECT / OPTION (held as long as the keys are held; Alt+F4 held while pressing Enter on an .atr in the browser, or KEY0 without a disk = start without BASIC) |
+| Alt+F2 / Alt+F3 / Alt+F4 | START / SELECT / OPTION (held as long as the keys are held; Alt+F4 held with KEY0 without a disk = start without BASIC) |
 | Alt+F5 | Reset (the XL/XE system reset) |
 | Alt+F6 | Help |
 | Pause, Alt+F7 | Break |
 | F8 | video 60 Hz (power-up) / 50 Hz |
-| F12 | ESP32 file browser: `.atr` into disk drive D1:, `.xex` runs (through our boot loader), `.car` (standard 8 / 16 KB, Atarimax 128 KB / 1 MB) plugs in; each cold-starts the Atari; Shift+Enter on an `.atr` only changes the disk; `.a8s` loads a snapshot |
+| F12 | ESP32 file browser: `.atr` into disk drive D1:, `.xex` runs (through our boot loader), `.car` (standard 8 / 16 KB, Atarimax 128 KB / 1 MB) plugs in; each cold-starts the Atari (an `.atr` first asks F1 no BASIC / F2 with BASIC); Shift+Enter on an `.atr` only changes the disk; `.a8s` loads a snapshot |
 | F2 | snapshot: the Atari stops, type a name, Enter: `NAME.A8S` in the browser's folder |
 | F3 / F4 | Bluetooth audio menu / joystick menu (which DB9 port is stick 0) |
 | Print Screen | the picture as SCRNnnnn.BMP (376 x 240, 256 colours) in the browser's current folder |

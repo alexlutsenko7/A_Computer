@@ -22,4 +22,15 @@ for clkh in 8929 5289; do
         done
     done
 done
+# the machine menu (AMenu): 75 MHz, FL_HALF 2, flash stream frames (FLS)
+for spi in "62500:45000 62500 75000" "125000:100000 125000"; do
+    half=${spi%%:*}
+    for samp in ${spi#*:}; do
+        out=$($Q/vsim.exe -c -quiet -lib work_esp -t ps -GFL_HALF=2 -GFLS=1 tb_esp_link +CLKH=6667 +HALF=$half +SAMP=$samp +FLS \
+              -do "run -all; quit -f" | tr -d '\r' | grep -vE '^# (//|Loading|\s*$)|Time: 0 ps')
+        res=$(echo "$out" | grep -E "^# (PASS|FAIL)$" | tail -1)
+        echo "menu + FLS: $(echo "$out" | grep "SPI half" | sed 's/^# //'): ${res#\# }"
+        echo "$out" | grep -q "^# PASS$" || { echo "$out" | grep "FAIL" | head -5; fail=1; }
+    done
+done
 [ $fail = 0 ] && echo "ESP LINK SIM PASSED" || { echo "ESP LINK SIM FAILED"; exit 1; }

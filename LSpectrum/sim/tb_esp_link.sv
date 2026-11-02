@@ -6,7 +6,7 @@
 `timescale 1ps/1ps
 `default_nettype none
 
-module tb_esp_link;
+module tb_esp_link #(parameter integer FL_HALF = 4, parameter FLS = 0);   // menu: -GFL_HALF=2 -GFLS=1 +FLS
 
 reg clk = 0;
 integer CLKH = 8929;                            // 56 MHz (L64: 5289 = 94.5 MHz)
@@ -32,8 +32,12 @@ wire [31:0] snap_wdata;
 reg         snap_frozen = 0, snap_ack = 0;
 reg  [31:0] snap_rdata = 0;
 
-tape_loader dut (
+wire fl_en, fl_ncs, fl_dclk, fl_mosi;
+reg  fl_miso = 1'b1;
+
+tape_loader #(.FL_HALF(FL_HALF), .FLS(FLS)) dut (
     .clk (clk), .rst_n (rst_n),
+    .fl_en (fl_en), .fl_ncs (fl_ncs), .fl_dclk (fl_dclk), .fl_mosi (fl_mosi), .fl_miso (fl_miso),
     .keys (keys), .keyraw (keyraw), .cen_tgl (cen_tgl), .mic (1'b0), .hold (),
     .tape_on (), .tape_turbo (), .tape_lvl (),
     .osd_on (), .osd_full (), .osd_we (osd_we), .osd_addr (osd_addr), .osd_data (osd_data),
@@ -61,6 +65,26 @@ always @(posedge clk) begin
         end
         snap_ack <= snap_req;
     end
+end
+
+//-----------------------------------------------------------------------------
+// SPI flash model for FLS: records every byte it gets (MOSI taken at rising DCLK) and answers
+// byte k of a chip-select period with fpat(k) (shifted out after each falling edge, MSB first)
+//-----------------------------------------------------------------------------
+function [7:0] fpat(input integer k); fpat = (k * 29 + 7) ^ (k >> 2); endfunction
+reg  [7:0] fl_got [0:1023];
+integer    fl_n = 0, fl_bit = 0;
+reg  [7:0] fl_in = 0, fl_out = 0;
+wire       fl_sel = fl_en && !fl_ncs;
+always @(negedge fl_sel) begin fl_n = 0; fl_bit = 0; fl_out = fpat(0); #1 fl_miso = fl_out[7]; end
+always @(posedge fl_dclk) if (fl_sel) begin
+    fl_in = {fl_in[6:0], fl_mosi};
+    if (fl_bit == 7) begin if (fl_n < 1024) fl_got[fl_n] = fl_in; end
+end
+always @(negedge fl_dclk) if (fl_sel) begin
+    if (fl_bit == 7) begin fl_bit = 0; fl_n = fl_n + 1; fl_out = fpat(fl_n); end
+    else begin fl_bit = fl_bit + 1; fl_out = {fl_out[6:0], 1'b0}; end
+    #1 fl_miso = fl_out[7];
 end
 
 //-----------------------------------------------------------------------------
@@ -228,6 +252,30 @@ initial begin
     if (irq) begin $display("FAIL: IRQ still set after reading"); errors = errors + 1; end
     else $display("ok    IRQ cleared by reading");
     rd(8'h28, d); check("KEYRAW", d, 32'h0000_0004);
+
+    // 8. flash stream (FLS, the menu: FL_HALF 2 at 75 MHz): 300 bytes out, the flash's answers
+    //    two frame bytes later, chip select kept until FLASH = EN
+    if ($test$plusargs("FLS")) begin
+        stat(d);
+        tb[0] = 8'h08;
+        for (i = 0; i < 300; i = i + 1) tb[1 + i] = (i * 13 + 5) & 8'hFF;
+        frame(301, tb);
+        #1000000;                               // the last byte shifts after the frame
+        if (!fl_sel) begin $display("FAIL: chip select dropped after the stream"); errors = errors + 1; end
+        check("FLS bytes at the flash", fl_n, 300);
+        n = 0;
+        for (i = 0; i < 300; i = i + 1) if (fl_got[i] !== tb[1 + i]) begin
+            if (n < 6) $display("  FLS out %0d: flash got %02h sent %02h", i, fl_got[i], tb[1 + i]); n = n + 1; end
+        check("FLS out mismatches", n, 0);
+        n = 0;
+        for (i = 0; i < 298; i = i + 1) if (rx[3 + i] !== fpat(i)) begin
+            if (n < 6) $display("  FLS in %0d: rx %02h flash %02h", i, rx[3 + i], fpat(i)); n = n + 1; end
+        check("FLS in mismatches", n, 0);
+        stat(d); check("STAT after FLS", d, 0);
+        wr(8'h40, 32'h0000_0400);               // EN only: chip select off
+        if (fl_sel) begin $display("FAIL: chip select still on"); errors = errors + 1; end
+        else $display("ok    chip select off");
+    end
 
     if (errors == 0) $display("PASS");
     else             $display("FAILED: %0d errors", errors);

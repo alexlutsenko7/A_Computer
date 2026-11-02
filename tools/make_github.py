@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""make_github.py [ROOT] -- copy the publishable part of the project into ROOT/github (the public repo L_8_bit).
+"""make_github.py [ROOT] -- copy the publishable part of the project into ROOT/github (the public repo A_Computer).
 
 Left out: Commodore ROMs, Retroleum's DiagROM (licence unknown: the public LSpectrum ROM image and L.jic get
 48K BASIC in that slot), third-party PDFs (docs/vendor/README.md lists them), the Altirra manual (LTari/ref),
@@ -26,7 +26,8 @@ SKIP_FILES = ['*.log', 'transcript', '*.rpt', '*.summary', '*.smsg', '*.done', '
               '*.pdf',                         # third-party datasheets / manuals (links in docs/vendor/README.md)
               'Monitor_at_work.txt',           # local monitor data (serial number)
               'sw_img.hex',                    # generated from a game snapshot (Sidewize): copyrighted
-              '*.vstf']                        # Questa crash dumps
+              '*.vstf',                        # Questa crash dumps
+              '*.ino.map']                     # ESP32 linker map: holds the Windows user's home path
 # generated simulation pictures (sim/*.png); documentation pictures stay
 SKIP_PATH_RE = [r'(^|/)sim/[^/]*\.png$', r'(^|/)sim/.*\.bmp$', r'^tests/.*/output_files/']
 # build outputs: only the programming files
@@ -41,9 +42,16 @@ def skip_file(rel, name):
         return not any(fnmatch.fnmatch(name, g) for g in KEEP_OUTPUT)
     return False
 
-if os.path.exists(DST):
-    shutil.rmtree(DST)
-os.makedirs(DST)
+# github/ is also the user's git working copy (Sourcetree): everything is rebuilt except .git
+os.makedirs(DST, exist_ok=True)
+for e in os.listdir(DST):
+    if e == '.git':
+        continue
+    p = os.path.join(DST, e)
+    if os.path.isdir(p) and not os.path.islink(p):
+        shutil.rmtree(p)
+    else:
+        os.remove(p)
 n = size = 0
 for t in TOP:
     src = os.path.join(ROOT, t)

@@ -20,6 +20,9 @@
 #include "sd.h"
 #include "loader.h"
 #include "espupd.h"
+#include "flash.h"
+#include "reset.h"
+#include <setjmp.h>
 
 int loader_main(void);
 
@@ -30,12 +33,14 @@ static const uint32_t ID_ZX  = 0x5A580001;       // LSpectrum ("ZX"), link versi
 static const uint32_t ID_C64 = 0x43360001;       // L64 ("C6"), link version 1
 static const uint32_t ID_AT  = 0x41540001;       // LTari ("AT"), link version 1
 static const uint32_t ID_MN  = 0x4D4E0001;       // the machine menu ("MN"): flash update, link version 1
+static const uint32_t ID_MN2 = 0x4D4E0002;       // the same, link version 2: + flash stream frames (FLS)
 static uint32_t core_id;                         // the machine found (probe)
+static bool     fls_ok;                          // flash stream frames work (menu link version 2)
 int machine_c64;                                 // hw.h: 1 = L64
 int machine_atari;                               // hw.h: 1 = LTari
 int machine_menu;                                // hw.h: 1 = the machine menu (AMenu)
 
-enum { CMD_WR = 1, CMD_RD = 2, CMD_OSD = 3, CMD_FIFO = 4, CMD_MWR = 5, CMD_MRD = 6, CMD_STAT = 7 };
+enum { CMD_WR = 1, CMD_RD = 2, CMD_OSD = 3, CMD_FIFO = 4, CMD_MWR = 5, CMD_MRD = 6, CMD_STAT = 7, CMD_FLS = 8 };
 enum { R_ID = 0x00, R_IRQ = 0x04, R_FIFO = 0x0C, R_TIMER = 0x18, R_SNAPCTL = 0x2C, R_SNAPCMD = 0x30, R_SNAPDAT = 0x34 };
 enum { C_MRD = 1, C_MWR = 2 };                    // snapshot port commands (snap.cpp)
 static const uint32_t SPEC_MEM = 0x40000;         // 18-bit Spectrum memory address space
@@ -147,6 +152,12 @@ static uint32_t timer56() { return (uint32_t)(esp_timer_get_time() * 56); }
 // the next probe starts the machine, so the ESP32 does not restart and a Bluetooth connection
 // being set up at power-up is not cut (a restart there broke the A2DP audio on hardware).
 static volatile bool menu_left;
+// A machine left (another core on the link: the menu after KEY1 / Ctrl+Alt+Del, or a reconfiguration):
+// the loader is left from wherever it polls the link (housekeeping) back to loader_task, which puts
+// every module back to its start state; the next probe starts the loader for the new core. No ESP32
+// restart, so the Bluetooth connection stays. KEY0 (the same core, its IRQ mask cleared) still
+// restarts the ESP32: "everything".
+static jmp_buf leave_jb;
 
 int menu_present(void) { return !menu_left; }
 
@@ -159,6 +170,11 @@ static void housekeeping()
         uint32_t id = link_rd(R_ID), irq = link_rd(R_IRQ);
         if (id != core_id || !(irq & 0xF00)) {
             if (machine_menu) { menu_left = true; return; }
+            if (id != core_id) {
+                Serial.printf("\r\nloader: the machine left (id %08lx): loader starts again, no restart\r\n",
+                              (unsigned long)id);
+                longjmp(leave_jb, 1);
+            }
             Serial.printf("\r\nloader: FPGA reset or reconfigured (id %08lx, irq %08lx): restarting the ESP32\r\n",
                           (unsigned long)id, (unsigned long)irq);
             delay(50);
@@ -168,6 +184,51 @@ static void housekeeping()
 }
 
 void log_line(const char *s) { Serial.printf("loader: %s\r\n", s); }
+
+//-----------------------------------------------------------------------------
+// flash stream (flash.h): one FLS frame, then STAT for its error flag
+//-----------------------------------------------------------------------------
+// on the heap, allocated on first use: only the menu mode streams (static RAM chops the Bluetooth audio)
+#define FLS_BUF (1 + 4 + FL_STREAM_MAX + 2)
+static uint8_t *fls_tx, *fls_rx;
+
+int fl_stream(const uint8_t *hdr, uint32_t nh, const uint8_t *data, uint8_t *rx, uint32_t n)
+{
+    size_t len = 1 + nh + n + (rx ? 2 : 0);
+    if (!fls_ok || nh > 4 || n > FL_STREAM_MAX) return -1;
+    if (!fls_tx) {
+        fls_tx = (uint8_t *)malloc(FLS_BUF);
+        fls_rx = (uint8_t *)malloc(FLS_BUF);
+        if (!fls_tx || !fls_rx) { free(fls_tx); free(fls_rx); fls_tx = fls_rx = nullptr; fls_ok = false; return -1; }
+    }
+    housekeeping();
+    flush_all();
+    ftx[0] = CMD_STAT;                            // clear an older error first
+    memset(ftx + 1, 0, 5);
+    frame(6);
+    fls_tx[0] = CMD_FLS;
+    memcpy(fls_tx + 1, hdr, nh);
+    if (data) memcpy(fls_tx + 1 + nh, data, n); else memset(fls_tx + 1 + nh, 0, n);
+    if (rx) fls_tx[len - 2] = fls_tx[len - 1] = 0;
+    linkspi.beginTransaction(SPISettings(LINK_HZ, MSBFIRST, SPI_MODE0));
+    digitalWrite(L_CS, LOW);
+    delayMicroseconds(1);
+    linkspi.transferBytes(fls_tx, fls_rx, len);
+    delayMicroseconds(1);
+    digitalWrite(L_CS, HIGH);
+    linkspi.endTransaction();
+    delayMicroseconds(1);
+    ftx[0] = CMD_STAT;
+    memset(ftx + 1, 0, 5);
+    frame(6);
+    if (frx[2] & 0x80) {                          // a byte was late or dropped: no stream from now on
+        fls_ok = false;
+        Serial.printf("loader: flash stream error, byte-wise from now on\r\n");
+        return -1;
+    }
+    if (rx) memcpy(rx, fls_rx + 1 + nh + 2, n);   // the flash's byte for frame byte k comes in byte k + 2
+    return 0;
+}
 
 int link_alive(void)
 {
@@ -307,11 +368,30 @@ int sd_write(uint32_t lba, const uint8_t *buf)
 //-----------------------------------------------------------------------------
 static uint32_t t_probe;
 
+// the link-side state back to the start (frames collected for the old core are dropped)
+static void link_reset()
+{
+    fifo_n = 0;
+    memset(osd_sh, 0, sizeof osd_sh);
+    osd_lo = OSD_COLS * OSD_ROWS;
+    osd_hi = 0;
+    mwr_n = 0;
+    mwr_a = 0;
+    mrd_n = 0;
+    mrd_a = 0;
+    snap_dat = snap_res = 0;
+    snap_done = false;
+}
+
 static void loader_task(void *)
 {
     t_yield = t_check = millis();
-    loader_main();                                // returns only when the machine menu is left
-    Serial.print("loader: the menu is gone, waiting for the machine\r\n");
+    if (setjmp(leave_jb) == 0) {
+        loader_main();                            // returns only when the machine menu is left
+        Serial.print("loader: the menu is gone, waiting for the machine\r\n");
+    }
+    link_reset();
+    loader_reset_all();
     t_probe = millis();
     running = false;                              // loader_poll probes for the machine
     vTaskDelete(nullptr);
@@ -327,8 +407,8 @@ static bool near_id(uint32_t id, uint32_t want)
 static bool probe()
 {
     uint32_t id = link_rd(R_ID);
-    if (id != ID_ZX && id != ID_C64 && id != ID_AT && id != ID_MN) {
-        if (near_id(id, ID_ZX) || near_id(id, ID_C64) || near_id(id, ID_AT) || near_id(id, ID_MN))   // the link has bit errors
+    if (id != ID_ZX && id != ID_C64 && id != ID_AT && id != ID_MN && id != ID_MN2) {
+        if (near_id(id, ID_ZX) || near_id(id, ID_C64) || near_id(id, ID_AT) || near_id(id, ID_MN) || near_id(id, ID_MN2))
             Serial.printf("loader: core id %08lx read with bit errors (link timing?)\r\n", (unsigned long)id);
         return false;
     }
@@ -336,7 +416,8 @@ static bool probe()
     menu_left   = false;
     machine_c64 = id == ID_C64;
     machine_atari = id == ID_AT;
-    machine_menu  = id == ID_MN;
+    machine_menu  = id == ID_MN || id == ID_MN2;
+    fls_ok        = id == ID_MN2;
     link_wr(R_IRQ, 0x100);                        // mask bit for the FPGA reset check (housekeeping)
     return (link_rd(R_IRQ) & 0xF00) != 0;
 }

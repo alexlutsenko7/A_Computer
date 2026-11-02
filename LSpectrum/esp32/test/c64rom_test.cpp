@@ -18,6 +18,10 @@
 #include "../src/hal.h"
 #include "../src/fat.h"
 #include "../src/c64.h"
+
+/* the flash stream exists only in the machine menu: byte-wise here, as in L64 */
+int fl_stream(const uint8_t *hdr, uint32_t nh, const uint8_t *data, uint8_t *rx, uint32_t n)
+{ (void)hdr; (void)nh; (void)data; (void)rx; (void)n; return -1; }
 #undef main                                     /* hw.h: main is the ESP32 loader task */
 
 #define FL_SIZE  0x400000u

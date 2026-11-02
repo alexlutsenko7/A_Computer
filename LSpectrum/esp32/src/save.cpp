@@ -228,3 +228,24 @@ int rec_status(char *s)
     msg_t = 0;
     return 0;
 }
+
+/* back to the state after a start: the next machine starts the loader again without an ESP32
+ * restart (esp_hw.cpp; the Bluetooth connection stays) */
+void save_reset(void)
+{
+    u_memset(&on, 0, sizeof on);
+    u_memset(&dst, 0, sizeof dst);
+    u_memset(&pc, 0, sizeof pc);
+    u_memset(&half, 0, sizeof half);
+    u_memset(&nbits, 0, sizeof nbits);
+    u_memset(&in_block, 0, sizeof in_block);
+    u_memset(&blocks, 0, sizeof blocks);
+    u_memset(&first_half, 0, sizeof first_half);
+    u_memset(&blk_len, 0, sizeof blk_len);
+    u_memset(&len_pos, 0, sizeof len_pos);
+    u_memset(&cur, 0, sizeof cur);
+    u_memset(&fname, 0, sizeof fname);
+    u_memset(&msg_t, 0, sizeof msg_t);
+    u_memset(&msg, 0, sizeof msg);
+    u_memset(&slow_mode, 0, sizeof slow_mode);
+}

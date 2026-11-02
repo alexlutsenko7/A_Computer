@@ -49,6 +49,15 @@ module vga_pll (input wire inclk0, output reg c0 = 0, output wire c1, output reg
     initial #1000 locked = 1;
 endmodule
 
+module menu_pll (input wire inclk0, output reg c0 = 0, output reg locked = 0);
+    always #6.667 c0 = !c0;                 // 75 MHz (ESP32 link clock)
+    initial #1000 locked = 1;
+endmodule
+
+module flash_if (input wire dclk, input wire ncs, input wire mosi, output wire miso);
+    assign miso = 1'b1;                     // the configuration flash is not used here
+endmodule
+
 module tb_amenu;
 `ifdef FAIL
     localparam [28:0] TRIG = 29'h08, PREV = 29'h600000;

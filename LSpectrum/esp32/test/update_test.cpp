@@ -12,6 +12,11 @@
  *      menu sectors are only touched after every machine sector is right; the file is still there;
  *      a full update afterwards gives the image
  *   5. no machines: upd_machines_present on an empty flash / after the loader
+ *   6, 7. first install on a loader board (FF / 00 after the menu)
+ *   8. the same with an old menu (link version 1: no flash stream, byte-wise)
+ *   9. the same with a stream that breaks (a dropped byte) in the middle: byte-wise from there on
+ * The flash stream (fl_stream, the link's FLS frame) is modelled as one register access plus
+ * 1 us per byte; tests 1-7 use it.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +26,7 @@
 #include "../src/hal.h"
 #include "../src/fat.h"
 #include "../src/update.h"
+#include "../src/flash.h"
 #undef main
 
 #define FL_SIZE  0x800000u
@@ -138,6 +144,30 @@ void hw_wr(uint8_t r, uint32_t v)
     if (ncs && cs) spi_cs_off();
     cs = !ncs;
     if (v & FL_START) { pt_q = cs ? spi_byte((uint8_t)v) : 0xFF; pt_until = now_us + busy_us; }
+}
+
+/* the flash stream: stream_on = the menu has it; stream_break = the stream number that drops a byte */
+static int  stream_on = 1;
+static long streams, stream_break;
+
+int fl_stream(const uint8_t *hdr, uint32_t nh, const uint8_t *data, uint8_t *rx, uint32_t n)
+{
+    uint32_t i, all = nh + n + (rx ? 2 : 0);
+    if (!stream_on) return -1;
+    tick();
+    if (now_us < pt_until) now_us = pt_until;
+    pt_en = 1;
+    cs = 1;
+    ++streams;
+    for (i = 0; i < all; i++) {
+        uint8_t b = i < nh ? hdr[i] : i - nh < n && data ? data[i - nh] : 0;
+        now_us += 1;
+        if (streams == stream_break && i == all / 2) continue;   /* dropped: the FPGA flags it */
+        uint8_t q = spi_byte(b);
+        if (rx && i >= nh && i - nh < n) rx[i - nh] = q;
+    }
+    if (streams == stream_break) { stream_on = 0; return -1; }
+    return 0;
 }
 
 /* checks */
@@ -288,6 +318,30 @@ int main(int argc, char **argv)
     r = run_update(-1, &mc, &w);
     printf("7. first install over 00: r=%d written=%u menu_changed=%d, %.1f s modelled\n", r, w, mc, now_us / 1e6);
     if (r || !flash_is_image() || !skip_untouched() || mc || file_there()) { printf("ERROR 7\n"); errors++; }
+
+    /* 8: an old menu without the stream */
+    stream_on = 0;
+    fresh_card();
+    memset(flash, 0xFF, FL_SIZE);
+    memcpy(flash, img, MENU_END);
+    memset(old, 0xFF, FL_SIZE);
+    now_us = 0; busy_until = 0; pt_until = 0;
+    r = run_update(-1, &mc, &w);
+    printf("8. first install, old menu (byte-wise): r=%d written=%u, %.1f s modelled\n", r, w, now_us / 1e6);
+    if (r || !flash_is_image() || !skip_untouched() || mc || file_there()) { printf("ERROR 8\n"); errors++; }
+
+    /* 9: the stream breaks in the middle of the update (a page program, a sector read) */
+    for (long sb = 300; sb <= 301; sb++) {
+        stream_on = 1; streams = 0; stream_break = sb;
+        fresh_card();
+        memset(flash, 0xFF, FL_SIZE);
+        memcpy(flash, img, MENU_END);
+        now_us = 0; busy_until = 0; pt_until = 0;
+        r = run_update(-1, &mc, &w);
+        printf("9. stream breaks at stream %ld: r=%d written=%u, %.1f s modelled\n", sb, r, w, now_us / 1e6);
+        if (r || !flash_is_image() || !skip_untouched() || mc || file_there() || stream_on) { printf("ERROR 9\n"); errors++; }
+    }
+    stream_on = 1; stream_break = 0;
 
     /* 5 */
     memset(flash, 0xFF, FL_SIZE);

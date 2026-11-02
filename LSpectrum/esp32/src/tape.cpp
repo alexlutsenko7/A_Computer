@@ -16,6 +16,7 @@
  * (by their length field).
  */
 #include "tape.h"
+#include "util.h"
 #include "hal.h"
 
 #define T_MS   3500u
@@ -317,3 +318,37 @@ void tape_continue(void)
 }
 
 uint32_t tape_block(void) { return blk_cur; }
+
+/* back to the state after a start: the next machine starts the loader again without an ESP32
+ * restart (esp_hw.cpp; the Bluetooth connection stays) */
+void tape_reset(void)
+{
+    u_memset(&f, 0, sizeof f);
+    u_memset(&tzx, 0, sizeof tzx);
+    u_memset(&lvl, 0, sizeof lvl);
+    u_memset(&g, 0, sizeof g);
+    u_memset(&last_bits, 0, sizeof last_bits);
+    u_memset(&has_sync, 0, sizeof has_sync);
+    u_memset(&blk_next, 0, sizeof blk_next);
+    u_memset(&blk_cur, 0, sizeof blk_cur);
+    u_memset(&pilot_len, 0, sizeof pilot_len);
+    u_memset(&pilot_cnt, 0, sizeof pilot_cnt);
+    u_memset(&sync1, 0, sizeof sync1);
+    u_memset(&sync2, 0, sizeof sync2);
+    u_memset(&zero, 0, sizeof zero);
+    u_memset(&one, 0, sizeof one);
+    u_memset(&data_left, 0, sizeof data_left);
+    u_memset(&pause_t, 0, sizeof pause_t);
+    u_memset(&first, 0, sizeof first);
+    u_memset(&tone_len, 0, sizeof tone_len);
+    u_memset(&tone_cnt, 0, sizeof tone_cnt);
+    u_memset(&seq_cnt, 0, sizeof seq_cnt);
+    u_memset(&dir_tps, 0, sizeof dir_tps);
+    u_memset(&loop_cnt, 0, sizeof loop_cnt);
+    u_memset(&loop_blk, 0, sizeof loop_blk);
+    u_memset(&call_n, 0, sizeof call_n);
+    u_memset(&call_i, 0, sizeof call_i);
+    u_memset(&call_pos, 0, sizeof call_pos);
+    u_memset(&call_blk, 0, sizeof call_blk);
+    u_memset(&n_emit, 0, sizeof n_emit);
+}

@@ -32,6 +32,7 @@ static int      rx_len, rx_skip;
 static int      shown, want_info, miss, have_info;
 static uint32_t t_info;
 static int      state, scanning, vol, src_tone;
+static uint32_t g_under, g_ovf, g_fix;      /* audio: I2S data short, DMA overwritten (skips), drift fixes */
 static char     peer[DEV_NAME + 1], pin[17];
 static char     dev[BT_DEVS][DEV_NAME + 1];
 static int      ndev, cur, edit, elen;
@@ -103,6 +104,9 @@ static void line(char *p)
         vol      = num(word(&p));
         u_strncpy(pin, word(&p), 16);
         src_tone = is(word(&p), "tone");
+        g_under  = (uint32_t)num(word(&p));
+        g_ovf    = (uint32_t)num(word(&p));
+        g_fix    = (uint32_t)num(word(&p));
         p = rest(p);
         u_strncpy(peer, is(p, "-") ? "" : p, DEV_NAME);
         have_info = 1;
@@ -145,9 +149,9 @@ static void line(char *p)
 int bt_service(void)
 {
     uint32_t u;
-    int      got = 0;
+    int      got = 0, n = 0;
 
-    while ((u = UART) & UART_VALID) {
+    while (((u = UART) & UART_VALID) && u != 0xFFFFFFFFu && n++ < 512) {   /* all ones: a gone FPGA */
         char c = (char)u;
         UART = UART_POP | (u & UART_OVR ? UART_CLR : 0);
         if (u & UART_OVR) rx_skip = 1;                      /* bytes were lost: drop this line */
@@ -295,7 +299,43 @@ void bt_draw(void)
         if (i < ndev) u_strcpy(u_strcpy(l, " "), dev[i][0] ? dev[i] : "?");
         osd_text(ROW_DEVS + i, 0, l, OSD_COLS, i < ndev && n == cur);
     }
-    osd_text(21, 0, "", OSD_COLS, 0);
+    l[0] = 0;
+    if (have_info && state == S_CONN) {                     /* audio gaps since the ESP32 started */
+        p = u_utoa(u_strcpy(l, " Audio: short "), g_under);
+        p = u_utoa(u_strcpy(p, " skip "), g_ovf);
+        p = u_utoa(u_strcpy(p, " fix "), g_fix);
+    }
+    osd_text(21, 0, l, OSD_COLS, 0);
     osd_text(22, 0, msg, OSD_COLS, 0);
     osd_text(23, 0, edit ? "Type PIN, Enter (empty = auto)" : "Enter=select  F3/Esc=exit", OSD_COLS, 1);
+}
+
+/* back to the state after a start: the next machine starts the loader again without an ESP32
+ * restart (esp_hw.cpp; the Bluetooth connection stays) */
+void bt_reset(void)
+{
+    u_memset(&rx, 0, sizeof rx);
+    u_memset(&rx_len, 0, sizeof rx_len);
+    u_memset(&rx_skip, 0, sizeof rx_skip);
+    u_memset(&shown, 0, sizeof shown);
+    u_memset(&want_info, 0, sizeof want_info);
+    u_memset(&miss, 0, sizeof miss);
+    u_memset(&have_info, 0, sizeof have_info);
+    u_memset(&t_info, 0, sizeof t_info);
+    u_memset(&state, 0, sizeof state);
+    u_memset(&scanning, 0, sizeof scanning);
+    u_memset(&vol, 0, sizeof vol);
+    u_memset(&src_tone, 0, sizeof src_tone);
+    u_memset(&g_under, 0, sizeof g_under);
+    u_memset(&g_ovf, 0, sizeof g_ovf);
+    u_memset(&g_fix, 0, sizeof g_fix);
+    u_memset(&peer, 0, sizeof peer);
+    u_memset(&pin, 0, sizeof pin);
+    u_memset(&dev, 0, sizeof dev);
+    u_memset(&ndev, 0, sizeof ndev);
+    u_memset(&cur, 0, sizeof cur);
+    u_memset(&edit, 0, sizeof edit);
+    u_memset(&elen, 0, sizeof elen);
+    u_memset(&ebuf, 0, sizeof ebuf);
+    u_memset(&msg, 0, sizeof msg);
 }

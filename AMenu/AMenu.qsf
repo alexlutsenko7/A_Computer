@@ -87,11 +87,16 @@ set_location_assignment PIN_AA13 -to ESP_MOSI
 set_location_assignment PIN_AB14 -to ESP_CS_N
 set_location_assignment PIN_AA14 -to ESP_MISO
 set_location_assignment PIN_AB15 -to ESP_IRQ
+set_location_assignment PIN_AB17 -to BT_TX
+set_location_assignment PIN_AA17 -to BT_RX
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ESP_SCK
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ESP_MOSI
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ESP_CS_N
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ESP_MISO
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ESP_IRQ
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BT_TX
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BT_RX
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to BT_RX
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ESP_SCK
 set_instance_assignment -name FAST_INPUT_REGISTER ON -to ESP_SCK
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ESP_MOSI

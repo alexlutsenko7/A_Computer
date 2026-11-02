@@ -90,8 +90,10 @@ flash, which means AMenu.
 ## Flash update from the SD card, loader image
 
 The menu also talks to the ESP32 (the machines' `tape_loader` + `esp_link` at 75 MHz from `rtl/menu_pll.v`, core ID
-4D4E_0001 "MN"): the ESP32 can draw on an OSD screen (shown instead of the menu; the menu takes no input meanwhile)
-and read / write the configuration flash (FLASH register, `flash_if`). With `LUPDATE.BIN` in the card's root folder
+4D4E_0002 "MN", link version 2): the ESP32 can draw on an OSD screen (shown instead of the menu; the menu takes no input
+meanwhile) and read / write the configuration flash (FLASH register, `flash_if`, DCLK 18.75 MHz; the link's FLS frame
+streams flash bytes at 1 us each: a first install takes about 1 minute instead of 5, most of it the flash's own
+erase / program time, and checking an up-to-date flash a few seconds; an older menu (4D4E_0001) is updated byte-wise). With `LUPDATE.BIN` in the card's root folder
 the ESP32 updates the flash at power-up (`LSpectrum/esp32/src/update.cpp`, test `esp32/test/update_test.cpp`); with no
 machine image in the flash it shows "No machines installed".
 

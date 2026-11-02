@@ -32,6 +32,8 @@
 //                         JMP $0812), memory s2_ram.bin written ($0000-$00FF, $0200-$CFFF, $D800-$FFFF),
 //                         registers s2_regs.txt; every 500 instructions from $0812 the zero-page pointers are
 //                         compared with s2_ref.txt; the first mismatch stops the run with the last 400 PCs
+//   +define+TRIG_MS=<ms>  joystick 0's trigger pressed at <ms> for TRIG_LEN ms (default 300; pictures trig_pre.ppm
+//                         20 ms before, trig_post.ppm 200 ms after the release; CPU addresses every 1 ms meanwhile)
 //   +define+XEX           the same drive serving disk.mem (mk_xextest.py: our .xex boot loader + a test
 //                         .xex, as the ESP32 serves an .xex); the run stops at "XEX OK" (or "XEX BAD")
 // Output every 50 ms: CPU address, VCOUNT, NMIs, SIO bytes sent, the text screen (from
@@ -99,6 +101,7 @@ wire [1:0]  fb_newest;
 wire        sio_in, so_stb;
 wire [7:0]  so_byte;
 
+reg  [1:0]  t_trig = 2'b11;                         // joystick triggers (TRIG_MS)
 reg         t_frz = 1'b0, t_rm = 1'b0, t_rst = 1'b0;   // snapshot port (SNAPTEST)
 wire        t_frozen, t_rmode;
 wire [63:0] t_regs;
@@ -118,7 +121,7 @@ atari_system #(.FLASH_DIV(2)) u_sys (
     .reload(1'b0), .cart(3'd0), .reset_key(1'b0),
 `endif
     .key_stb(1'b0), .key_code(6'd0), .key_down(1'b0), .key_shift(1'b0), .key_ctrl(1'b0), .key_break(1'b0),
-    .consol_n(3'b111), .joy_dir_n(8'hFF), .joy_trig_n(2'b11),
+    .consol_n(3'b111), .joy_dir_n(8'hFF), .joy_trig_n(t_trig),
     .sd_cke(cke), .sd_cs_n(cs_n), .sd_ras_n(ras_n), .sd_cas_n(cas_n), .sd_we_n(we_n),
     .sd_ba(ba), .sd_a(a), .sd_dqm(dqm), .sd_dq_o(dq_o), .sd_dq_oe(dq_oe), .sd_dq_i(dq_i),
     .f_dclk(f_dclk), .f_ncs(f_ncs), .f_mosi(f_mosi), .f_miso(f_miso),
@@ -640,6 +643,27 @@ initial begin : s2_check
             cnt++;
         end
     end
+end
+`endif
+
+`ifdef TRIG_MS
+`ifndef TRIG_LEN
+ `define TRIG_LEN 300
+`endif
+initial begin : trig_pic
+    #(`TRIG_MS * 1ms - 20ms);
+    grab("trig_pre.ppm");
+end
+initial begin : trig_press
+    integer k;
+    #(`TRIG_MS * 1ms);
+    $display("%t TRIG: trigger 0 pressed, CPU A %04h", $time, u_sys.cpu_a);
+    t_trig = 2'b10;
+    for (k = 0; k < `TRIG_LEN; k++) begin #1ms; $display("%t TRIG: +%0d ms CPU A %04h VCOUNT %0d NMIEN %02h", $time, k + 1, u_sys.cpu_a, u_sys.u_antic.vc, u_sys.u_antic.nmien); end
+    t_trig = 2'b11;
+    $display("%t TRIG: released", $time);
+    for (k = 0; k < 200; k++) begin #1ms; $display("%t TRIG: +%0d ms CPU A %04h VCOUNT %0d", $time, k + 1 + `TRIG_LEN, u_sys.cpu_a, u_sys.u_antic.vc); end
+    grab("trig_post.ppm");
 end
 `endif
 

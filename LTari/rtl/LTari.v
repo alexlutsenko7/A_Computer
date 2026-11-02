@@ -365,6 +365,12 @@ wire [7:0]  x_dout;
 reg [1:0] kr_s;
 always @(posedge clk) kr_s <= {kr_s[0], kbd_ready};
 
+// MCTL[24] (the ESP32, atari.cpp): OPTION held during a cold start = boot without BASIC (the user chose
+// "No BASIC" when loading a file); released by the ESP32 at the first SIO command
+reg [1:0] opt_s;
+always @(posedge clk) opt_s <= {opt_s[0], l_mctl[24]};
+wire [2:0] a_consol_n = k_consol_n & {!opt_s[1], 2'b11};   // [2] = OPTION
+
 wire        a_frozen, a_rmode;          // snapshots (clk; static while the port uses them)
 wire [63:0] a_regs;
 wire [47:0] a_pia;
@@ -396,7 +402,7 @@ atari_system u_sys (
     .key_shift  (k_shift),
     .key_ctrl   (k_ctrl),
     .key_break  (k_break),
-    .consol_n   (k_consol_n),
+    .consol_n   (a_consol_n),
     .joy_dir_n  ({stick1[3:0], stick0[3:0]}),
     .joy_trig_n ({stick1[4], stick0[4]}),
     .sd_cke     (DRAM_CKE),

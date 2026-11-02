@@ -728,3 +728,29 @@ int c64_screenshot(uint32_t dir, const char name11[11])
     if (r != FAT_OK) { shot_end(); return r; }
     return shot_end();
 }
+
+/* back to the state after a start: the next machine starts the loader again without an ESP32
+ * restart (esp_hw.cpp; the Bluetooth connection stays) */
+void c64_reset(void)
+{
+    u_memset(&rom, 0, sizeof rom);
+    u_memset(&page, 0, sizeof page);
+    u_memset(&t_f, 0, sizeof t_f);
+    u_memset(&t_ver, 0, sizeof t_ver);
+    u_memset(&t_state, 0, sizeof t_state);
+    u_memset(&t_pend, 0, sizeof t_pend);
+    u_memset(&r_on, 0, sizeof r_on);
+    u_memset(&r_half, 0, sizeof r_half);
+    u_memset(&r_acc, 0, sizeof r_acc);
+    u_memset(&r_pulses, 0, sizeof r_pulses);
+    u_memset(&d_f, 0, sizeof d_f);
+    u_memset(&d_on, 0, sizeof d_on);
+    u_memset(&d_ro, 0, sizeof d_ro);
+    u_memset(&d_loaded, 0, sizeof d_loaded);
+    u_memset(&d_ctl, 0, sizeof d_ctl);
+    u_memset(&d_name, 0, sizeof d_name);
+    u_memset(&d_sec, 0, sizeof d_sec);
+    u_memset(&a64_hdr, 0, sizeof a64_hdr);
+    u_memset(&a64_sh, 0, sizeof a64_sh);
+    u_memset(&stub_pc, 0, sizeof stub_pc);
+}

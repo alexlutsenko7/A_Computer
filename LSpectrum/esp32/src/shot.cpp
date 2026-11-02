@@ -82,3 +82,13 @@ int shot_end(void)
     if (s_err) { fw_discard(&fw_file); return s_err; }
     return fw_close(&fw_file);
 }
+
+/* back to the state after a start: the next machine starts the loader again without an ESP32
+ * restart (esp_hw.cpp; the Bluetooth connection stays) */
+void shot_reset(void)
+{
+    u_memset(&s_w, 0, sizeof s_w);
+    u_memset(&s_err, 0, sizeof s_err);
+    u_memset(&s_bpp, 0, sizeof s_bpp);
+    u_memset(&s_rowbytes, 0, sizeof s_rowbytes);
+}

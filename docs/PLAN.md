@@ -297,7 +297,7 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   ROM's LD-WAIT needs ~3.5 M T before the leader). Build: 8,379 LEs (54 %), 55/56 M9K, worst slack +0.47 ns.
   Docs: KNOWN_ISSUES.md, LSpectrum_Keys.docx, LSpectrum_Architecture.docx (Letter; generators in docs/src).
 
-- GitHub: https://github.com/alexlutsenko7/L_8_bit.git (user commits from a separate folder). Checked from a fresh
+- GitHub: https://github.com/alexlutsenko7/A_Computer (user commits from a separate folder). Checked from a fresh
   clone: complete (T80, sim, fw/test added), firmware rebuilds identical, PC tests + loader sim pass. Cosmetic left:
   .sh files without the executable flag, 32 leftover files tracked (VGA_TEST/sim/work, transcripts, a log, .qws), no
   .gitignore. Top-level README.md written (L/README.md, to be copied to the repo root).
@@ -979,3 +979,43 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   root folder; the menu mode writes it into the spare OTA slot (app0 / app1, 1.25 MB each), esp_ota_end verifies it,
   the slot is selected, the file deleted, the ESP32 restarts; LESP32.BIN is handled before LUPDATE.BIN. src/espupd.cpp
   (portable, our FAT) + ota_* in esp_hw.cpp. Firmware 1,193,120 B (91 %). Uploaded over USB; User: LESP32.BIN + LUPDATE.BIN together work.
+- (2026-10-31) Public repo renamed by the user: https://github.com/alexlutsenko7/A_Computer (L_8_bit is gone); first
+  commit there b62ef6f = github/ from make_github.py of 2026-10-31 11:42.
+- (2026-10-31) E.T. Phone Home! (.atr) went black for good on fire (both models). Cause: the .atr booted with BASIC on
+  (the default without Alt+F4 = OPTION, as on a real XL); the disk copies a 16 KB cartridge to $8000-$BFFF, so the
+  half at $A000-$BFFF fell under the BASIC ROM. The title runs from $8000-$9FFF; the game start calls $A000+ code.
+  Found by tb_atari +define+TRIG_MS (new: joystick trigger press) with the image injected (BASIC off): the game
+  starts normally. Hold Alt+F4 while pressing Enter on the .atr: E.T. works on hw (user). (The disk also has the cartridge's
+  VCOUNT/WSYNC protection, bypassed by the crack; our ANTIC decodes it correctly: entry chain 1 -> 2 -> 3 -> $955A.)
+- (2026-11-02) LTari .atr boot asks (user's idea): Enter on an .atr shows three OSD lines "How do you want to load it:
+  <F1> No BASIC <F2> with BASIC" (Esc = back; Shift+Enter disk change is not asked). F1: MCTL[24] holds OPTION
+  (LTari.v, synchronised into clk, ANDed into the console keys) through the cold start; the ESP32 releases it at the
+  first SIO command frame (at most 5 s). .xex / .car are not asked (user: files that carry the choice stay as they
+  are; the .xex loader switches BASIC off). LTari 6,936 LEs, LTari800 6,933 LEs, timing clean.
+- (2026-11-02) Faster SD flash update (LUPDATE.BIN): the byte-wise FLASH register cost ~4 link frames per flash byte
+  (~5 min first install). New link frame 08 FLS (esp_link parameter FLS, only the menu): each frame byte goes out on
+  the flash, its answer comes back two bytes later; tape_loader FL_HALF 2 in the menu (DCLK 18.75 MHz, a byte shifts
+  in ~0.45 us < the 1 us link byte). Menu core ID 4D4E_0002 = link version 2; the ESP32 streams only then (fl_stream
+  in esp_hw.cpp; fl_read / fl_prog in flash.cpp), STAT before / after each frame, any error = byte-wise from then on.
+  run_esp_link_sim.sh: menu + FLS at 75 MHz PASS (a 56 MHz / FL_HALF 4 run flags the error); update_test: first
+  install 52 s modelled vs 300 s byte-wise, old menu and a broken stream fall back and finish. Machines unchanged
+  (FLS = 0).
+- (2026-11-02) Bluetooth across machine switches (user): leaving a machine restarted the ESP32 (core ID changed), which
+  dropped the A2DP link (and a quick menu -> machine switch could then leave it unconnected). Now housekeeping
+  longjmps back to loader_task, which resets the link state and every module (*_reset(), loader_reset_all() in
+  main.cpp, src/reset.h) and probes again: no restart, the connection stays. KEY0 (same core, IRQ mask cleared)
+  still restarts the ESP32. The FLS buffers had added 8.2 KB static RAM and chopped the audio again: now heap,
+  menu only (76,996 B static). F3 in the machine menu: AMenu connects zx_keyboard's lkeys to tape_loader and
+  BT_TX / BT_RX (AB17 / AA17); menu_text row 23 "F3: Bluetooth audio"; the ESP32's menu mode runs the same
+  bt.cpp menu on the OSD (12,889 LEs, timing clean; AMenu sim fixed: link files + stubs, PASS).
+  Short audio gaps: F3 shows "Gaps: data N late N max N ms" (I2S reads that came short / A2DP steps > 60 ms
+  apart / longest step) to tell ESP32-side gaps from radio-side ones (no counter moves = radio). Not yet on hw.
+- (2026-11-02) Bluetooth audio "jumped" (short skips forward, heard as a speed-up). The I2S input (APLL 44.1 kHz) and
+  the A2DP stack's pull timer are different clocks: when the backlog in the 8 DMA buffers drifted up, the driver
+  overwrote a buffer (~6 ms skip). esp32.ino now counts DMA buffers (on_recv / on_recv_q_ovf) and keeps the backlog
+  at 512-1024 frames by dropping or repeating one frame per step (<= 0.2 %); F3 row 21 "Audio: short N skip N fix N",
+  `status` shows the backlog. User: works. Why it showed only today (fine in the morning) is not known.
+- (2026-11-02) After the update F12 was dead in a machine once (ESP32 reset over USB brought it back). Hardened the new
+  menu-mode code: key_events ignores all-ones reads (FPGA reconfiguring), the menu loop stops as soon as the menu is
+  left, bt_service stops on all-ones / after 512 bytes. Root cause not confirmed.
+- (2026-11-02) User: everything above works on hardware (.atr prompt, fast SD update, F3 in the menu, Bluetooth kept across machine switches, audio drift fix).

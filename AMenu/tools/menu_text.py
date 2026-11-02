@@ -32,6 +32,7 @@ put(ERR_ROW + 1, " Chip tried address:       ")   # and the address at columns 2
 put(ERR_ROW + 2, " Mode:    reason before:      ")  # mode at column 7, earlier reason at 25-26
 centre(21, f"Up/Down + Enter, 1-{len(MACHINES)}, joystick")
 centre(22, "KEY1 in a machine: back here")
+centre(23, "F3: Bluetooth audio")
 
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rtl", "menu_text.hex")
 with open(out, "w", newline="\n") as f:

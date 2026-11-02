@@ -458,3 +458,29 @@ int fw_discard(FWFILE *w)
     secbuf[w->dir_off] = 0xE5;                              /* entry deleted */
     return sd_write(w->dir_lba, secbuf) ? FAT_EIO : FAT_OK;
 }
+
+/* back to the state after a start: the next machine starts the loader again without an ESP32
+ * restart (esp_hw.cpp; the Bluetooth connection stays) */
+void fat_reset(void)
+{
+    u_memset(&secbuf, 0, sizeof secbuf);
+    u_memset(&fatbuf, 0, sizeof fatbuf);
+    u_memset(&fatbuf_lba, 0, sizeof fatbuf_lba);
+    u_memset(&fat32, 0, sizeof fat32);
+    u_memset(&spc_shift, 0, sizeof spc_shift);
+    u_memset(&nfats, 0, sizeof nfats);
+    u_memset(&fat_dirty, 0, sizeof fat_dirty);
+    u_memset(&fsinfo_done, 0, sizeof fsinfo_done);
+    u_memset(&spc, 0, sizeof spc);
+    u_memset(&fat_lba, 0, sizeof fat_lba);
+    u_memset(&root_lba, 0, sizeof root_lba);
+    u_memset(&root_secs, 0, sizeof root_secs);
+    u_memset(&data_lba, 0, sizeof data_lba);
+    u_memset(&root_clus, 0, sizeof root_clus);
+    u_memset(&max_clus, 0, sizeof max_clus);
+    u_memset(&fatsz, 0, sizeof fatsz);
+    u_memset(&fsinfo_lba, 0, sizeof fsinfo_lba);
+    u_memset(&free_hint, 0, sizeof free_hint);
+    u_memset(&ent_lba, 0, sizeof ent_lba);
+    u_memset(&ent_idx, 0, sizeof ent_idx);
+}

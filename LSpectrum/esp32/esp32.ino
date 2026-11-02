@@ -102,6 +102,23 @@ static volatile bool src_i2s;         // false = test tone
 static volatile bool muted;
 static i2s_chan_handle_t i2s_rx;
 static volatile uint32_t i2s_underruns;
+// The I2S clock (APLL, 44.1 kHz) and the A2DP stack's sending timer are different clocks: a few
+// ppm apart, the DMA backlog drifts. Left alone it fills the 8 buffers and the driver overwrites
+// one (a 5.8 ms skip forward, heard as a short "speed-up"), or runs dry (silence). The backlog is
+// kept near BACKLOG_MID by dropping or repeating one sample frame per step when it drifts out of
+// [BACKLOG_LO, BACKLOG_HI] (at most ~0.2 %, not audible).
+static volatile uint32_t i2s_rx_frames;   // frames the DMA delivered (ISR)
+static uint32_t i2s_rd_frames;            // frames read by get_frames
+static volatile uint32_t i2s_overflows;   // DMA buffers overwritten (ISR)
+static uint32_t i2s_drops, i2s_dups;      // drift corrections
+static const int32_t BACKLOG_LO = 512, BACKLOG_MID = 768, BACKLOG_HI = 1024;   // frames (256 per buffer)
+// The A2DP stack asks for audio in steady steps (~10-20 ms). A step much later than that means the
+// sending side was held up (the speaker's buffer can run dry: a short gap); the radio side shows no
+// late step. Counted while connected; the F3 menu shows both counters.
+static volatile uint32_t cb_late;      // steps more than LATE_US after the one before
+static volatile uint32_t cb_max_us;    // longest step distance (while connected)
+static int64_t cb_last;
+static const int64_t LATE_US = 60000;
 static volatile int32_t i2s_peak;     // largest |sample| since the last status
 
 static int16_t sine_tab[1024];
@@ -140,16 +157,29 @@ static void tone_frames(Frame *f, int32_t n) {
 // a short wait (at most ~8 ms) covers the DMA buffer granularity, silence beyond.
 static void i2s_frames(Frame *f, int32_t n) {
   uint8_t *p = (uint8_t *)f;
-  size_t want = (size_t)n * sizeof(Frame), got = 0;
+  int32_t backlog = (int32_t)(i2s_rx_frames - i2s_rd_frames);
+  // too much waiting: read one frame more and drop it; too little: read one less and repeat the last
+  int adj = n > 2 && backlog > BACKLOG_HI ? 1 : n > 2 && backlog < BACKLOG_LO && backlog >= 0 ? -1 : 0;
+  size_t want = (size_t)(n - (adj < 0 ? 1 : 0)) * sizeof(Frame), got = 0;
   for (int tries = 0; got < want && tries < 4; tries++) {
     size_t r = 0;
     i2s_channel_read(i2s_rx, p + got, want - got, &r, 2);
     got += r;
   }
+  i2s_rd_frames += got / sizeof(Frame);
   if (got < want) {
     memset(p + got, 0, want - got);
     i2s_underruns = i2s_underruns + 1;
+  } else if (adj > 0) {
+    Frame extra;
+    size_t r = 0;
+    i2s_channel_read(i2s_rx, &extra, sizeof extra, &r, 0);   // dropped
+    if (r == sizeof extra) { i2s_rd_frames += 1; i2s_drops++; }
+  } else if (adj < 0) {
+    f[n - 1] = f[n - 2];                                       // repeated
+    i2s_dups++;
   }
+  if (backlog > 8 * 256 || backlog < -8 * 256) i2s_rd_frames = i2s_rx_frames - BACKLOG_MID;   // resync (start)
   int32_t pk = i2s_peak;
   for (int32_t i = 0; i < n; i++) {
     int32_t a = abs(f[i].channel1);
@@ -159,10 +189,28 @@ static void i2s_frames(Frame *f, int32_t n) {
 }
 
 static int32_t get_frames(Frame *f, int32_t n) {
+  int64_t now = esp_timer_get_time();
+  if (cb_last && now - cb_last < 2000000) {        // longer = the stream had stopped (not a gap)
+    uint32_t d = (uint32_t)(now - cb_last);
+    if (d > cb_max_us) cb_max_us = d;
+    if (d > LATE_US) cb_late = cb_late + 1;
+  }
+  cb_last = now;
   if (src_i2s) i2s_frames(f, n);
   else tone_frames(f, n);
   if (muted) memset(f, 0, (size_t)n * sizeof(Frame));
   return n;
+}
+
+static bool IRAM_ATTR i2s_on_recv(i2s_chan_handle_t, i2s_event_data_t *e, void *) {
+  i2s_rx_frames = i2s_rx_frames + e->size / sizeof(Frame);
+  return false;
+}
+
+static bool IRAM_ATTR i2s_on_ovf(i2s_chan_handle_t, i2s_event_data_t *e, void *) {
+  i2s_overflows = i2s_overflows + 1;
+  i2s_rx_frames = i2s_rx_frames - (e && e->size ? e->size : 256 * sizeof(Frame)) / sizeof(Frame);   // that buffer is gone
+  return false;
 }
 
 static void i2s_start() {
@@ -184,6 +232,10 @@ static void i2s_start() {
   };
   cfg.clk_cfg.clk_src = I2S_CLK_SRC_APLL;   // exact 44.1 kHz
   ESP_ERROR_CHECK(i2s_channel_init_std_mode(i2s_rx, &cfg));
+  i2s_event_callbacks_t cbs = {};
+  cbs.on_recv = i2s_on_recv;
+  cbs.on_recv_q_ovf = i2s_on_ovf;
+  ESP_ERROR_CHECK(i2s_channel_register_event_callback(i2s_rx, &cbs, nullptr));
   gpio_pulldown_en((gpio_num_t)I2S_DIN);    // silence when the FPGA is not connected
   ESP_ERROR_CHECK(i2s_channel_enable(i2s_rx));
 }
@@ -421,6 +473,10 @@ static void status(Print &out) {
              volume, muted ? "on" : "off", (int)i2s_peak, (unsigned)i2s_underruns);
   out.printf("   tone=%u Hz wave=%s level=%u%% codec-fix=%u\r\n", tone_hz,
              square_wave ? "square" : "sine", level_pct, (unsigned)codec_forced);
+  out.printf("   audio steps: late=%u (> %u ms) longest=%u ms\r\n", (unsigned)cb_late,
+             (unsigned)(LATE_US / 1000), (unsigned)(cb_max_us / 1000));
+  out.printf("   i2s backlog=%d frames, overflows=%u, drift fixes: dropped=%u repeated=%u\r\n",
+             (int)(i2s_rx_frames - i2s_rd_frames), (unsigned)i2s_overflows, (unsigned)i2s_drops, (unsigned)i2s_dups);
   i2s_peak = 0;
 }
 
@@ -474,9 +530,10 @@ static void command(char *line, Print &out) {
   } else if (!strcasecmp(cmd, "info")) {
     char m[18];
     mac_str(*a2dp.get_last_peer_address(), m);
-    out.printf("OK info %s %s %s %u %s %s %s\r\n", conn_name(a2dp.get_connection_state()),
+    out.printf("OK info %s %s %s %u %s %s %u %u %u %s\r\n", conn_name(a2dp.get_connection_state()),
                a2dp.is_discovery_active() || scan_pending ? "scan" : "idle", m, volume,
                pin_fixed[0] ? pin_fixed : "auto", src_i2s ? "i2s" : "tone",
+               (unsigned)i2s_underruns, (unsigned)i2s_overflows, (unsigned)(i2s_drops + i2s_dups),
                peer_name[0] ? peer_name : "-");
   } else if (!strcasecmp(cmd, "scan")) {
     portENTER_CRITICAL(&devs_mux);

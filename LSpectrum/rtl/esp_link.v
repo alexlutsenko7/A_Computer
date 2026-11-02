@@ -24,14 +24,22 @@
 //   05 MWR  a2 a1 a0, b...        Spectrum memory writes from a (18 bits), auto-increment
 //   06 MRD  a2 a1 a0, x, -> b...  Spectrum memory reads, auto-increment (prefetched)
 //   07 STAT x, -> d3 d2 d1 d0     {error, 31'd0}; reading clears the error flag
+//   08 FLS  b..., -> -, -, r...   flash stream: each byte b goes out on the configuration flash
+//                                 (FLASH register 0x40 with EN | CS | START); the byte the flash
+//                                 returned for frame byte n comes back in frame byte n + 2
+//                                 (so a read ends with two extra bytes). The shift must end
+//                                 within a byte time (tape_loader FL_HALF). Only with parameter
+//                                 FLS = 1 (the machine menu); otherwise ignored
 // MWR/MRD need the Spectrum frozen (SNAPCTL). Each memory byte is one snapshot
 // command (well under the 1 us a byte takes at 8 MHz). The error flag is set
 // when a byte arrives while the previous access is still running (it is
-// dropped) or when an MRD byte is not ready in time (0xEE is sent).
+// dropped) or when an MRD / FLS byte is not ready in time (0xEE is sent).
 //=============================================================================
 `default_nettype none
 
-module esp_link (
+module esp_link #(
+    parameter FLS = 0                           // 1: the FLS frame (the machine menu only)
+) (
     input  wire        clk,
     input  wire        rst_n,
 
@@ -50,9 +58,9 @@ module esp_link (
 );
 
 localparam [7:0] CMD_WR = 8'h01, CMD_RD = 8'h02, CMD_OSD = 8'h03, CMD_FIFO = 8'h04,
-                 CMD_MWR = 8'h05, CMD_MRD = 8'h06, CMD_STAT = 8'h07;
+                 CMD_MWR = 8'h05, CMD_MRD = 8'h06, CMD_STAT = 8'h07, CMD_FLS = 8'h08;
 localparam [31:0] IO = 32'h1000_0000, OSD = 32'h2000_0000;
-localparam [7:0]  R_FIFO = 8'h0C, R_SNAPCTL = 8'h2C, R_SNAPCMD = 8'h30, R_SNAPDAT = 8'h34;
+localparam [7:0]  R_FIFO = 8'h0C, R_SNAPCTL = 8'h2C, R_SNAPCMD = 8'h30, R_SNAPDAT = 8'h34, R_FLASH = 8'h40;
 localparam [3:0]  C_MRD = 4'd1, C_MWR = 4'd2;
 
 //-----------------------------------------------------------------------------
@@ -89,24 +97,27 @@ reg         miso_q;                             // the pin (I/O register): tx_sh
 assign miso = miso_q;
 
 // bus jobs
-localparam [1:0] J_ONE = 2'd0, J_MWR = 2'd1, J_MRD = 2'd2;
+localparam [1:0] J_ONE = 2'd0, J_MWR = 2'd1, J_MRD = 2'd2, J_FLS = 2'd3;
 reg         busy;                               // a job is running
 reg  [1:0]  job, step;
 reg         poll;                               // next: read SNAPCTL
 reg  [17:0] job_a;
-reg         mrd_ok;                             // mrd_b holds the prefetched byte
+reg         mrd_ok;                             // mrd_b holds the prefetched byte (MRD) / the flash's byte (FLS)
 reg  [7:0]  mrd_b;
 
 // byte sent after the one ending now (that is byte nb + 1; nb saturates, so compare nb)
 reg  [7:0] tx_next;
 reg        tx_mrd;                              // that byte is MRD data
+reg        tx_fls;                              // that byte is FLS data
 always @* begin
     tx_next = {err, 7'd0};
     tx_mrd  = 1'b0;
+    tx_fls  = 1'b0;
     case (cmd)
         CMD_RD:   if (nb >= 4'd2 && nb <= 4'd5) tx_next = rd_word[8 * (5 - nb) +: 8];   // bytes 3-6
         CMD_STAT: if (nb >= 4'd1 && nb <= 4'd4) tx_next = rd_word[8 * (4 - nb) +: 8];   // bytes 2-5
         CMD_MRD:  if (nb >= 4'd4) begin tx_mrd = 1'b1; tx_next = mrd_ok ? mrd_b : 8'hEE; end   // bytes 5-
+        CMD_FLS:  if (FLS && nb >= 4'd2) begin tx_fls = 1'b1; tx_next = mrd_ok ? mrd_b : 8'hEE; end   // bytes 3-
         default: ;
     endcase
     if (nb == 4'd0) tx_next = {err, 7'd0};     // cmd is not known yet
@@ -152,6 +163,10 @@ always @(posedge clk or negedge rst_n)
                         mem_wdata <= {C_MRD, 10'd0, addr}; mem_wstrb <= 4'hF;
                         addr <= addr + 18'd1;
                     end
+                end
+                if (tx_fls) begin                   // the flash's byte handed out
+                    if (!mrd_ok) err <= 1'b1;
+                    mrd_ok <= 1'b0;
                 end
             end else
                 tx_sh <= {tx_sh[6:0], 1'b0};
@@ -219,6 +234,15 @@ always @(posedge clk or negedge rst_n)
                         addr <= addr + 18'd1;
                     end
                 end
+                CMD_FLS: if (FLS) begin                 // every byte: out on the flash
+                        if (nb == 4'd1) mrd_ok <= 1'b0;
+                        if (busy) err <= 1'b1;
+                        else begin
+                            busy <= 1'b1; job <= J_FLS; step <= 2'd0;
+                            mem_valid <= 1'b1; mem_addr <= IO | R_FLASH;
+                            mem_wdata <= {21'd0, 3'b111, rx_sh}; mem_wstrb <= 4'hF;
+                        end
+                    end
                 CMD_MRD: if (nb == 4'd3) begin          // address complete: fetch the first byte
                         mrd_ok <= 1'b0;
                         if (busy) err <= 1'b1;
@@ -267,6 +291,16 @@ always @(posedge clk or negedge rst_n)
                         busy   <= 1'b0;
                     end
                 endcase
+                J_FLS: if (step == 2'd0) begin      // byte started: read FLASH until it is shifted
+                        step <= 2'd1;
+                        mem_valid <= 1'b1; mem_addr <= IO | R_FLASH; mem_wstrb <= 4'h0;
+                    end else if (mem_rdata[8]) begin
+                        mem_valid <= 1'b1; mem_addr <= IO | R_FLASH; mem_wstrb <= 4'h0;
+                    end else begin
+                        mrd_b  <= mem_rdata[7:0];
+                        mrd_ok <= 1'b1;
+                        busy   <= 1'b0;
+                    end
                 default: busy <= 1'b0;
             endcase
         end

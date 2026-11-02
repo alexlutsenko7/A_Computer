@@ -15,10 +15,12 @@
 // ruclk = CLOCK_50 / 4 = 12.5 MHz (remote update block, at most 20 MHz).
 // LED: on = menu, blinking = the last machine could not start; the error row shows the
 // reconfiguration reason in hex (02 watchdog, 04 nSTATUS / no image, 08 CRC, 10 nCONFIG).
-// ESP32 link (as the machines: tape_loader + esp_link at mclk = 75 MHz, core ID 4D4E_0001 "MN"):
-// the ESP32 draws on an OSD screen (shown instead of the menu while OSD is on; the menu takes
-// no input meanwhile) and reads / writes the configuration flash through the FLASH register:
+// ESP32 link (as the machines: tape_loader + esp_link at mclk = 75 MHz, core ID 4D4E_0002 "MN",
+// link version 2 = flash stream frames): the ESP32 draws on an OSD screen (shown instead of the
+// menu while OSD is on; the menu takes no input meanwhile) and reads / writes the configuration
+// flash through the FLASH register, DCLK 18.75 MHz (FL_HALF 2), mostly with FLS frames (1 us per byte):
 // flash update from the SD card (LUPDATE.BIN), "no machines installed" (LSpectrum/esp32/src/update.cpp).
+// F3 opens the ESP32's Bluetooth menu (loader keys + the UART to its Bluetooth part, BT_TX / BT_RX).
 // All other I/O board pins stay inputs (weak pull-ups): the SDRAM is deselected (CS_N high).
 //=============================================================================
 `default_nettype none
@@ -56,7 +58,9 @@ module AMenu #(
     input  wire       ESP_MOSI,
     input  wire       ESP_CS_N,
     output wire       ESP_MISO,
-    output wire       ESP_IRQ
+    output wire       ESP_IRQ,
+    output wire       BT_TX,            // UART to the ESP32's Bluetooth part (its RX2, GPIO16): F3 menu
+    input  wire       BT_RX             // UART from it (its TX2, GPIO17)
 );
 
 assign AUDIO_AY   = 1'b0;
@@ -111,6 +115,7 @@ wire mrst_n = mrst_sr[2];
 // Keyboard (LSpectrum's parser; only the raw report is used here) and joysticks
 //-----------------------------------------------------------------------------
 wire [31:0] kb_raw;
+wire [17:0] lkeys;                      // loader keys (F3 etc.) for the ESP32, as in the machines
 
 zx_keyboard #(.CLK_HZ(50000000)) u_kbd (
     .clk    (CLOCK_50),
@@ -118,7 +123,7 @@ zx_keyboard #(.CLK_HZ(50000000)) u_kbd (
     .rx     (KB_OUT & KB_IN),
     .block  (1'b0),
     .rows   (),
-    .lkeys  (),
+    .lkeys  (lkeys),
     .f1     (),
     .f8_tgl (),
     .cad    (),
@@ -190,6 +195,7 @@ always @* begin
     end
 end
 
+wire       l_osd_on;                    // tape_loader below
 reg  [1:0] osd_ls;                      // the ESP32's screen is up: no menu input
 always @(posedge CLOCK_50) osd_ls <= {osd_ls[0], l_osd_on};
 wire osd_lock = osd_ls[1];
@@ -252,7 +258,7 @@ menu_boot u_boot (
 // ESP32 link: loader registers (only ID, IRQ, KEYRAW, OSD, FLASH are used here) and the
 // configuration flash (AS pins through the ASMI block; idle: chip select off)
 //-----------------------------------------------------------------------------
-wire       l_osd_on, osd_we;
+wire       osd_we;
 wire [9:0] osd_addr;
 wire [7:0] osd_data;
 wire       fl_en, fl_ncs, fl_dclk, fl_mosi, fl_miso;
@@ -260,10 +266,10 @@ wire       snap_req;
 reg        snap_ack;
 always @(posedge mclk) snap_ack <= snap_req;   // no snapshot port: every command is done at once
 
-tape_loader #(.BAUD_DIV(651), .CORE_ID(32'h4D4E_0001)) u_tl (
+tape_loader #(.BAUD_DIV(651), .CORE_ID(32'h4D4E_0002), .FL_HALF(2), .FLS(1)) u_tl (
     .clk         (mclk),
     .rst_n       (mrst_n),
-    .keys        (18'd0),
+    .keys        (lkeys),
     .keyraw      (kb_raw),
     .cen_tgl     (1'b0),
     .mic         (1'b0),
@@ -276,8 +282,8 @@ tape_loader #(.BAUD_DIV(651), .CORE_ID(32'h4D4E_0001)) u_tl (
     .osd_we      (osd_we),
     .osd_addr    (osd_addr),
     .osd_data    (osd_data),
-    .bt_tx       (),
-    .bt_rx       (1'b1),
+    .bt_tx       (BT_TX),
+    .bt_rx       (BT_RX),
     .esp_sck     (ESP_SCK),
     .esp_mosi    (ESP_MOSI),
     .esp_cs_n    (ESP_CS_N),

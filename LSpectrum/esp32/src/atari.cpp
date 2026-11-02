@@ -91,6 +91,10 @@ static uint8_t csum(const uint8_t *d, int n)
 static uint32_t sec_len(uint32_t s) { return s <= 3 ? 128u : a_ssz; }
 static uint32_t sec_off(uint32_t s) { return s <= 3 ? 16u + (s - 1u) * 128u : 16u + 384u + (s - 4u) * a_ssz; }
 static uint32_t a_xlen;                 /* .xex: the file length, patched into the loader sectors */
+static int      a_noba;                 /* OPTION held (MCTL [24]) until the first SIO command: no BASIC */
+static uint32_t a_noba_t0;
+#define MC_OPTION (1u << 24)
+#define NOBA_MS   5000u                 /* OPTION released at the latest after this (no SIO command came) */
 
 static void wait_us(uint32_t us)
 {
@@ -243,10 +247,17 @@ static void command(void)
     }
 }
 
+static void noba_off(void)
+{
+    a_noba = 0;                                             /* OPTION released */
+    MCTL   = a_cart << 16;
+}
+
 void at_service(void)
 {
     uint32_t st = 0;
     int      k;
+    if (a_noba && TIMER - a_noba_t0 > NOBA_MS * CLK_PER_MS) noba_off();
     if (!a_on) return;
     for (k = 0; k < 64; k++) {
         st = MCTL;
@@ -260,11 +271,23 @@ void at_service(void)
     }
     if (cn == 5 && !(st & ST_CMDNOW)) {                     /* frame complete, command line raised */
         cn = 0;
+        if (a_noba) noba_off();                             /* the OS has checked OPTION long ago */
         command();
     }
 }
 
-int at_atr_mount(const FFILE *f, const char *name, int ro, int boot)
+/* cold start (the cartridge out), OPTION held for "No BASIC" */
+static void cold_start(int basic)
+{
+    a_cart    = 0;
+    a_noba    = !basic;
+    a_noba_t0 = TIMER;
+    MCTL = a_noba ? MC_OPTION : 0u;                         /* 19,200 baud */
+    MCLR = CL_FLUSH;
+    RELOAD = 1;
+}
+
+int at_atr_mount(const FFILE *f, const char *name, int ro, int boot, int basic)
 {
     uint8_t  h[16];
     uint32_t bytes, ssz, nsec;
@@ -295,10 +318,7 @@ int at_atr_mount(const FFILE *f, const char *name, int ro, int boot)
     cn      = 0;
     u_strncpy(a_name, name, NAME_MAX);
     if (!boot) return 0;                                    /* disk change only: as a real drive's door */
-    a_cart = 0;                                             /* a disk boot takes the cartridge out */
-    MCTL = 0;                                               /* 19,200 baud */
-    MCLR = CL_FLUSH;
-    RELOAD = 1;                                             /* cold start: the OS boots from D1: */
+    cold_start(basic);                                      /* the OS boots from D1: (cartridge out) */
     return 0;
 }
 
@@ -321,10 +341,7 @@ int at_xex_mount(const FFILE *f, const char *name)
     a_on    = 1;
     cn      = 0;
     u_strncpy(a_name, name, NAME_MAX);
-    a_cart = 0;
-    MCTL = 0;
-    MCLR = CL_FLUSH;
-    RELOAD = 1;                                             /* cold start: the OS boots the loader */
+    cold_start(1);                                          /* the OS boots the loader (it switches BASIC off) */
     return 0;
 }
 
@@ -353,6 +370,7 @@ int at_car_mount(const FFILE *f, const char *name)
     }
     if (f->size < 16u + len) return AT_EBAD;
     a_cart = 0;
+    a_noba = 0;
     win    = mode >= 3;                                     /* Atarimax: through the cartridge window */
     MCTL   = 0;                                             /* not mapped while it is written */
     for (i = 0; i < len; i++) {
@@ -518,7 +536,7 @@ static int snap_load(FFILE *f, char *disk)
         if ((c = ff_getc(f)) < 0) { SNAPCTL = 0; return FAT_EIO; }
         snap_cmd(C_MWR, i, (uint32_t)c);
     }
-    if (!type && a_cart) { a_cart = 0; MCTL = 0; }      /* the snapshot ran without the cartridge */
+    if (!type && a_cart) { a_cart = 0; a_noba = 0; MCTL = 0; }      /* the snapshot ran without the cartridge */
     snap_cmd(C_MWR, RB_BASE + 0xFFFC, STUB & 0xFF);     /* reset vector -> the program */
     snap_cmd(C_MWR, RB_BASE + 0xFFFD, STUB >> 8);
 
@@ -566,3 +584,28 @@ static int snap_load(FFILE *f, char *disk)
     return 0;
 }
 
+/* back to the state after a start: the next machine starts the loader again without an ESP32
+ * restart (esp_hw.cpp; the Bluetooth connection stays) */
+void at_reset(void)
+{
+    u_memset(&a_cname, 0, sizeof a_cname);
+    u_memset(&a_f, 0, sizeof a_f);
+    u_memset(&a_on, 0, sizeof a_on);
+    u_memset(&a_ro, 0, sizeof a_ro);
+    u_memset(&a_wperr, 0, sizeof a_wperr);
+    u_memset(&a_xex, 0, sizeof a_xex);
+    u_memset(&a_cart, 0, sizeof a_cart);
+    u_memset(&a_ssz, 0, sizeof a_ssz);
+    u_memset(&a_nsec, 0, sizeof a_nsec);
+    u_memset(&a_name, 0, sizeof a_name);
+    u_memset(&a_buf, 0, sizeof a_buf);
+    u_memset(&cf, 0, sizeof cf);
+    u_memset(&cn, 0, sizeof cn);
+    u_memset(&a_xlen, 0, sizeof a_xlen);
+    u_memset(&a_noba, 0, sizeof a_noba);
+    u_memset(&a_noba_t0, 0, sizeof a_noba_t0);
+    u_memset(&s_hdr, 0, sizeof s_hdr);
+    u_memset(&stub_pc, 0, sizeof stub_pc);
+    if (s_sh) free(s_sh);
+    s_sh = 0;
+}

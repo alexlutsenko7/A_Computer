@@ -170,7 +170,8 @@ justified 2-clock multicycle in the SDC.
 
 Link frames (`rtl/esp_link.v`): `01 WR r d3..d0`, `02 RD r x -> d3..d0`, `03 OSD a1 a0 b...`, `04 FIFO (d3..d0)...`,
 `05 MWR a2 a1 a0 b...` and `06 MRD a2 a1 a0 x -> b...` (Spectrum memory through the snapshot port, while frozen),
-`07 STAT x -> {error, 0}`. The ESP32 collects pulse commands, OSD text and memory writes into one frame each and
+`07 STAT x -> {error, 0}`, and only in the machine menu (esp_link parameter FLS, core ID 4D4E_0002) `08 FLS b... ->
+-, -, r...` (each byte goes out on the configuration flash; its answer comes back two bytes later: the flash update). The ESP32 collects pulse commands, OSD text and memory writes into one frame each and
 reads memory 256 bytes at a time; every other register access is one frame.
 
 Snapshot commands (`zx_bus`, while frozen): 1 MRD SDRAM byte, 2 MWR SDRAM byte (+ screen shadow), 3 REG register
@@ -245,7 +246,8 @@ LSpectrum/esp32/test/run_host_test.sh  # PC: FAT16/FAT32 images, listing + every
                                        #     installs cut off at random points, never a valid header on a wrong image
 LSpectrum/sim/run_esp_link_sim.sh      # RTL: tape_loader over the SPI link: ID, registers, OSD, FIFO, 256-byte MWR/MRD
                                        #     across a page, error flag with slow commands, IRQ on key change;
-                                       #     at 56 / 94.5 MHz, 8 / 4 MHz SPI, MISO sampled 30-140 ns after the rising edge
+                                       #     at 56 / 94.5 MHz, 8 / 4 MHz SPI, MISO sampled 30-140 ns after the rising edge;
+                                       #     the menu (75 MHz, FL_HALF 2): a 300-byte FLS stream against a flash model
 LSpectrum/sim/run_snap_sim.sh          # RTL: zx_bus + T80 + SDRAM: a Z80 test program (prefixes, DD CB, LDIR/CPIR,
                                        #     EXX, IM 2, HALT, paging, AY) run undisturbed, with random freezes + reads,
                                        #     and with random freezes + full restore (LOAD): identical results

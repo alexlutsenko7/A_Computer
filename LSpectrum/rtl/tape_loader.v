@@ -64,7 +64,9 @@ module tape_loader #(
     parameter integer BAUD_DIV  = 486,                  // 56 MHz / 115200 (0.02 % fast)
     parameter [19:0]  INT_POS   = {10'd166, 10'd24},    // INTPOS after reset: {pixel, line} (zx_video; measured, see there)
     parameter integer GAP_T     = 8000,                 // T-states without a MIC edge = end of a block
-    parameter [31:0]  CORE_ID   = 32'h5A58_0001         // register 0x00: "ZX" link version 1 (L64: "C6")
+    parameter [31:0]  CORE_ID   = 32'h5A58_0001,        // register 0x00: "ZX" link version 1 (L64: "C6")
+    parameter integer FL_HALF   = 4,                    // flash pass-through: clocks per DCLK half period (2-4)
+    parameter         FLS       = 0                     // esp_link flash stream frames (the menu: with FL_HALF 2)
 )(
     input  wire        clk,             // 56 MHz
     input  wire        rst_n,           // synchronous to clk
@@ -127,7 +129,7 @@ wire [3:0]  mem_wstrb;
 reg         mem_ready;
 wire [31:0] mem_rdata;
 
-esp_link u_link (
+esp_link #(.FLS(FLS)) u_link (
     .clk       (clk),
     .rst_n     (rst_n),
     .sck       (esp_sck),
@@ -538,8 +540,8 @@ always @(posedge clk or negedge rst_n)
     end
 
 //-----------------------------------------------------------------------------
-// Flash pass-through: one byte per start, DCLK = clk / 8 (MISO sampled at the end of
-// the high phase, MOSI changes in the low phase, as rom_loader); reload pulse
+// Flash pass-through: one byte per start, DCLK = clk / (2 * FL_HALF) (MISO sampled at the end
+// of the high phase, MOSI changes in the low phase, as rom_loader); reload pulse
 //-----------------------------------------------------------------------------
 wire       fl_wr = wr && sel_io && reg_a == 5'd16;
 reg  [7:0] fl_sh, fl_q;
@@ -576,8 +578,8 @@ always @(posedge clk or negedge rst_n)
                 fl_div  <= 2'd0;
             end
         end else if (fl_busy) begin
-            fl_div <= fl_div + 2'd1;
-            if (fl_div == 2'd3) begin
+            fl_div <= fl_div == FL_HALF - 1 ? 2'd0 : fl_div + 2'd1;
+            if (fl_div == FL_HALF - 1) begin
                 if (!fl_dclk)
                     fl_dclk <= 1'b1;
                 else begin

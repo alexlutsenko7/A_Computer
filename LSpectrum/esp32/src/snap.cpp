@@ -356,3 +356,14 @@ int snap_screenshot(uint32_t dir, const char name11[11])
     if (r != FAT_OK) { shot_end(); return r; }
     return shot_end();
 }
+
+/* back to the state after a start: the next machine starts the loader again without an ESP32
+ * restart (esp_hw.cpp; the Bluetooth connection stays) */
+void snap_reset(void)
+{
+    u_memset(&hdr, 0, sizeof hdr);
+    u_memset(&wr_err, 0, sizeof wr_err);
+    u_memset(&c_addr, 0, sizeof c_addr);
+    u_memset(&c_val, 0, sizeof c_val);
+    u_memset(&scr, 0, sizeof scr);
+}

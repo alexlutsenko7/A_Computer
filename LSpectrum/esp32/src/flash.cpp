@@ -31,9 +31,38 @@ int fl_wait(uint32_t ms)
     }
 }
 
+static void hdr4(uint8_t h[4], uint8_t cmd, uint32_t a)
+{
+    h[0] = cmd; h[1] = (uint8_t)(a >> 16); h[2] = (uint8_t)(a >> 8); h[3] = (uint8_t)a;
+}
+
 void fl_read(uint32_t a, uint8_t *d, uint32_t n)
 {
-    fl_addr(0x03, a);
+    uint8_t h[4];
+    while (n) {                                             /* the stream, in pieces */
+        uint32_t k = n < FL_STREAM_MAX ? n : FL_STREAM_MAX;
+        fl_end();
+        hdr4(h, 0x03, a);
+        if (fl_stream(h, 4, 0, d, k)) break;
+        fl_end();
+        a += k; d += k; n -= k;
+    }
+    if (!n) return;
+    fl_addr(0x03, a);                                       /* byte-wise */
     while (n--) *d++ = fl_xfer(0);
+    fl_end();
+}
+
+void fl_prog(uint32_t a, const uint8_t *d)
+{
+    uint8_t  h[4];
+    uint32_t i;
+    fl_wren();
+    hdr4(h, 0x02, a);
+    if (fl_stream(h, 4, d, 0, 256) == 0) { fl_end(); return; }
+    fl_end();                                               /* a broken stream: program it again */
+    fl_wren();
+    fl_addr(0x02, a);
+    for (i = 0; i < 256; i++) fl_send(d[i]);
     fl_end();
 }

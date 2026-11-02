@@ -22,8 +22,8 @@ set_clock_groups -asynchronous \
     -group [get_clocks $pclk] \
     -group [get_clocks $mclk]
 
-set_false_path -from [get_ports {RESET_N KB_IN KB_OUT JOY1_* JOY2_*}]
-set_false_path -to   [get_ports {VGA_R[*] VGA_G[*] VGA_B[*] VGA_HS VGA_VS AUDIO_AY AUDIO_BEEP LEDR}]
+set_false_path -from [get_ports {RESET_N KB_IN KB_OUT JOY1_* JOY2_* BT_RX}]
+set_false_path -to   [get_ports {VGA_R[*] VGA_G[*] VGA_B[*] VGA_HS VGA_VS AUDIO_AY AUDIO_BEEP BT_TX LEDR}]
 
 # SPI link from the ESP32: synchronised in esp_link (SCK oversampled); IRQ is a level
 set_false_path -from [get_ports {ESP_SCK ESP_MOSI ESP_CS_N}]

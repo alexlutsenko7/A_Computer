@@ -63,14 +63,14 @@ const stepOf = ref => t => new Paragraph({ numbering: { reference: ref, level: 0
 
 const children = [
   new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: "LTari — keys", bold: true, size: 40, font: FONT, color: "1F3864" })] }),
-  new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "Atari 800XL / 130XE (PAL) on the QMTECH Cyclone IV board: AltirraOS and Altirra BASIC, SD card disk drive (.atr), .xex and cartridges (.car), snapshots, 60 / 50 Hz video, Bluetooth audio (build of 30 October 2026)", size: 21, font: FONT, color: "595959" })] }),
+  new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "Atari 800XL / 130XE (PAL) on the QMTECH Cyclone IV board: AltirraOS and Altirra BASIC, SD card disk drive (.atr), .xex and cartridges (.car), snapshots, 60 / 50 Hz video, Bluetooth audio (build of 2 November 2026)", size: 21, font: FONT, color: "595959" })] }),
 
   p("All keys below are on the USB keyboard unless a board button is named. The machine menu is described in L64_Keys.docx; LTari has two entries there: **3 LTari 800** (800XL, 64 KB) and **4 LTari 130** (130XE, 128 KB)."),
 
   h1("Machine keys"),
   table([2234, 2816, 4310], ["Key", "What it does", "Notes"], [
     ["**F12**, keypad **/** or **NumLock**", "Opens / closes the SD card browser", ["Lists folders and the .atr, .xex and .car files. See \"Usage cases\" below."]],
-    ["**Alt + F2 / F3 / F4**", "The Atari's **START / SELECT / OPTION**", ["Held as long as the keys are held. OPTION held while the Atari starts switches BASIC off: Alt + F4 held while pressing Enter on an .atr in the browser (or KEY0 without a disk)."]],
+    ["**Alt + F2 / F3 / F4**", "The Atari's **START / SELECT / OPTION**", ["Held as long as the keys are held. OPTION held while the Atari starts switches BASIC off: Alt + F4 held while pressing KEY0 without a disk (for an .atr the browser asks)."]],
     ["**Alt + F5**", "The Atari's **Reset** key", ["A warm start: BASIC keeps its program."]],
     ["**Alt + F6**", "The Atari's **Help** key", []],
     ["**Pause**, **Alt + F7**", "The Atari's **Break** key", []],
@@ -92,7 +92,7 @@ const children = [
     ["Left / Right, keypad 4 / 6, Page Up / Page Down", "One page up / down"],
     ["**Enter**, keypad Enter, F11", "Opens the folder, or uses the file (see the usage cases); an .atr boots"],
     ["**Shift + Enter** on an .atr", "Changes the disk in D1: only; the Atari runs on (\"insert disk 2\")"],
-    ["**Alt + F4 + Enter** on an .atr", "Boots it with BASIC off (keep Alt + F4 held until the program starts)"],
+    ["**Enter** on an .atr, then **F1** / **F2**", "Boots it with BASIC off (F1) or on (F2); Esc goes back to the list"],
     ["**Esc**, **Backspace**", "Up one folder; in the top folder closes the browser"],
     ["**F12**", "Closes the browser"],
   ]),
@@ -106,18 +106,19 @@ const children = [
   stepOf("boot")("The monitor gets no signal for about 2 seconds, then the screen turns blue. With no disk the OS asks the disk drive for about a second, then **Altirra 8K BASIC** shows **Ready**."),
 
   h2("Booting a disk (.atr)"),
-  stepOf("disk")("Press **F12**, choose the **.atr** file and press **Enter**. The note says **D1: name**; the disk is in drive 1 and the Atari restarts and boots from it."),
+  stepOf("disk")("Press **F12**, choose the **.atr** file and press **Enter**. Three lines ask **How do you want to load it: <F1> No BASIC <F2> with BASIC**; press F1 or F2 (Esc goes back to the list)."),
+  stepOf("disk")("The note says **D1: name**; the disk is in drive 1 and the Atari restarts and boots from it."),
   stepOf("disk")("The disk stays in until another one is chosen or KEY0 is pressed. Programs write to it as to a real disk: the .atr on the card changes."),
-  stepOf("disk")("Disks made for the old Atari 400 / 800 often need **BASIC off** (e.g. M.U.L.E.: with BASIC on it hangs on a half-drawn screen): hold **Alt + F4** and press **Enter** on the .atr, and keep holding until the program starts. The browser's bottom line reminds you: **Alt+F4+Ent=BASIC off**."),
+  stepOf("disk")("Disks made for the old Atari 400 / 800 often need **BASIC off** (e.g. M.U.L.E.: with BASIC on it hangs on a half-drawn screen): choose **F1**. The OPTION key is held for you while the Atari starts."),
   stepOf("disk")("To protect an .atr, make the file read-only on the PC (Properties > Read-only): writing then fails with an error, as on a write-protected disk."),
 
   h2("Changing disks (multi-disk programs)"),
-  stepOf("swap")("Boot the first disk as above (Enter, or Alt + F4 + Enter)."),
+  stepOf("swap")("Boot the first disk as above (Enter, then F1 or F2)."),
   stepOf("swap")("When the program asks for the next disk or side: **F12**, choose that .atr and press **Shift + Enter**. The note says **Disk changed, D1: name**; the Atari was not restarted."),
   stepOf("swap")("Press the key the program asks for (often Return or START) to go on."),
 
   h2("BASIC with a DOS disk"),
-  stepOf("dos")("Boot a DOS disk (e.g. DOS 2.5 .atr) as above, with BASIC on (do not hold OPTION). BASIC starts with Ready."),
+  stepOf("dos")("Boot a DOS disk (e.g. DOS 2.5 .atr) as above with **F2** (with BASIC). BASIC starts with Ready."),
   stepOf("dos")("**SAVE \"D:NAME\"** and **LOAD \"D:NAME\"** save and load BASIC programs on that disk; **DOS** opens the DOS menu."),
 
   h2("Running a program file (.xex)"),
@@ -131,7 +132,7 @@ const children = [
   stepOf("car")("Choosing an .atr or .xex, or KEY0, takes the cartridge out again."),
 
   h2("Without BASIC"),
-  stepOf("nobasic")("With a disk: in the browser hold **Alt + F4** (OPTION) and press **Enter** on the .atr; keep holding until the program starts."),
+  stepOf("nobasic")("With a disk: in the browser press **Enter** on the .atr, then **F1** (No BASIC)."),
   stepOf("nobasic")("Without a disk: hold **Alt + F4** and press **KEY0**; keep holding until the screen comes up. (KEY0 also takes a disk out, so use the browser way for disks.)"),
   stepOf("nobasic")("Signs that a disk needs BASIC off: it hangs while starting or shows a half-drawn screen. Most disks for the old 400 / 800 need it; .xex files switch BASIC off by themselves."),
 

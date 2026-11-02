@@ -63,6 +63,7 @@
 #include "c64.h"
 #include "shot.h"
 #include "atari.h"
+#include "reset.h"
 
 #define MAXE       320
 #define LIST_ROW   2
@@ -113,7 +114,9 @@ static uint32_t key_events(void)
 {
     const uint32_t rep_keys = K_UP | K_DOWN | K_LEFT | K_RIGHT | K_PGUP | K_PGDN;
     uint32_t now = KEYS;
-    uint32_t ev  = now & ~kprev;
+    uint32_t ev;
+    if (now == 0xFFFFFFFFu) return 0;                       /* a gone FPGA (reconfiguring) reads all ones */
+    ev = now & ~kprev;
 
     if (ev & rep_keys)
         t_rep = TIMER + REP_DELAY;
@@ -337,7 +340,7 @@ static void draw_menu(void)
         osd_text(LIST_ROW + LIST_LINES - 1, 0, " (only the first 320 entries)", OSD_COLS, 0);
     if (!speed_text(line) && !note_text(line) && !status_text(line)) u_strcpy(line, err_line);
     osd_text(22, 0, line, OSD_COLS, 0);
-    osd_text(23, 0, machine_atari ? "Ent=boot Shift=swap Alt+F4=noBAS"  /* + Enter; Alt+F4: OPTION held, BASIC off */
+    osd_text(23, 0, machine_atari ? "Ent=load Shift+Ent=swap disk"      /* .atr: Enter asks F1 no BASIC / F2 BASIC */
                                   : "Ent=load Esc=up 5=stop F12=exit", OSD_COLS, 1);
 }
 
@@ -650,6 +653,35 @@ static void joy_draw(void)
     osd_text(23, 0, "Enter=select  F4/Esc=exit", OSD_COLS, 1);
 }
 
+/* LTari, booting an .atr (an .xex decides itself: our loader switches BASIC off): three lines on the OSD, F1 = no BASIC (OPTION held at the
+ * cold start), F2 = with BASIC (as a real XL); 0 / 1, -1 = Esc (nothing loaded) */
+static int basic_prompt(void)
+{
+    uint8_t  ev[3], mods;
+    uint32_t r, r2;
+    int      i, n, a = -2;
+    raw_events(ev, &mods);                                  /* keys already held do not count */
+    osd_clear();
+    osd_text(10, 0, " How do you want to load it:", OSD_COLS, 1);
+    osd_text(11, 0, "   <F1> No BASIC", OSD_COLS, 1);
+    osd_text(12, 0, "   <F2> with BASIC", OSD_COLS, 1);
+    while (a == -2) {
+        n = raw_events(ev, &mods);
+        for (i = 0; i < n && a == -2; i++)
+            a = ev[i] == 0x3A ? 0 : ev[i] == 0x3B ? 1 : ev[i] == 0x29 ? -1 : -2;   /* F1, F2, Esc */
+    }
+    do {                                                    /* released first: F2 is also the snapshot key */
+        do { r = KEYRAW; r2 = KEYRAW; } while (r != r2);
+        for (i = 0, n = 0; i < 3; i++) {
+            uint8_t c = (uint8_t)(r >> (8 * i));
+            if (c == 0x3A || c == 0x3B || c == 0x29) n = 1;
+        }
+    } while (n);
+    raw_events(ev, &mods);
+    osd_clear();
+    return a;
+}
+
 static void menu_keys(uint32_t k)
 {
     if (k & K_MENU) { menu_close(); return; }
@@ -694,12 +726,13 @@ static void menu_keys(uint32_t k)
             }
             else if (e->atr) {                                           /* LTari: D1:, boot from it */
                 FFILE    af;
-                int      r, swap;
+                int      r, swap, b = 1;
                 uint32_t kr, kr2;
                 do { kr = KEYRAW; kr2 = KEYRAW; } while (kr != kr2);
                 swap = (kr >> 24) & 0x22;                                /* Shift + Enter: change the disk only */
+                if (!swap && (b = basic_prompt()) < 0) return;           /* Esc: back to the browser */
                 ff_open(&af, e->clus, e->size);
-                r = at_atr_mount(&af, e->name, e->ro, !swap);
+                r = at_atr_mount(&af, e->name, e->ro, !swap, b);
                 if (r == 0)             note(swap ? "Disk changed, D1: " : "D1: ", e->name);
                 else if (r == AT_EBAD)  note("Not an .atr: ", e->name);
                 else                    note("Card error", "");
@@ -905,18 +938,18 @@ static void screenshot(void)
 
 /* the Print Screen key (USB HID 0x46) in the raw keyboard report, polled every 20 ms;
    1 on a new press */
+static uint32_t prt_t;
+static int      prt_was;
 static int prtsc_pressed(void)
 {
-    static uint32_t t;
-    static int      was;
     uint32_t r, r2;
     int      now;
-    if (TIMER - t < 20 * CLK_PER_MS) return 0;
-    t = TIMER;
+    if (TIMER - prt_t < 20 * CLK_PER_MS) return 0;
+    prt_t = TIMER;
     do { r = KEYRAW; r2 = KEYRAW; } while (r != r2);
     now = ((r >> 16) & 0xFF) == 0x46 || ((r >> 8) & 0xFF) == 0x46 || (r & 0xFF) == 0x46;
-    if (now && !was) { was = 1; return 1; }
-    was = now;
+    if (now && !prt_was) { prt_was = 1; return 1; }
+    prt_was = now;
     return 0;
 }
 
@@ -1046,7 +1079,8 @@ static void menu_espupd(const DIRENT *d)
 static void menu_main(void)
 {
     DIRENT d;
-    int    shown = 0, k, i;
+    int    shown = 0, i, bt_r = 0;
+    uint32_t k, t_chk, t_draw = 0;
     char   line[96], *p;
     uint8_t b[4];
     static const char hx[] = "0123456789ABCDEF";
@@ -1060,7 +1094,32 @@ static void menu_main(void)
     }
     *p = 0;
     log_line(line);
+    t_chk = TIMER - 2000 * CLK_PER_MS;                      /* the checks run at once */
     while (menu_present()) {
+        /* F3: the Bluetooth menu on the OSD (the menu takes no keys while the OSD is on) */
+        k = key_events();
+        if (!menu_present()) break;                         /* a machine is starting: no more menu */
+        if (bt_on) {
+            bt_r = bt_keys(k);
+            if (!bt_r) {
+                bt_on = 0;
+                bt_close();
+                while (KEYS & (CLOSE_KEYS | K_BT)) ;        /* the menu must not see Enter */
+                osd_clear();
+                osd_hide();
+                shown = 0;                                  /* "no machines" is drawn again */
+            }
+        } else if (k & K_BT) {
+            bt_on = 1;
+            bt_open();
+        }
+        if (bt_service() || k || bt_r == 2 || TIMER - t_draw > 200 * CLK_PER_MS) {
+            if (bt_on) bt_draw();
+            t_draw = TIMER;
+        }
+        bt_r = 0;
+        if (bt_on || TIMER - t_chk < 2000 * CLK_PER_MS) { wait_ms(20); continue; }
+        t_chk = TIMER;
         if (sd_init() == 0 && fat_mount() == FAT_OK && espupd_find(&d) > 0 && link_alive())
             menu_espupd(&d);
         if (sd_ready() && upd_find(&d) > 0) {
@@ -1078,8 +1137,8 @@ static void menu_main(void)
             osd_hide();
             shown = 0;
         }
-        wait_ms(2000);
     }
+    if (bt_on) { bt_on = 0; bt_close(); }
 }
 
 int main(void)
@@ -1129,4 +1188,50 @@ int main(void)
             t_draw = TIMER;
         }
     }
+}
+
+/* every module back to the state after a start (esp_hw.cpp, before the loader runs for the next
+ * machine: no ESP32 restart, so the Bluetooth connection stays) */
+void loader_reset_all(void)
+{
+    u_memset(&ent, 0, sizeof ent);
+    u_memset(&nent, 0, sizeof nent);
+    u_memset(&cur, 0, sizeof cur);
+    u_memset(&top, 0, sizeof top);
+    u_memset(&truncated, 0, sizeof truncated);
+    u_memset(&mounted, 0, sizeof mounted);
+    u_memset(&menu, 0, sizeof menu);
+    u_memset(&closing, 0, sizeof closing);
+    u_memset(&list_folders, 0, sizeof list_folders);
+    u_memset(&list_stale, 0, sizeof list_stale);
+    u_memset(&bt_on, 0, sizeof bt_on);
+    u_memset(&joy_on, 0, sizeof joy_on);
+    u_memset(&joy_cur, 0, sizeof joy_cur);
+    u_memset(&dir_clus, 0, sizeof dir_clus);
+    u_memset(&path, 0, sizeof path);
+    u_memset(&came_from, 0, sizeof came_from);
+    u_memset(&tf, 0, sizeof tf);
+    u_memset(&p_state, 0, sizeof p_state);
+    u_memset(&p_tzx, 0, sizeof p_tzx);
+    u_memset(&p_stop, 0, sizeof p_stop);
+    u_memset(&p_block, 0, sizeof p_block);
+    u_memset(&p_name, 0, sizeof p_name);
+    u_memset(&kprev, 0, sizeof kprev);
+    u_memset(&t_rep, 0, sizeof t_rep);
+    u_memset(&err_line, 0, sizeof err_line);
+    u_memset(&speed_t, 0, sizeof speed_t);
+    u_memset(&note_line, 0, sizeof note_line);
+    u_memset(&note_t, 0, sizeof note_t);
+    u_memset(&rprev, 0, sizeof rprev);
+    u_memset(&upd_t, 0, sizeof upd_t);
+    u_memset(&prt_t, 0, sizeof prt_t);
+    u_memset(&prt_was, 0, sizeof prt_was);
+    at_reset();
+    c64_reset();
+    save_reset();
+    shot_reset();
+    snap_reset();
+    tape_reset();
+    bt_reset();
+    fat_reset();
 }

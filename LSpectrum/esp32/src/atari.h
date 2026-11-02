@@ -12,9 +12,10 @@
 #define AT_ECART  -34       /* snapshot needs a cartridge that is not in */
 
 /* Insert an .atr into D1: (ro: read only, e.g. the file's read-only attribute). boot = 1: cold-start
- * the Atari (cartridge out), so the OS boots from it; boot = 0: only change the disk (a program asking
- * for the next disk), the Atari runs on. 0, AT_EBAD, FAT_EIO. */
-int  at_atr_mount(const FFILE *f, const char *name, int ro, int boot);
+ * the Atari (cartridge out), so the OS boots from it, with BASIC if basic, else with OPTION held
+ * until the first SIO command; boot = 0: only change the disk (a program asking for the next disk),
+ * the Atari runs on. 0, AT_EBAD, FAT_EIO. */
+int  at_atr_mount(const FFILE *f, const char *name, int ro, int boot, int basic);
 /* Run an .xex: served as a read-only boot disk (our loader + the file), Atari cold-started.
  * 0, AT_EBAD (no $FFFF header), FAT_EIO. */
 int  at_xex_mount(const FFILE *f, const char *name);

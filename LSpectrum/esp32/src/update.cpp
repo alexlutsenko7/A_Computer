@@ -34,12 +34,14 @@ static const uint32_t slot[4] = { 0x080000u, 0x180000u, 0x280000u, 0x300000u }; 
 struct ubuf {
     uint8_t  hdr[HDR];
     uint8_t  sec[SECTOR];
+    uint8_t  chk[SECTOR];       /* the flash's sector */
     uint32_t crc_tab[256];
     char     label[65];
 };
 static struct ubuf *ub;
 #define hdr     (ub->hdr)
 #define sec     (ub->sec)
+#define chk     (ub->chk)
 #define crc_tab (ub->crc_tab)
 #define label   (ub->label)
 
@@ -121,12 +123,8 @@ int upd_check(const DIRENT *d, void (*progress)(uint32_t done, uint32_t total))
 /* the flash sector at a equals sec[] */
 static int same(uint32_t a)
 {
-    uint32_t i;
-    fl_addr(0x03, a);
-    for (i = 0; i < SECTOR; i++)
-        if (fl_xfer(0) != sec[i]) { fl_end(); return 0; }
-    fl_end();
-    return 1;
+    fl_read(a, chk, SECTOR);
+    return u_memcmp(chk, sec, SECTOR) == 0;
 }
 
 /* erase the sector at a and program sec[] into it (pages that are all FF stay erased) */
@@ -140,10 +138,7 @@ static int burn(uint32_t a)
     for (p = 0; p < SECTOR; p += 256) {
         for (i = 0; i < 256 && sec[p + i] == 0xFF; i++) ;
         if (i == 256) continue;
-        fl_wren();
-        fl_addr(0x02, a + p);
-        for (i = 0; i < 256; i++) fl_send(sec[p + i]);
-        fl_end();
+        fl_prog(a + p, sec + p);
         if (fl_wait(PROG_MS)) return UPD_EFLASH;
     }
     return 0;
