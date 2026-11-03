@@ -108,6 +108,7 @@ its notice for the bitstream is in [Appendix A](#appendix-a-notices-for-the-bits
 | Area | Files | What |
 |---|---|---|
 | I/O board | `Extra_PCB_CycloneIV/` | KiCad 10 project, revision 1 (ordered 2026-10-14): VGA DAC, two DB9, audio, keyboard module, microSD and ESP32 sockets; JLCPCB order files |
+| I/O board revision 2 | `Extra_PCB_CycloneIV_R2/` | KiCad 10 project, 4 layers (ordered 2026-11-03): ESP32-WROVER-E, CP2102N on USB-C, CH9350L + USB-A keyboard, 5 V USB-A, VGA DAC, two DB9, audio, microSD; JLCPCB order files, generator / routing scripts |
 | Machine menu | `AMenu/` | Factory image at flash 0: menu screen, joystick / keyboard choice, remote update into a machine, error report after a failed start |
 | SDRAM controller | `LSpectrum/rtl/sdram_ram.v`, `DDR_TEST/` | Byte / 16-bit RAM over the W9825G6KH at up to 112 MHz, open-row policy, refresh; tested on hardware (`DDR_TEST`, `docs/SDRAM_CONTROLLER.md`) |
 | Shared infrastructure | `LSpectrum/rtl/` (`rom_loader`, `flash_if`, `tape_loader`, `esp_link`, `bt_i2s`, `sd_dac`, `vga_*`) | Flash ROM loader, ESP32 SPI link and register bus, on-screen display, Bluetooth audio I2S, sigma-delta audio, video clock switch |
@@ -306,7 +307,10 @@ C64 ROMs as in 4.5.
 
 ### 4.8 Hardware
 
-The I/O board (revision 1) is `Extra_PCB_CycloneIV/`: KiCad 10 project and the JLCPCB order files in `jlcpcb/`
+The I/O board revision 2 is `Extra_PCB_CycloneIV_R2/`: everything on the board (ESP32 module, USB-C console and 5 V
+input, CH9350L keyboard interface), fully assembled by JLCPCB from `jlcpcb/` (`python3 tools/jlc_export.py` rebuilds
+it), same J1 and wiring to U8 as revision 1. Its ESP32 firmware needs the control UART on IO27 / IO21 (the WROVER's
+IO16 / IO17 belong to its PSRAM). The I/O board (revision 1) is `Extra_PCB_CycloneIV/`: KiCad 10 project and the JLCPCB order files in `jlcpcb/`
 (Gerber zip, BOM, CPL; J1, the ESP32 dev board and the keyboard module are fitted by hand). Its README has the
 J1-to-U8 wiring (each pin pair swapped). The FPGA pin assignments are in each `.qsf`; `docs/BOARD_PINOUT.md` maps the core board's headers to FPGA pins and
 describes the I/O board wiring (VGA, two DB9 joysticks, audio, keyboard UART, ESP32 link). `docs/L_Build_and_Install.docx`

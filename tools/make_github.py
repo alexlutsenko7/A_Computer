@@ -12,13 +12,14 @@ ROOT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else '.')
 DST = os.path.join(ROOT, 'github')
 
 TOP = ['AMenu', 'LSpectrum', 'L64', 'LTari', 'T65', 'T80', 'DDR_TEST', 'VGA_TEST', 'docs', 'tests', 'tools',
-       'Extra_PCB_CycloneIV', 'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md']
+       'Extra_PCB_CycloneIV', 'Extra_PCB_CycloneIV_R2', 'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md']
 
 SKIP_DIRS = {'db', 'incremental_db', 'greybox_tmp', '.qsys_edit', '__pycache__', 'node_modules', '.git',
              'roms_local',          # C64 ROMs (copyright)
              'ref',                 # LTari/ref: Altirra manual PDF + files from atari800
              'syn_check',           # LTari scratch synthesis check
-             '.history', 'Extra_PCB_CycloneIV-backups',   # KiCad local history and backups
+             '.history', 'Extra_PCB_CycloneIV-backups', 'Extra_PCB_CycloneIV_R2-backups',   # KiCad history / backups
+             'archive',             # Extra_PCB_CycloneIV_R2/archive: earlier local states (the repository has the history)
              'old'}                 # Extra_PCB_CycloneIV/old: a superseded routing
 SKIP_DIR_GLOBS = ['work*']          # Questa libraries, host-test work folders
 
@@ -38,7 +39,8 @@ SKIP_PATH_RE = [r'(^|/)sim/[^/]*\.png$', r'(^|/)sim/.*\.bmp$', r'^tests/.*/outpu
 KEEP_OUTPUT = ['*.sof', 'L.jic']             # (LUPDATE.BIN and L_loader.jic are made below from the public image)
 
 # own documents that are PDFs (the '*.pdf' rule above is for third-party files)
-KEEP_PDF = ['Extra_PCB_CycloneIV/Extra_PCB_CycloneIV.pdf']   # the I/O board's schematic, plotted by KiCad
+KEEP_PDF = ['Extra_PCB_CycloneIV/Extra_PCB_CycloneIV.pdf',         # the I/O boards' schematics, plotted by KiCad
+            'Extra_PCB_CycloneIV_R2/Extra_PCB_CycloneIV_R2.pdf']
 
 def skip_file(rel, name):
     if rel in KEEP_PDF:

@@ -1065,3 +1065,29 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   jlcpcb/ Gerbers + drill + BOM + CPL, tools/). Left out: .history, backups, old/, .kicad_prl, routing .dsn / .ses.
   KiCad-library footprints noted as CC-BY-SA 4.0 + library exception. make_github.py also gives changed text files
   their committed line endings (Quartus rewrites .qsf / .qpf with CRLF).
+- (2026-11-02) I/O board revision 2 started (user): Extra_PCB_CycloneIV_R2/ (KiCad 10, ANSI B schematic generated from
+  tools/design.py; ERC clean, netlist checked). ESP32-WROVER-E-N16R8 module (JLCPCB C529589; PSRAM for folder lists
+  beyond 320 entries; control UART moves to IO27 / IO21 because IO16 / IO17 drive the PSRAM, firmware picks the pins
+  with psramFound()), CP2102N + auto-reset on USB-C (also the 5 V input, SS34 to +5V, which feeds the core board via
+  J1 63/64), CH9350L with a right-angle USB-A for the keyboard and a second, 5 V-only USB-A beside the VGA socket for a
+  VGA2HDMI dongle, LDL1117S33R LDO; VGA, joysticks, microSD, audio and J1 as revision 1. WROVER-E footprint from the
+  datasheet v2.4 land pattern (19 pads per side). Next: part stock check, placement (user review before routing).
+- (2026-11-03) I/O board revision 2 (Extra_PCB_CycloneIV_R2): schematic wired + edited in KiCad; PCB placed in revision
+  1's outline (84.1 x 83.4 mm; edges: top DB9 x2 + audio jack, left USB 2 (5 V) + VGA + microSD, right ESP32 antenna +
+  USB-C + USB 1 keyboard, bottom J1); 4 layers (In1 GND plane, In2 +3V3 plane), fully routed (FreeRouting + hand work in
+  the USB-C / CP2102N area; CP2102N rotated 180 deg). Antenna: 15 mm copper keep-out along the edge, module 1 mm inside
+  the edge, no board cut-outs. Review: SS34 dropped (USB-C VBUS = +5V; supply from a self-powered hub or the core board,
+  not both), polyfuses dropped, copper-edge 0.3 mm, silk tidied, R40 22k, LCSC table + 4-layer JLCPCB export
+  (tools/jlc_export.py). Still to do before the first flash: ESP32 firmware control UART on IO27 / IO21 when PSRAM is
+  found (GPIO16/17 are the WROVER's PSRAM pins).
+- (2026-11-03) I/O board revision 2 ordered at JLCPCB (5 boards, $349). Ordered files in
+  Extra_PCB_CycloneIV_R2/archive/2026-11-03_as_ordered/ (board, schematic, jlcpcb/, and JLCPCB's BOM as ordered: USB-A J8 / J9 =
+  SOFNG USB-302-T, C112456, chosen by the user in JLCPCB's BOM step). Afterwards: silkscreen references kept 0.8 mm
+  clear of the large connectors / ESP32 (the VGA housing covered labels in JLCPCB's preview). Next revision, Basic-part
+  swaps (about $3 per extended line per order): DAC 523 / 1.05k / 2.1k / 4.22k -> 510 / 1k / 2k / 4.7k (C23193 /
+  C21190 / C22975 / C23162), 6p8 -> 10p (C1634), 68R -> 100R (C22775), 47.5k -> 47k (C25819); optional
+  LDL1117S33R -> AMS1117-3.3 (C6186) and PTS810 -> TS-1187A-B-A-B (C318884, new footprint).
+- (2026-11-03) I/O board revision 2 after the order: Basic-part swaps applied (DAC 510 / 1k / 2k / 4.7k, 10p VGA caps,
+  100R AY filter, 47k VBUS divider; BOM 32 lines), USB-A = SOFNG USB-302-T (C112456, datasheet checked: same hole
+  pattern as the DS1095 footprint), silkscreen kept off the connector bodies. Old states moved to
+  Extra_PCB_CycloneIV_R2/archive/. LDL1117 and the PTS810 buttons kept (Extended).

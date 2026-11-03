@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "Extra_PCB_CycloneIV_R2")(type "KiCad")(uri "${KIPRJMOD}/Extra_PCB_CycloneIV_R2.pretty")(options "")(descr "Extra_PCB_CycloneIV_R2 local footprints"))
+)

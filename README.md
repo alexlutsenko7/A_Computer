@@ -51,6 +51,7 @@ yourself): [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md).**
 |---|---|
 | QMTECH Cyclone IV core board | EP4CE15F23C8N, 50 MHz oscillator, W9825G6KH-6 SDRAM (32 MB), W25Q64 configuration flash |
 | I/O board (own design, `Extra_PCB_CycloneIV/`) | 4-bit-per-colour VGA DAC, two Kempston DB9, 3.5 mm audio jack (AY + beeper, line level), USB keyboard module (UART, 3.3 V), microSD socket, sockets for the ESP32; wired to the core board's U8 |
+| I/O board revision 2 (own design, `Extra_PCB_CycloneIV_R2/`, ordered 2026-11-03) | as revision 1, with everything on the board: ESP32-WROVER-E module, CP2102N USB-C console / 5 V input, CH9350L with a USB-A keyboard socket, a second USB-A (5 V for a VGA2HDMI dongle); 4 layers; same J1 to the core board's U8 |
 | ESP32-WROOM-32 dev board | system controller on the I/O board: SD card, tape loader, Bluetooth audio (`LSpectrum/esp32/README.md`) |
 
 Pin assignments: `docs/BOARD_PINOUT.md`.
@@ -68,6 +69,7 @@ Pin assignments: `docs/BOARD_PINOUT.md`.
 | `DDR_TEST/` | stand-alone SDRAM controller + memory test (the controller used by LSpectrum) |
 | `VGA_TEST/` | stand-alone VGA test (colour bars, both video modes) |
 | `Extra_PCB_CycloneIV/` | **the I/O board, revision 1**: KiCad 10 project (schematic + PDF, routed 2-layer layout, project symbols / footprints), JLCPCB order files (`jlcpcb/`: Gerbers, drill, BOM, CPL), wiring to the core board (`README.md`) |
+| `Extra_PCB_CycloneIV_R2/` | **the I/O board, revision 2**: KiCad 10 project (schematic + PDF, routed 4-layer layout with GND / +3V3 planes, project footprints incl. the ESP32-WROVER-E), JLCPCB order files (`jlcpcb/`), generator / routing scripts (`tools/`), `README.md` |
 | `docs/` | design notes, user documents, data sheets (see below) |
 
 ## Building
@@ -178,7 +180,7 @@ The project's own files are under the MIT licence (`LICENSE`). Third-party parts
 | ROM images in `LSpectrum/roms48k.hex` and `LSpectrum/sim/roms.mem` | ZX Spectrum 128 ROMs (c) Amstrad, distributed for emulator use with permission, copyright messages unchanged. Retroleum's DiagROM is not included (its licence is not known): the published image has a copy of the 48K BASIC ROM in that slot; `LSpectrum/tools/mk_roms48k.py` builds the image with your own copy |
 | `LTari/roms/` (AltirraOS, Altirra BASIC, Avery Lee) | permissive notice: copying and distribution permitted, notice preserved |
 | Commodore 64 / 1541 ROMs | **not included**: copyrighted; bring your own (`L64/README.md`) |
-| `Extra_PCB_CycloneIV/Extra_PCB_CycloneIV.pretty/`: footprints adapted from the KiCad libraries (D-Sub 15 HD, pin headers) | CC-BY-SA 4.0 with the KiCad library exception (designs made with them, the board files and Gerbers included, are not bound by it); the rest of the board is MIT |
+| `Extra_PCB_CycloneIV/Extra_PCB_CycloneIV.pretty/` and `Extra_PCB_CycloneIV_R2/Extra_PCB_CycloneIV_R2.pretty/`: footprints adapted from the KiCad libraries (D-Sub 15 HD, pin headers); revision 2's ESP32-WROVER-E footprint is own work from Espressif's land pattern | CC-BY-SA 4.0 with the KiCad library exception (designs made with them, the board files and Gerbers included, are not bound by it); the rest of the boards is MIT |
 
 Because of the GPL-3 parts, the LSpectrum and L64 bitstreams (and `L.jic`) are GPL-3 works. Details, the
 notices the BSD-style cores require, and what was changed in external code: [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md);
