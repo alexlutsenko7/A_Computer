@@ -34,10 +34,10 @@ INSTALL = dict(
         ], [45, 55]),
         ('note', 'An update never touches the C64 ROMs you installed (section 4) and never your files on the SD card.'),
         ('h1', '4. Software not included'),
-        ('p', "The board set and this folder contain **no games and no other programs**, and **not the Commodore 64 ROMs**. Get them yourself, from the internet or from your own collection, and copy them to the SD card. Please respect the copyright: use only software you are allowed to use. Many old programs may be shared freely with their authors' permission, others may not."),
+        ('p', "The board set and this folder contain **no games and no other programs**, and **not the Commodore 64 ROMs**. Get them yourself and copy them to the SD card. Please respect the copyright: use only software and ROMs you are allowed to use; a game is not free just because it is old. Many old programs may be shared freely with their authors' permission, others may not."),
         ('table', ['Machine', 'Needs on the SD card', 'Where to look (examples)'], [
             ['LSpectrum', 'Nothing to start. Programs: .tap, .tzx, .z80', 'Spectrum Computing (spectrumcomputing.co.uk), World of Spectrum archives'],
-            ['L64', '**The C64 ROMs (once, see below).** Programs: .d64, .prg, .t64, .tap', 'The C64 ROM files come with the VICE emulator (vice-emu.sourceforge.io). Programs: CSDb (csdb.dk), Commodore archives'],
+            ['L64', '**The C64 ROMs (once, see below).** Programs: .d64, .prg, .t64, .tap', 'Use copies you are entitled to: read from a C64 and 1541 you own, or licensed ones (for example in Cloanto\'s C64 Forever). Programs: CSDb (csdb.dk), Commodore archives'],
             ['LTari', 'Nothing to start. Programs: .atr, .xex, .car', 'Atarimania (atarimania.com), Atari archives'],
         ], [16, 38, 46]),
         ('h2', 'Installing the Commodore 64 ROMs (once)'),

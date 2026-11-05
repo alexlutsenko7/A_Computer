@@ -8,8 +8,8 @@ Layout (c64_system.v, loaded from flash 0x580000 to SDRAM 0x10000 by rom_loader)
   0x2000  BASIC   8 KB  (basic.901226-01.bin)
   0x4000  KERNAL  8 KB  (kernal.901227-03.bin)
   0x6000  FF      8 KB
-  0x8000  1541    16 KB (DOS 2.6, e.g. VICE dos1541-325302-01+901229-05.bin), optional (else FF)
-The Commodore ROMs are not part of this project (copyright): bring your own, e.g. from VICE.
+  0x8000  1541    16 KB (DOS 2.6, e.g. dos1541-325302-01+901229-05.bin), optional (else FF)
+The Commodore ROMs are not part of this project (copyright): bring copies you are entitled to use.
 c64.cpp (ESP32) builds the same image from /ROMS/C64/ on the SD card.
 
   python3 mk_c64rom.py KERNAL BASIC CHAR [D1541] OUT    OUT.hex = Intel HEX for a .cof (local tests),

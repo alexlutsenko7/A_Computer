@@ -34,10 +34,10 @@ INSTALL = dict(
         ], [45, 55]),
         ('note', 'Una actualización nunca toca las ROM del C64 que usted instaló (sección 4), ni sus archivos de la tarjeta SD.'),
         ('h1', '4. Software no incluido'),
-        ('p', 'El juego de placas y esta carpeta **no contienen juegos ni otros programas**, ni **las ROM del Commodore 64**. Consígalos usted mismo, de Internet o de su propia colección, y cópielos a la tarjeta SD. Respete los derechos de autor: use solo software que tenga permiso para usar. Muchos programas antiguos pueden compartirse libremente con permiso de sus autores; otros no.'),
+        ('p', 'El juego de placas y esta carpeta **no contienen juegos ni otros programas**, ni **las ROM del Commodore 64**. Consígalos usted mismo y cópielos a la tarjeta SD. Respete los derechos de autor: use solo software y ROM que tenga permiso para usar; un juego no es libre solo por ser antiguo. Muchos programas antiguos pueden compartirse libremente con permiso de sus autores; otros no.'),
         ('table', ['Máquina', 'Necesita en la tarjeta SD', 'Dónde buscar (ejemplos)'], [
             ['LSpectrum', 'Nada para arrancar. Programas: .tap, .tzx, .z80', 'Spectrum Computing (spectrumcomputing.co.uk), archivos de World of Spectrum'],
-            ['L64', '**Las ROM del C64 (una vez, ver abajo).** Programas: .d64, .prg, .t64, .tap', 'Los archivos de ROM del C64 vienen con el emulador VICE (vice-emu.sourceforge.io). Programas: CSDb (csdb.dk), archivos de Commodore'],
+            ['L64', '**Las ROM del C64 (una vez, ver abajo).** Programas: .d64, .prg, .t64, .tap', 'Use solo copias que tenga derecho a usar: leídas de un C64 y una 1541 de su propiedad, o con licencia (por ejemplo, en C64 Forever de Cloanto). Programas: CSDb (csdb.dk), archivos de Commodore'],
             ['LTari', 'Nada para arrancar. Programas: .atr, .xex, .car', 'Atarimania (atarimania.com), archivos de Atari'],
         ], [16, 38, 46]),
         ('h2', 'Instalar las ROM del Commodore 64 (una vez)'),

@@ -121,7 +121,7 @@ const children = [
   h1("Usage cases"),
 
   h2("First start: the ROMs"),
-  p("The Commodore ROMs are copyrighted and are not part of this project, so you supply your own files (for example those that come with the VICE emulator)."),
+  p("The Commodore ROMs are copyrighted and are not part of this project, so you supply copies you are entitled to use: read from a C64 and 1541 you own, or licensed ones (for example from Cloanto's C64 Forever)."),
   stepOf("roms")("On the SD card, make the folder **/ROMS/C64/** and put in it the KERNAL (8 KB), BASIC (8 KB) and character ROM (4 KB): file names starting with **KERNAL**, **BASIC** and **CHAR**, e.g. kernal-901227-03.bin, basic-901226-01.bin, chargen-901225-01.bin."),
   stepOf("roms")("For the disk drive add the 1541 DOS ROM (16 KB), a name starting with **DOS1541** or **1541**. Without it there is no drive (DEVICE NOT PRESENT)."),
   stepOf("roms")("Start L64 from the machine menu. The ESP32 finds no ROMs in the flash, writes them there (a few seconds, shown on screen) and restarts the C64. From then on the C64 starts without the card. If the files are missing, the screen says where to put them: add them and press KEY0."),

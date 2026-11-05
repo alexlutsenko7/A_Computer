@@ -139,7 +139,7 @@ These are needed or useful but may not be published here. Get them yourself:
 
 | What | Why | Where it is needed |
 |---|---|---|
-| **Commodore 64 ROMs**: KERNAL (8 KB), BASIC (8 KB), character ROM (4 KB), **1541 DOS** (16 KB) | (c) Commodore | L64. Put them on the SD card (section 4.5); the ESP32 installs them into the flash. VICE and other licensed emulator distributions include them. |
+| **Commodore 64 ROMs**: KERNAL (8 KB), BASIC (8 KB), character ROM (4 KB), **1541 DOS** (16 KB) | (c) Commodore | L64. Put them on the SD card (section 4.5); the ESP32 installs them into the flash. Use copies you are entitled to: read from a C64 and 1541 you own, or licensed ones (for example Cloanto's C64 Forever). |
 | **Retroleum DiagROM** (ZX Spectrum diagnostics, 16 KB) | licence not known | Optional: started with F1 at LSpectrum power-up. The published ROM image has a copy of the 48K BASIC ROM in that slot instead (section 4.2, step 2). |
 | ESP32-A2DP library | separate project | ESP32 firmware build (section 4.4) |
 | Datasheets and schematics | third-party documents | `docs/vendor/README.md` lists them and their publishers |
@@ -148,7 +148,7 @@ These are needed or useful but may not be published here. Get them yourself:
 
 The C64 files named exactly:
 
-| File name on the card starts with | Size | Typical file (as in VICE) |
+| File name on the card starts with | Size | Typical file name (Commodore part numbers) |
 |---|---|---|
 | `KERNAL` | 8,192 bytes | `kernal-901227-03.bin` |
 | `BASIC` | 8,192 bytes | `basic-901226-01.bin` |

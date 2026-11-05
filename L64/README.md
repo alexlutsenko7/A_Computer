@@ -37,8 +37,8 @@ The C64 keyboard is mapped by position on a US layout:
 
 ## ROMs
 
-The Commodore ROMs are copyrighted, so they are not part of this project. Put your own ROM files (for
-example from VICE) on the SD card in **`/ROMS/C64/`**. Each name must start with `KERNAL`, `BASIC` or `CHAR`;
+The Commodore ROMs are copyrighted, so they are not part of this project. Put copies you are entitled to use
+(read from a C64 and 1541 you own, or licensed ones, for example from Cloanto's C64 Forever) on the SD card in **`/ROMS/C64/`**. Each name must start with `KERNAL`, `BASIC` or `CHAR`;
 the sizes are 8, 8 and 4 KB (`kernal-901227-03.bin`, `basic-901226-01.bin`, `chargen-901225-01.bin`).
 
 For the disk drive, add the 1541 DOS ROM (16 KB, name starting `DOS1541` or `1541`, e.g.
