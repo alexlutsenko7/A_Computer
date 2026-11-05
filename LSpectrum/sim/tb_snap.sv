@@ -9,7 +9,7 @@
 //          (compared with the SDRAM model) and writes screen bytes the program
 //          never touches (checked against the video shadow at the end)
 //   run 2  as run 1, and every freeze also restores everything it read: register
-//          words -> DIR (PC - 1 in HALT, as esp32/src/snap.cpp) -> LOAD (the T80 is reset),
+//          words -> DIR (PC - 1 in HALT, as esp32_v2/src/snap.cpp) -> LOAD (the T80 is reset),
 //          7FFD/border/MIC/beeper, AY registers and select
 // Runs 1 and 0 must end identical (RAM incl. R stored by the program, registers,
 // AY). Run 2 must too, except what depends on the exact interrupt timing (each

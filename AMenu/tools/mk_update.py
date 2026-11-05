@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """mk_update.py -- LUPDATE.BIN, the flash update the ESP32 installs from the SD card
-(LSpectrum/esp32/src/update.cpp), and the loader .jic for boards shipped without machines.
+(LSpectrum/esp32_v2/src/update.cpp), and the loader .jic for boards shipped without machines.
 
   python3 tools/mk_update.py [--cof L.cof] [--out output_files/LUPDATE.BIN] [--label TEXT]
       builds output_files/L_raw.pof and .rpd from the .cof (the same images and ROMs as L.jic)

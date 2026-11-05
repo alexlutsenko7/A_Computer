@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """mk_xexboot.py OUT.h [OUT.mem] -- LTari .xex boot loader (our own 6502 code).
 
-The ESP32 (LSpectrum/esp32/src/atari.cpp) serves an .xex as a read-only disk: sectors 1-3 = this
+The ESP32 (LSpectrum/esp32_v2/src/atari.cpp) serves an .xex as a read-only disk: sectors 1-3 = this
 loader, sectors 4.. = the .xex file, 128 bytes per sector. The OS boots the loader to $0700 and
 calls $0706; the loader then:
   - switches BASIC off (PORTB bit 1, BASICF) so $A000-$BFFF is RAM,

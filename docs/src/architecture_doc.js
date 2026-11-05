@@ -66,7 +66,7 @@ C.push(table([3000, 6360], ["Item", "Value"], [
   ["Board", "QMTECH Cyclone IV core board: 50 MHz oscillator, W9825G6KH-6 SDRAM (32 MB, 16 bit), W25Q64 configuration flash, 2 buttons, 1 LED"],
   ["I/O board", "Extra_PCB_CycloneIV, wired to the core board's U8: VGA (4 bits per colour), AY + beeper audio on a 3.5 mm jack, two Kempston DB9, USB keyboard module (UART), microSD socket and the ESP32"],
   ["CPU", "T80 (Z80, VHDL, from the MiSTer ZX Spectrum core), 3.5469 MHz or 28 MHz"],
-  ["System controller", "ESP32-WROOM-32 DevKit with the Arduino sketch LSpectrum/esp32/: the microSD card on its SPI port, SD tape loader firmware (C), A2DP Bluetooth source fed with the sound over I2S; SPI link (8 MHz) to the FPGA"],
+  ["System controller", "ESP32-WROOM-32 DevKit with the Arduino sketch LSpectrum/esp32_v2/: the microSD card on its SPI port, SD tape loader firmware (C), A2DP Bluetooth source fed with the sound over I2S; SPI link (8 MHz) to the FPGA"],
   ["Resources used", "7,469 logic elements (48 %), 19 of 56 M9K block RAMs (34 %), 2 PLLs, 84 pins"],
   ["Timing", "worst setup slack +0.42 ns (112 MHz, slow 85 °C corner), worst hold +0.16 ns, no negative slack at any corner, no unconstrained paths"],
   ["Tools", "Quartus Prime 25.1std Lite, Questa FSE, Arduino core esp32 3.3.2"],
@@ -224,7 +224,7 @@ C.push(table([2400, 6960], ["Command", "Meaning"], [
 ]));
 C.push(gap());
 C.push(p("The next command starts in the same clock as the previous one ends, so there are no gaps; settings are taken in while a pulse runs and take effect exactly at its end, so they never show on the line. If the ESP32 is late, the delay is credited to the next pulse (up to 255 T-states), so edges stay on time."));
-C.push(h2("9.3 Firmware (LSpectrum/esp32/src/, C)"));
+C.push(h2("9.3 Firmware (LSpectrum/esp32_v2/src/, C)"));
 C.push(b("**Platform:** the FPGA's registers appear as proxy objects whose reads and writes go over the link (hw.h, esp_hw.cpp); pulse commands, OSD text and memory writes are collected into one frame each; SD sectors come from the ESP32's SD card driver. The loader runs as a task next to the Bluetooth stack."));
 C.push(b("**FAT16/FAT32:** with or without a partition table, long file names, fragmented files, seeking, creating files."));
 C.push(b("**TAP and TZX:** TZX blocks 10, 11, 12, 13, 14, 15, 20 and 2B are played; 21-27 (groups, jumps, loops, calls) are followed; 18, 19, 28, 2A and information blocks are skipped."));
@@ -251,7 +251,7 @@ C.push(h2("10.1 Sound path (bt_i2s.v)"));
 C.push(b("**Mix:** the AY value (10 bit) x 16 plus 8192 for the beeper, the same sources as the analog outputs."));
 C.push(b("**Filters:** two one-pole low-passes at the AY rate (3.5469 MHz, about 35 kHz each) against aliasing at 44.1 kHz, then a DC blocker once per sample (about 27 Hz), so silence is 0 whatever the AY volumes or the beeper level."));
 C.push(b("**I2S:** the ESP32 is the master and drives BCLK (1.4112 MHz) and LRCK (44.1 kHz), so the Bluetooth stream and the sound share one clock. The FPGA synchronises both and sends 16-bit words, MSB first, one BCLK after each LRCK edge (Philips format), the same sample in both channels; DATA changes about 27 ns after the falling BCLK edge, far ahead of the next rising edge (354 ns)."));
-C.push(h2("10.2 The ESP32 (LSpectrum/esp32/esp32.ino)"));
+C.push(h2("10.2 The ESP32 (LSpectrum/esp32_v2/esp32_v2.ino)"));
 C.push(b("Arduino sketch on the ESP32 core 3.3 with the ESP32-A2DP library (v1.8.11): an A2DP source that takes its samples from the I2S input (or a test tone), reconnects to the last device by itself, and stores its settings (device, PIN, volume, source) in flash."));
 C.push(b("**PIN devices** (Bluetooth 2.0 and older) ask for a fixed code: the ESP32 answers with 0000, 1234, 8888 and 1111 in turn, one per connection attempt, or with a code set in the menu. Newer devices pair without a code. Old devices that only give their name on request are listed too."));
 C.push(b("**ESP-IDF fix:** when the headphones open the stream themselves (Bose headphones do), ESP-IDF 5.5 never asks for their codec capabilities, leaves its SBC encoder unset and crashed with a division by zero. The sketch wraps the failing function at link time (-Wl,--wrap) and reports success while a link is open; the encoder then uses the standard SBC setup that the headphones chose."));
@@ -295,7 +295,7 @@ C.push(h1("13. Verification"));
 C.push(table([3100, 6260], ["Test", "What it shows"], [
   ["sim/run_sim.sh", "Whole machine with the real ROMs: flash model, ROM loader, SDRAM model with timing checks, T80 boots the 128K ROM to its menu (and DiagROM with F1)"],
   ["sim/run_esp_link_sim.sh", "Loader hardware driven over the SPI link by an ESP32 model: core ID, register writes and reads, OSD text, FIFO bursts, 256-byte memory writes and reads across a page, the error flag with slow commands, the interrupt on a key change"],
-  ["esp32/test/run_host_test.sh", "Firmware on the PC against generated FAT16/FAT32 card images (fragmented files, long names): every listing and every TAP/TZX signal compared with an independent Python reference; recordings of real TAP files (noise, headerless, several saves, 1 s pauses in turbo, empty) written and checked by an independent FAT checker; snapshots: reference .z80 files (versions 1-3, 48K/128K, stored pages, bad files) loaded into a model of the hardware, and save + reload round trips checked by an independent .z80 decoder"],
+  ["esp32_v2/test/run_host_test.sh", "Firmware on the PC against generated FAT16/FAT32 card images (fragmented files, long names): every listing and every TAP/TZX signal compared with an independent Python reference; recordings of real TAP files (noise, headerless, several saves, 1 s pauses in turbo, empty) written and checked by an independent FAT checker; snapshots: reference .z80 files (versions 1-3, 48K/128K, stored pages, bad files) loaded into a model of the hardware, and save + reload round trips checked by an independent .z80 decoder"],
   ["sim/run_snap_sim.sh", "zx_bus + T80 + SDRAM: a Z80 test program (prefixes, DD CB, block instructions, EXX, IM 2, HALT, paging, AY) run undisturbed, with random freezes and reads, and with random freezes and full restores (LOAD): identical results"],
   ["sim/run_cont_sim.sh", "zx_bus + T80 + SDRAM: 8,000 NOPs in contended RAM run 57 per line in the border and 41 per picture line (the known Spectrum result), 57 everywhere with contention off"],
   ["sim/run_float_sim.sh", "zx_bus + T80 + SDRAM: 6,000 IN A,(FF) against Fuse 1.6's rule for the 128K floating bus (read point after all I/O contention; incl. contended port addresses); all FF with it switched off"],

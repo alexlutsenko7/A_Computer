@@ -75,7 +75,7 @@ C.push(h1("1. What goes where"));
 C.push(p("The finished system has three places that hold software. Each is built and loaded separately:"));
 C.push(table([2300, 3500, 3560], ["Where", "What", "How it gets there"], [
   ["**Configuration flash** on the core board (W25Q64, 8 MB)", "The machine menu, both machines, the Spectrum ROMs; later the C64 ROMs", "One file, `AMenu/output_files/L.jic`, programmed over JTAG (USB-Blaster). The C64 ROMs are added by the ESP32 (section 6)."],
-  ["**ESP32** (system controller on the I/O board)", "SD card loader, on-screen menus, ROM installer, Bluetooth audio", "The Arduino sketch `LSpectrum/esp32`, uploaded over USB (section 4)."],
+  ["**ESP32** (system controller on the I/O board)", "SD card loader, on-screen menus, ROM installer, Bluetooth audio", "The Arduino sketch `LSpectrum/esp32_v2`, uploaded over USB (section 4)."],
   ["**microSD card** (in the I/O board's socket, read by the ESP32)", "Games, tapes, disks, snapshots, and your own C64 ROM files", "Copied on a PC (section 5)."],
 ]));
 C.push(gap());
@@ -102,7 +102,7 @@ C.push(table([3000, 6360], ["Tool", "Notes"], [
   ["**Quartus Prime 25.1std Lite** (Windows)", "Free edition; includes the Programmer and `quartus_cpf`. The scripts are written for WSL and call the Windows tools in `C:\\Altera\\quartus\\bin64`."],
   ["**USB-Blaster**", "JTAG cable to the core board's JTAG header."],
   ["**Arduino IDE / arduino-cli**", "Core **esp32 3.3.2** (Espressif), board **ESP32 Dev Module**, default partition scheme. `arduino-cli` comes with the Arduino IDE."],
-  ["Arduino libraries", "**ESP32-A2DP 1.8.11** (Phil Schatzmann; not in the Library Manager: copy the GitHub release into the sketchbook's `libraries` folder) and **AAudioLinkFix** (copy `LSpectrum/esp32/libraries/AAudioLinkFix` there too)."],
+  ["Arduino libraries", "**ESP32-A2DP 1.8.11** (Phil Schatzmann; not in the Library Manager: copy the GitHub release into the sketchbook's `libraries` folder) and **AAudioLinkFix** (copy `LSpectrum/esp32_v2/libraries/AAudioLinkFix` there too)."],
   ["Python 3 (optional)", "For the tools: `L64/tools/mk_c64rom.py` (a local C64 ROM image for tests), `mk_d64.py` (a test disk)."],
   ["Questa FSE (optional)", "Intel's free simulator, for the testbenches; not needed to build."],
 ]));
@@ -162,7 +162,7 @@ C.push(stepOf("esp")("Connect the ESP32 board by USB; note its COM port (COM10 o
 C.push(stepOf("esp")("Compile and upload, in the folder `LSpectrum/`:"));
 C.push(code(["arduino-cli compile -b esp32:esp32:esp32 -u -p COM10 esp32"]));
 C.push(gap());
-C.push(p("Or open `LSpectrum/esp32/esp32.ino` in the Arduino IDE, board \"ESP32 Dev Module\", and Upload. The sketch uses about 1.17 MB of the 1.25 MB app partition. A change in the ESP32 sources needs only this step; the FPGA flash stays as it is."));
+C.push(p("Or open `LSpectrum/esp32_v2/esp32_v2.ino` in the Arduino IDE, board \"ESP32 Dev Module\", and Upload. (I/O board revision 1: `LSpectrum/esp32_v1/esp32_v1.ino`.) The sketch uses about 1.17 MB of the 1.25 MB app partition. A change in the ESP32 sources needs only this step; the FPGA flash stays as it is."));
 
 // ------------------------------------------------------------------ 5
 C.push(h1("5. The SD card"));
@@ -220,7 +220,7 @@ C.push(table([3000, 6360], ["Situation", "What happens"], [
 C.push(gap());
 C.push(p("Making the file, after building the images (section 3), in `AMenu/`:"));
 C.push(code(["python3 tools/mk_update.py --label \"L 2026-10-30\"     # -> output_files/LUPDATE.BIN"]));
-C.push(p("The tool converts `L.cof` into a raw flash image (.pof -> .rpd, the flash contents byte for byte) and writes it after a 256-byte header: \"LUPDATE1\", the image length, its CRC-32, the skipped range (the C64 ROM area), the end of the menu's area and the label shown during the update. The ESP32 code is `LSpectrum/esp32/src/update.cpp`; its PC test (`esp32/test/update_test.cpp`, part of `run_host_test.sh`) runs updates against a flash model, including power cuts at random moments."));
+C.push(p("The tool converts `L.cof` into a raw flash image (.pof -> .rpd, the flash contents byte for byte) and writes it after a 256-byte header: \"LUPDATE1\", the image length, its CRC-32, the skipped range (the C64 ROM area), the end of the menu's area and the label shown during the update. The ESP32 code is `LSpectrum/esp32_v2/src/update.cpp`; its PC test (`esp32_v2/test/update_test.cpp`, part of `run_host_test.sh`) runs updates against a flash model, including power cuts at random moments."));
 
 C.push(h1("8. Boards shipped with the loader"));
 C.push(p("`AMenu/output_files/L_loader.jic` holds only the machine menu (the rest of the flash blank): no machines and no ROMs. A board can be passed on with it, and the user installs everything from the public release."));

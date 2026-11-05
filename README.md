@@ -34,7 +34,7 @@ yourself): [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md).**
   - pause, back one block, stop;
   - **snapshots**: F2 saves the whole machine as a `.z80` (version 3, 128K) at any moment; the browser loads
     `.z80` files (versions 1-3, 48K and 128K).
-- **Bluetooth audio**: the same ESP32-WROOM-32 (`LSpectrum/esp32/`, Arduino) takes the sound as I2S and sends it to Bluetooth
+- **Bluetooth audio**: the same ESP32-WROOM-32 (`LSpectrum/esp32_v2/`, Arduino) takes the sound as I2S and sends it to Bluetooth
   speakers / headphones (A2DP), including old PIN-only devices; F3 opens the on-screen Bluetooth menu.
 - **L64** (`L64/README.md`): VIC-II Kawari, T65 as 6510, the MiSTer SID 6581/8580 and CIAs, our bus, PLA
   and 1541 drive (T65, two VIAs, GCR on the fly from a track buffer the ESP32 fills from the `.d64`). The
@@ -52,7 +52,7 @@ yourself): [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md).**
 | QMTECH Cyclone IV core board | EP4CE15F23C8N, 50 MHz oscillator, W9825G6KH-6 SDRAM (32 MB), W25Q64 configuration flash |
 | I/O board (own design, `Extra_PCB_CycloneIV/`) | 4-bit-per-colour VGA DAC, two Kempston DB9, 3.5 mm audio jack (AY + beeper, line level), USB keyboard module (UART, 3.3 V), microSD socket, sockets for the ESP32; wired to the core board's U8 |
 | I/O board revision 2 (own design, `Extra_PCB_CycloneIV_R2/`, ordered 2026-11-03) | as revision 1, with everything on the board: ESP32-WROVER-E module, CP2102N USB-C console / 5 V input, CH9350L with a USB-A keyboard socket, a second USB-A (5 V for a VGA2HDMI dongle); 4 layers; same J1 to the core board's U8 |
-| ESP32-WROOM-32 dev board | system controller on the I/O board: SD card, tape loader, Bluetooth audio (`LSpectrum/esp32/README.md`) |
+| ESP32-WROOM-32 dev board | system controller on the I/O board: SD card, tape loader, Bluetooth audio (`LSpectrum/esp32_v2/README.md`) |
 
 Pin assignments: `docs/BOARD_PINOUT.md`.
 
@@ -61,7 +61,7 @@ Pin assignments: `docs/BOARD_PINOUT.md`.
 | Folder | Contents |
 |---|---|
 | `AMenu/` | machine menu shown at power-up (factory image); `L.cof` -> `output_files/L.jic`, the ready-to-program image with all machines |
-| `LSpectrum/` | **The Spectrum**: Quartus project, `rtl/` (Verilog), `esp32/` (ESP32 firmware for both machines: loader + Bluetooth), `sim/` (Questa testbenches) |
+| `LSpectrum/` | **The Spectrum**: Quartus project, `rtl/` (Verilog), `esp32_v2/` (ESP32 firmware for all machines: loader + Bluetooth; `esp32_v1/` = the version for I/O board revision 1), `sim/` (Questa testbenches) |
 | `L64/` | **The Commodore 64**: Quartus project, `rtl/` (our bus, 1541, video; Kawari VIC-II, SID, CIA, VIA), `sim/`, `tools/` (ROM image, test disk) |
 | `T65/` | 6502 core (VHDL), from the MiSTer C64 core, unchanged (`T65/SOURCE.md`) |
 | `tests/` | hardware test tools: `Test_wires/` (ESP32 <-> FPGA wiring), `ESPLinkTest/` (SPI link), `t80_fmax/` |
@@ -76,7 +76,7 @@ Pin assignments: `docs/BOARD_PINOUT.md`.
 
 Step by step, from the tools to the SD card: [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md), section 4.
 Tools: Quartus Prime 25.1std Lite (Windows) for the FPGA; Arduino (core esp32 3.3.2, `arduino-cli`) for the ESP32
-(libraries: `LSpectrum/esp32/README.md`). The scripts are written for WSL on Windows and call the Windows tools;
+(libraries: `LSpectrum/esp32_v2/README.md`). The scripts are written for WSL on Windows and call the Windows tools;
 paths are at the top of each script.
 
 ```
@@ -94,7 +94,7 @@ arduino-cli compile -b esp32:esp32:esp32 -u -p COM10 esp32       # ESP32 firmwar
 Flash layout (1 MB per image): menu at 0, LSpectrum at 0x100000, L64 at 0x200000, LTari 800 at 0x300000, LTari 130 at
 0x400000, the Spectrum ROMs (`roms48k.hex`) at 0x500000, the Atari ROMs at 0x540000, the C64 ROMs (installed by the
 ESP32) at 0x580000; ROMs are copied into SDRAM at every reset.
-A change in `LSpectrum/esp32/` needs only the ESP32 flashed again; a change in `LSpectrum/rtl/` a new compile.
+A change in `LSpectrum/esp32_v2/` needs only the ESP32 flashed again; a change in `LSpectrum/rtl/` a new compile.
 
 ## Programming
 
@@ -133,7 +133,7 @@ The complete key list with step-by-step usage is in `docs/LSpectrum_Keys.docx`.
 ## Testing
 
 ```
-bash LSpectrum/esp32/test/run_host_test.sh       # PC: FAT reading/writing, every TAP/TZX signal vs a Python reference, saving, .z80
+bash LSpectrum/esp32_v2/test/run_host_test.sh       # PC: FAT reading/writing, every TAP/TZX signal vs a Python reference, saving, .z80
 bash LSpectrum/sim/run_esp_link_sim.sh           # RTL: loader hardware driven over the SPI link by an ESP32 model
 bash LSpectrum/sim/run_sim.sh                    # RTL: whole machine boots the 128K ROM
 bash LSpectrum/sim/run_snap_sim.sh               # RTL: snapshot freeze / restore with the real T80
@@ -176,7 +176,7 @@ The project's own files are under the MIT licence (`LICENSE`). Third-party parts
 | `L64/rtl/vicii/` (VIC-II Kawari, Randy Rossi) | **GPL-3** |
 | `L64/rtl/via/` (VIA 6522, Gideon Zweijtzer) | **GPL-3** |
 | `L64/rtl/sid/`, `L64/rtl/cia/` (MiSTer C64 core) | CERN-OHL-S v2 (`sid_dac.sv`, `sid_filter.sv`) and GPL (the MiSTer C64 core) |
-| `LSpectrum/esp32/` uses ESP32-A2DP (Phil Schatzmann) | Apache-2.0 (library, not included) |
+| `LSpectrum/esp32_v2/` uses ESP32-A2DP (Phil Schatzmann) | Apache-2.0 (library, not included) |
 | ROM images in `LSpectrum/roms48k.hex` and `LSpectrum/sim/roms.mem` | ZX Spectrum 128 ROMs (c) Amstrad, distributed for emulator use with permission, copyright messages unchanged. Retroleum's DiagROM is not included (its licence is not known): the published image has a copy of the 48K BASIC ROM in that slot; `LSpectrum/tools/mk_roms48k.py` builds the image with your own copy |
 | `LTari/roms/` (AltirraOS, Altirra BASIC, Avery Lee) | permissive notice: copying and distribution permitted, notice preserved |
 | Commodore 64 / 1541 ROMs | **not included**: copyrighted; bring your own (`L64/README.md`) |

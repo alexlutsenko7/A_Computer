@@ -267,7 +267,7 @@ task automatic grab(input string fn);
 endtask
 
 //-----------------------------------------------------------------------------
-// SIO bridge + disk drive model (the ESP32's part, LSpectrum/esp32/src/atari.cpp)
+// SIO bridge + disk drive model (the ESP32's part, LSpectrum/esp32_v2/src/atari.cpp)
 //-----------------------------------------------------------------------------
 reg  [31:0] mclr = 0;
 reg         mclr_we = 0;

@@ -1091,3 +1091,27 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   100R AY filter, 47k VBUS divider; BOM 32 lines), USB-A = SOFNG USB-302-T (C112456, datasheet checked: same hole
   pattern as the DS1095 footprint), silkscreen kept off the connector bodies. Old states moved to
   Extra_PCB_CycloneIV_R2/archive/. LDL1117 and the PTS810 buttons kept (Extended).
+- (2026-11-03) ESP32 firmware split for I/O board revision 2: `LSpectrum/esp32` -> `LSpectrum/esp32_v1/` (sketch
+  esp32_v1.ino, revision 1 DevKit, frozen) and `LSpectrum/esp32_v2/` (esp32_v2.ino, WROVER-E-N16R8, active). v2 so far:
+  control UART fixed on GPIO27 (RX2 <- BT_TX) / GPIO21 (TX2 -> BT_RX), checked against the R2 netlist; no psramFound()
+  pin switch (a PSRAM build probing GPIO16 on a revision 1 DevKit would fight the FPGA's BT_TX); #error without PSRAM.
+  Browser list in PSRAM: 4,096 entries per folder (320 in internal RAM if no PSRAM), names 29 characters, Knuth-gap
+  shell sort (PC test 0..4096 entries); static RAM 77,124 -> 65,612 B. 16 MB flash layout app3M_fat9M_16MB (app0 / app1
+  3 MB each for LESP32.BIN, espupd MAX_SIZE 3 MB), FQBN esp32:esp32:esp32:PSRAM=enabled,FlashSize=16M,
+  PartitionScheme=app3M_fat9M_16MB: 1,216,087 B = 38 %. No first-letter jump (user: folders are already alphabetical).
+  Not on hardware (boards not delivered). Open: LESP32.BIN guard against the other board's firmware (optional); user
+  manuals still say 320 entries (update all languages when revision 2 ships).
+- (2026-11-05) Bluetooth audio, choppy on some starts (any machine, both speakers; reconnecting cleared it). Measured live
+  over USB: the I2S input from the FPGA ran at 44.1 kHz every time, but the Bluedroid source read only ~29,900 frames/s
+  (I2S DMA overflow ~56 buffers/s, A2DP steps on time): the link could not carry 328 kbit/s (RSSI delta about -20 dB at
+  40 cm). Bitpool cap 35 left a 0.2-0.3 s gap every 4-6 s (96 % read); cap 29 (196 kbit/s) keeps up on every machine,
+  quality fine (user): default 29, `bitpool <n>` command. Hook: `--wrap=bta_av_co_get_remote_bitpool_pref` (second
+  wrap in AAudioLinkFix; returns TRUE with the capped range, the configuration's range when the sink sent none).
+  BR/EDR transmit power 0..+9 dBm (default 0..+3) in a `bt_start()` override. New diagnostics: both sample rates every
+  2 s (`rates` history, F3 row 2 `Rate: in .. out ..`), RSSI delta every 10 s, bitpool and transmit power in `status`.
+  An automatic I2S clock change to the measured A2DP rate was tried and dropped: when I2S delivers less, the A2DP pull
+  rate drops too (get_frames waits), so the check chased itself into silence. F3 line limit 96 -> 128 characters (the
+  longer `info` line was dropped: "No answer from the ESP32"). Quick disconnects / reconnects from the headphones once
+  left the link connected but silent (media state idle, the 3 s kick did not help): after 15 more seconds without audio
+  the sketch now drops the link and reconnects (`relinks`). User: survives repeated reconnects during play. esp32_v1
+  flashed on hardware; esp32_v2 has the same changes (built, not on hardware). Static RAM v1 76,892 -> 77,764 B.

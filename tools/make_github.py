@@ -31,6 +31,7 @@ SKIP_FILES = ['*.log', 'transcript', '*.rpt', '*.summary', '*.smsg', '*.done', '
               'sw_img.hex',                    # generated from a game snapshot (Sidewize): copyrighted
               '*.vstf',                        # Questa crash dumps
               '*.ino.map',                     # ESP32 linker map: holds the Windows user's home path
+              '*.ino.elf',                     # ESP32 debug image: same paths (kept locally for addr2line)
               '*.kicad_prl', 'fp-info-cache', '*.lck', '*.dsn', '*.ses']   # KiCad local state, routing files
 # generated simulation pictures (sim/*.png); documentation pictures stay
 SKIP_PATH_RE = [r'(^|/)sim/[^/]*\.png$', r'(^|/)sim/.*\.bmp$', r'^tests/.*/output_files/',
@@ -125,7 +126,7 @@ subprocess.run([sys.executable, '-I', 'tools/mk_update.py', '--label', 'L %s' % 
 subprocess.run([sys.executable, '-I', 'tools/mk_update.py', '--loader'], cwd=os.path.join(DST, 'AMenu'), check=True)
 # INSTALL/: for buyers of a ready board set (ESP32 programmed, machine menu in the FPGA): only the machines'
 # image for the SD card and the manuals (docs/manuals/build_manuals.py). The developer files (L_loader.jic,
-# the ESP32 binaries) stay in AMenu/output_files and LSpectrum/esp32/build.
+# the ESP32 binaries) stay in AMenu/output_files and LSpectrum/esp32_v2/build.
 inst = os.path.join(DST, 'INSTALL')
 os.makedirs(inst, exist_ok=True)
 shutil.copy2(os.path.join(DST, 'AMenu', 'output_files', 'LUPDATE.BIN'), os.path.join(inst, 'LUPDATE.BIN'))

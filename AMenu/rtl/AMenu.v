@@ -19,7 +19,7 @@
 // link version 2 = flash stream frames): the ESP32 draws on an OSD screen (shown instead of the
 // menu while OSD is on; the menu takes no input meanwhile) and reads / writes the configuration
 // flash through the FLASH register, DCLK 18.75 MHz (FL_HALF 2), mostly with FLS frames (1 us per byte):
-// flash update from the SD card (LUPDATE.BIN), "no machines installed" (LSpectrum/esp32/src/update.cpp).
+// flash update from the SD card (LUPDATE.BIN), "no machines installed" (LSpectrum/esp32_v2/src/update.cpp).
 // F3 opens the ESP32's Bluetooth menu (loader keys + the UART to its Bluetooth part, BT_TX / BT_RX).
 // All other I/O board pins stay inputs (weak pull-ups): the SDRAM is deselected (CS_N high).
 //=============================================================================

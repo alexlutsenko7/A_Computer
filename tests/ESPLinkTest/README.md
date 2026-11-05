@@ -24,7 +24,7 @@ Test sketch for step 1 of the "Next stage" in `docs/PLAN.md`: the ESP32 owns the
 
 - FPGA: the normal LSpectrum build (`LSpectrum/output_files/LSpectrum.jic` in the flash).
 - ESP32 (in `tests/`): board ESP32 Dev Module, `arduino-cli compile -b esp32:esp32:esp32 -u -p COM10 ESPLinkTest`.
-  Flash `LSpectrum/esp32` again afterwards (loader + Bluetooth).
+  Flash `LSpectrum/esp32_v1` (I/O board revision 1) or `LSpectrum/esp32_v2` (revision 2) again afterwards (loader + Bluetooth).
 
 ## Test sequence (USB serial 115200, line ending New Line)
 

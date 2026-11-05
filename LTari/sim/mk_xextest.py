@@ -5,7 +5,7 @@ file length at LEN_OFS, sectors 4.. the file. Writes disk.mem (one byte per line
 The test program: an INIT segment ($3000: $AA -> $3100), a byte at $A000 (RAM only with BASIC off), the
 main program ($3010) printing "XEX OK" if both are there, else "XEX BAD"; RUNAD = $3010."""
 import re
-hdr = open('../../LSpectrum/esp32/src/atari_xexboot.h').read()
+hdr = open('../../LSpectrum/esp32_v2/src/atari_xexboot.h').read()
 lofs = int(re.search(r'XEXBOOT_LEN_OFS (\d+)', hdr).group(1))
 boot = bytearray(int(l, 16) for l in open('xexboot.mem'))
 init = bytes([0xA9, 0xAA, 0x8D, 0x00, 0x31, 0x60]) + bytes(10)                  # $3000-$300F

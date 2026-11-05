@@ -67,7 +67,7 @@
 //   T - 14364: half of the contended polls saw a bitmap byte, Sidewize synced early
 //   and its player flickered.)
 //
-// Snapshots (.z80 save/load by the ESP32 loader firmware, esp32/src/snap.c):
+// Snapshots (.z80 save/load by the ESP32 loader firmware, esp32_v2/src/snap.c):
 //   snap_freeze stops the CPU at the next instruction boundary: in T2 of an
 //   opcode fetch (M1) that is not an interrupt acknowledge and does not follow a
 //   prefix (CB/ED/DD/FD). There the T80 has written back the previous

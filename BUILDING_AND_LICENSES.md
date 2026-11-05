@@ -88,7 +88,7 @@ its notice for the bitstream is in [Appendix A](#appendix-a-notices-for-the-bits
 |---|---|---|
 | Arduino-ESP32 core 3.3.2 (Espressif) | core LGPL-2.1 or later; SD, Preferences, ESP-IDF Apache-2.0 | SPI (FPGA link, SD card), raw SD sectors (the FAT code is ours), Preferences, I2S, FreeRTOS, Bluedroid. Linked, not copied. |
 | ESP32-A2DP 1.8.11 (Phil Schatzmann) | Apache-2.0 | The A2DP source (Bluetooth audio). Not in the repository: install it (section 4.4). |
-| AAudioLinkFix (`LSpectrum/esp32/libraries/`) | ours (MIT) | A linker option that wraps one Bluetooth stack function (A2DP source crash fix); the stub archive carries no code. |
+| AAudioLinkFix (`LSpectrum/esp32_v2/libraries/`) | ours (MIT) | A linker option that wraps one Bluetooth stack function (A2DP source crash fix); the stub archive carries no code. |
 
 ### 1.4 ROMs and data in the repository
 
@@ -115,7 +115,7 @@ its notice for the bitstream is in [Appendix A](#appendix-a-notices-for-the-bits
 | LSpectrum | `LSpectrum/rtl/zx_*.v`, `LSpectrum.v`, `cpu_t80.v` | The Spectrum 128K around T80 and JT49: bus with clock enables, paging, ULA video, contention, floating bus, keyboard, snapshot freeze |
 | L64 | `L64/rtl/c64_*.v`, `c1541*.v`, `L64.v` | The C64 around the cores of 1.2: bus and PLA, 6510 port, frame buffer (VGA 800x600), keyboard, turbo, snapshot restore mode; the 1541 drive logic (address decode, serial bus, stepper, GCR encoder / decoder, track buffer) |
 | LTari | `LTari/rtl/` | **ANTIC, GTIA, POKEY and the PIA written from scratch** from the Altirra Hardware Reference Manual (no other Atari FPGA core was looked at), MMU / banking, cartridges, SIO bridge to the ESP32, frame buffer, snapshots; only the CPU (T65) is external |
-| ESP32 firmware | `LSpectrum/esp32/` | SD card browser, FAT16 / FAT32, TAP / TZX player and recorder, .z80 / .a64 / .a8s snapshots, C64 loaders and 1541 track service, C64 ROM installer, Atari disk drive (.atr, .xex / .com, .car), Bluetooth menu, screenshots |
+| ESP32 firmware | `LSpectrum/esp32_v2/` | SD card browser, FAT16 / FAT32, TAP / TZX player and recorder, .z80 / .a64 / .a8s snapshots, C64 loaders and 1541 track service, C64 ROM installer, Atari disk drive (.atr, .xex / .com, .car), Bluetooth menu, screenshots |
 | Tools, tests, docs | `*/tools/`, `*/sim/`, `tests/`, `docs/` | Image generators, testbenches and models, the user documentation |
 
 ### 2.2 Changes to external code
@@ -168,7 +168,7 @@ git-ignored or local folders.
 | Place | Holds | How |
 |---|---|---|
 | Configuration flash on the core board (8 MB) | menu, the three machines, Spectrum and Atari ROMs; later the C64 ROMs | `AMenu/output_files/L.jic` over JTAG (USB-Blaster); C64 ROMs written by the ESP32 |
-| ESP32 on the I/O board | SD card loader, on-screen menus, ROM installer, Bluetooth audio | Arduino sketch `LSpectrum/esp32`, uploaded over USB |
+| ESP32 on the I/O board | SD card loader, on-screen menus, ROM installer, Bluetooth audio | Arduino sketch `LSpectrum/esp32_v2`, uploaded over USB |
 | microSD card | games, disks, snapshots, your C64 ROM files | copied on a PC |
 
 Flash layout (`AMenu/L.cof`):
@@ -251,15 +251,17 @@ program or update a board without building (go to 4.3 or 4.6).
 
 1. Arduino IDE: install the **esp32** core 3.3.2 (Boards Manager). Copy the **ESP32-A2DP** library, release 1.8.11
    from github.com/pschatzmann/ESP32-A2DP, into the sketchbook's `libraries` folder (it is not in the Library
-   Manager), and copy `LSpectrum/esp32/libraries/AAudioLinkFix` there too.
+   Manager), and copy `LSpectrum/esp32_v2/libraries/AAudioLinkFix` there too.
 2. Connect the ESP32 board by USB and note its port.
-3. Open `LSpectrum/esp32/esp32.ino`, board **ESP32 Dev Module**, Upload. Or from `LSpectrum/`:
+3. Open `LSpectrum/esp32_v2/esp32_v2.ino`, board **ESP32 Dev Module**, Upload. Or from `LSpectrum/`:
 
    ```
-   arduino-cli compile -b esp32:esp32:esp32 -u -p COMx esp32
+   arduino-cli compile -b esp32:esp32:esp32 -u -p COMx esp32_v2
    ```
 
 The same firmware serves all machines; it recognises the running machine by its core ID on the SPI link.
+The sketch is for I/O board revision 2; a revision 1 board (`Extra_PCB_CycloneIV/`, ESP32 DevKit on sockets) takes
+`LSpectrum/esp32_v1` the same way.
 
 ### 4.5 The SD card
 

@@ -17,7 +17,7 @@
 //   4 0 9 8 7 6      5 P O I U Y   6 ENT L K J H 7 SPC SYM M N B
 //
 // Machine and loader keys (docs/SD_TAPE_LOADER.md):
-//   lkeys (1 = held, read by the ESP32 loader firmware, esp32/src/hw.h K_*):
+//   lkeys (1 = held, read by the ESP32 loader firmware, esp32_v2/src/hw.h K_*):
 //     0 F12 / keypad / / NumLock   1 keypad 8 / F9 / Up      2 keypad 2 / F10 / Down
 //     3 keypad 4 / Left            4 keypad 6 / Right        5 keypad Enter / Enter
 //     6 F11   7 keypad 5   8 keypad -   9 Esc / Backspace   10 F7 / keypad *   11 F6

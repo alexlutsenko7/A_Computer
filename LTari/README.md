@@ -16,7 +16,7 @@ AltirraOS and Altirra BASIC by Avery Lee, which are free to distribute (`roms/RE
   (banking test `tools/mk_modeltest.py`); BASIC, keyboard, joysticks, 640x480@60 / 720x576@50 video, sound.
   Disks (.atr): Pac-Man, M.U.L.E. (BASIC off); cartridge: Prince of Persia (Atarimax 1 MB, 130 only, as it should be).
 - **Disk drive D1:** `.atr` images (128 / 256-byte sectors) through the SIO bridge and the ESP32
-  (`../LSpectrum/esp32/src/atari.cpp`): status, read, write / put, format. A header size beyond the file's end is cut
+  (`../LSpectrum/esp32_v2/src/atari.cpp`): status, read, write / put, format. A header size beyond the file's end is cut
   to the file (old images).
 - **.xex:** served as a read-only boot disk: sectors 1-3 our loader (`tools/mk_xexboot.py`), then the file.
   The loader switches BASIC off, loads the segments, calls INITAD, jumps to RUNAD. It uses $0700-$08FF, so a
@@ -105,10 +105,10 @@ The two DB9 ports are stick 0 (DB9-1) and stick 1 (DB9-2). The F4 menu can swap 
 | `rtl/atari_pll.v`, `rtl/atari_vpll.v` | machine / SDRAM clocks; VGA pixel clocks 25.208 / 27.009 MHz (as LSpectrum) |
 | `sim/run_sim.sh`, `sim/tb_atari.sv` | boot simulation (Questa): ROMs from the flash model, SDRAM model, the frame buffer, the SIO bridge; text screen every 50 ms, `screen.png` (GTIA) and `vga.png` (VGA output); `+define+DISK`: a drive model boots our test boot sector ("DISK BOOT OK") |
 | `tools/mk_atarirom.py` | ROM image for the flash (header page, OS, BASIC) |
-| `tools/mk_xexboot.py` | the .xex boot loader (our 6502 code, with a small assembler) -> `../LSpectrum/esp32/src/atari_xexboot.h` |
+| `tools/mk_xexboot.py` | the .xex boot loader (our 6502 code, with a small assembler) -> `../LSpectrum/esp32_v2/src/atari_xexboot.h` |
 | `sim/run_gtia_sim.sh`, `sim/tb_gtia.sv` | GTIA unit test: players / missiles, sizes, priorities, collisions, hi-res, fifth player, GTIA modes |
 | `sim/mk_xextest.py` | test disk for `tb_atari +define+XEX`: the loader + a test .xex (INIT, BASIC off, RUN) |
-| `tools/mk_palette.py` | the palette, from the PAL hue angles of the hardware manual (also `../LSpectrum/esp32/src/atari_palette.h` for screenshots) |
+| `tools/mk_palette.py` | the palette, from the PAL hue angles of the hardware manual (also `../LSpectrum/esp32_v2/src/atari_palette.h` for screenshots) |
 | `NOTES.md` | the clean-room facts from the manual, in our own words, and the implementation notes |
 | `ref/` | local only (not in the repository): Altirra Hardware Reference Manual (PDF + text; free download from virtualdub.org / Altirra), AltirraOS / Altirra BASIC sources as published in atari800 |
 | `roms/` | `altirraos_xl.rom`, `altirra_basic.rom`, `atarirom.hex`, licence notes |

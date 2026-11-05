@@ -13,11 +13,11 @@ Architecture and decisions: `../docs/PLAN.md`, CPU clock-enable analysis: `../do
 | RAM + ROM | W9825G6KH SDRAM via `sdram_ram` (DDR_TEST, proven at 112 MHz): RAM pages 0-7, ROM 0/1, DiagROM |
 | ROMs | in the configuration flash at 0x500000 (in the .jic), copied to SDRAM at power-up/reset by `rom_loader` (~14 ms) |
 | Video | 640x480@60 (25.208 MHz, 60.02 Hz) or 720x576@50 (27.009 MHz, 50.017 Hz) VGA (CEA-861 VIC 1 / 17 timing, clocks +0.033 %), 4-bit RGB DAC (ZX normal = E, bright = F per colour), from block-RAM shadows of pages 5/7 |
-| Sound | AY-3-8912 (JT49, GPL-3) at 1.7734 MHz -> sigma-delta on AUDIO_AY; beeper on AUDIO_BEEP (both to the 3.5 mm jack); the same mix as I2S (`bt_i2s`) to the ESP32, which sends it to Bluetooth headphones / speakers (`esp32/`) |
+| Sound | AY-3-8912 (JT49, GPL-3) at 1.7734 MHz -> sigma-delta on AUDIO_AY; beeper on AUDIO_BEEP (both to the 3.5 mm jack); the same mix as I2S (`bt_i2s`) to the ESP32, which sends it to Bluetooth headphones / speakers (`esp32_v2/`) |
 | Keyboard | USB keyboard via the CH9350-style UART module (115200), packet format as the DE10-Lite reference |
 | Joystick | two DB9 ports, mode chosen in the F4 menu: both Kempston (port 1F, default); DB9-1 Kempston + DB9-2 Cursor (5 6 7 8, fire 0); Interface 2 (DB9-1 Sinclair 1 = 6-0, DB9-2 Sinclair 2 = 1-5). Sinclair / Cursor sticks press keys in the keyboard matrix (`zx_system.v`) |
 | Tape | SD tape loader (EAR = loader while it plays, else the beeper) |
-| SD tape loader | ESP32 system controller (`esp32/`) with the microSD card, over an SPI link (`rtl/esp_link.v`) to the FPGA's loader hardware (`rtl/tape_loader.v`): OSD file browser (320 entries), plays .tap/.tzx T-state exact, records SAVE output into .tap files; turbo or normal speed; .z80 snapshots: F2 saves, the browser loads (`../docs/SD_TAPE_LOADER.md`) |
+| SD tape loader | ESP32 system controller (`esp32_v2/`) with the microSD card, over an SPI link (`rtl/esp_link.v`) to the FPGA's loader hardware (`rtl/tape_loader.v`): OSD file browser (320 entries), plays .tap/.tzx T-state exact, records SAVE output into .tap files; turbo or normal speed; .z80 snapshots: F2 saves, the browser loads (`../docs/SD_TAPE_LOADER.md`) |
 
 ## Controls
 
@@ -55,8 +55,8 @@ At power-up the CPU waits for the first keyboard packet (at most 1.5 s) so a hel
 | `rtl/zx_keyboard.v` | UART + packet parser -> 8x5 key matrix, loader keys, F1, F8, Ctrl+Alt+Del (menu) |
 | `rtl/tape_loader.v` | loader hardware: register bus, command FIFO, pulse player, MIC recorder with CPU hold, snapshot port, OSD port, UART to the ESP32's Bluetooth part; shared with L64 (flash pass-through, ROM reload, MCTL / MCLR) |
 | `rtl/esp_link.v` | SPI slave for the ESP32 (8 MHz, frames WR/RD/OSD/FIFO/MWR/MRD/STAT), master of the loader's register bus; IRQ pin |
-| `rtl/osd_font.hex` | Spectrum character set (made by `esp32/tools/mkfont.py` from `../roms/zx128.rom`): labels of the documentation diagrams; the OSD uses `../AMenu/rtl/menu_font.hex` (Spleen 8x16) |
-| `esp32/` | ESP32 system controller (Arduino sketch `esp32.ino`): SD tape loader firmware in `src/` (browser `main.cpp`, `fat.cpp`, `tape.cpp`, `save.cpp`, `snap.cpp`, `bt.cpp`; `hw.h` + `esp_hw.cpp` = link, SD, OSD) and Bluetooth audio; `test/` PC tests, `tools/` card image / test generators, FAT checker (`esp32/README.md`) |
+| `rtl/osd_font.hex` | Spectrum character set (made by `esp32_v2/tools/mkfont.py` from `../roms/zx128.rom`): labels of the documentation diagrams; the OSD uses `../AMenu/rtl/menu_font.hex` (Spleen 8x16) |
+| `esp32_v2/` | ESP32 system controller (Arduino sketch `esp32_v2.ino`; `esp32_v1/` = the frozen version for I/O board revision 1): SD tape loader firmware in `src/` (browser `main.cpp`, `fat.cpp`, `tape.cpp`, `save.cpp`, `snap.cpp`, `bt.cpp`; `hw.h` + `esp_hw.cpp` = link, SD, OSD) and Bluetooth audio; `test/` PC tests, `tools/` card image / test generators, FAT checker (`esp32/README.md`) |
 | `rtl/rom_loader.v`, `rtl/flash_if.v` | flash READ -> SDRAM; bit-order auto-detect (the .jic stores the data bit-reversed) |
 | `rtl/sd_dac.v` | sigma-delta audio DAC |
 | `rtl/bt_i2s.v` | AY + beeper as I2S (slave, Philips 16 bit, 44.1 kHz from the ESP32's clocks), low-passed, DC-free; pins BT_BCLK AA15 / BT_LRCK AB16 / BT_DATA AA16 |
@@ -75,7 +75,7 @@ quartus_sh --flow compile LSpectrum
 (cd ../AMenu && quartus_cpf -c L.cof)  # -> ../AMenu/output_files/L.jic (menu + LSpectrum + ROMs)
 arduino-cli compile -b esp32:esp32:esp32 -u -p COM10 esp32     # ESP32: loader + Bluetooth (esp32/README.md)
 ```
-The loader firmware runs on the ESP32: after changing `esp32/`, only the ESP32 is flashed again.
+The loader firmware runs on the ESP32: after changing `esp32_v2/`, only the ESP32 is flashed again.
 Program `../AMenu/output_files/L.jic` once (Programmer, JTAG, Program/Configure, power-cycle): it puts the
 ROMs into the flash. After that, `.sof` loads over JTAG are enough during development (ROMs stay in flash).
 If the LED blinks fast after loading a .sof, the flash has no ROM image: program the .jic.

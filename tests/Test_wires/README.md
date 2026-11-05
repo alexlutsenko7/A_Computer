@@ -49,7 +49,7 @@ The FPGA → ESP32 wires are only tested at 115200 baud here. The 8 MHz MISO ret
    (or open `Test_wires.ino` in the Arduino IDE, board "ESP32 Dev Module").
 3. Open the serial monitor at 115200 with line ending "New Line", then press the ESP32's EN (reset) button: the
    whole test runs. Load the FPGA first; if you load it later, press Enter to run the test again.
-4. Flash `LSpectrum/esp32` back onto the ESP32 afterwards.
+4. Flash `LSpectrum/esp32_v1` (I/O board revision 1) or `LSpectrum/esp32_v2` (revision 2) back onto the ESP32 afterwards.
 
 Commands: Enter / `all` = everything, `sd`, `ls <path>`, `back`, `fwd`, `fast`,
 `set <hex>` (drive the 6 outputs to a fixed pattern for a multimeter; bit 0 = GPIO14 … bit 5 = GPIO17),

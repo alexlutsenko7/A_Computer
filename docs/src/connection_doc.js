@@ -132,7 +132,7 @@ C.push(table([2200, 7160], ["Connector", "Use"], [
 ]));
 
 C.push(h1("5. ESP32 system controller and microSD card"));
-C.push(p("A 30-pin ESP32-WROOM-32 DevKit (CP2102, USB-C) with the sketch LSpectrum/esp32/esp32.ino, plugged into the I/O board. It owns the microSD card, runs the tape loader and the Bluetooth audio, and talks to the FPGA over an SPI link with an interrupt line, an I2S sound input and a UART. The ESP32 drives the link and I2S clocks. ESP32 pins are given by their DOIT 30-pin board labels."));
+C.push(p("A 30-pin ESP32-WROOM-32 DevKit (CP2102, USB-C) with the sketch LSpectrum/esp32_v2/esp32_v2.ino, plugged into the I/O board. It owns the microSD card, runs the tape loader and the Bluetooth audio, and talks to the FPGA over an SPI link with an interrupt line, an I2S sound input and a UART. The ESP32 drives the link and I2S clocks. ESP32 pins are given by their DOIT 30-pin board labels."));
 const ESPW = [1500, 1500, 1300, 1000, 1000, 3060];
 C.push(table(ESPW, ["ESP32 board pin", "Signal", "Dir", "J1 / U8", "FPGA pin", "Notes"], [
   ["D35", "ESP_MISO", "FPGA → ESP32", "10 / 9", "AA14", "link data to the ESP32; D35 is input-only"],

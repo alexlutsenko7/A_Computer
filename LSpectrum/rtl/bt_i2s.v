@@ -1,6 +1,6 @@
 //=============================================================================
 // bt_i2s -- machine sound as an I2S slave transmitter for the ESP32 Bluetooth
-//           part of the system controller (esp32/esp32.ino)
+//           part of the system controller (esp32_v2/esp32_v2.ino)
 //
 // The ESP32 is the I2S master: it drives BCLK (32 x fs = 1.4112 MHz at
 // 44.1 kHz) and LRCK, and reads DATA on the rising BCLK edge. Format: Philips

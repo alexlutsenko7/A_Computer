@@ -9,7 +9,7 @@
 //   snap_*                   request toggle + data held until the acknowledge toggles back
 //
 // Register bus: driven by the ESP32 over the SPI link (rtl/esp_link.v, frames WR/RD/OSD/
-// FIFO/MWR/MRD/STAT); the ESP32 firmware's names are in esp32/src/hw.h.
+// FIFO/MWR/MRD/STAT); the ESP32 firmware's names are in esp32_v2/src/hw.h.
 //   0x1000_0000  registers:
 //     00 ID        R: core ID (CORE_ID: 5A58_0001 = "ZX", 4336_0002 = "C6"; link version 1, L64 2)
 //     04 IRQ       R: [3:0] interrupt causes, [11:8] mask   W: [11:8] mask (see the link section)
@@ -47,7 +47,7 @@
 // holding stops the T-states too, so the recorded timing is unaffected.
 // Each access takes 2 clocks (register read).
 //
-// Pulse player: commands from a 512 x 32 FIFO (esp32/src/hal.h):
+// Pulse player: commands from a 512 x 32 FIFO (esp32_v2/src/hal.h):
 //   00: PULSE n     hold the level for n T-states, then toggle
 //   01: LEVEL l, n  set the level to l, hold n T-states
 //   10: DATA b, k   k+1 bits of b, MSB first; each bit = 2 pulses of len0 / len1
@@ -419,7 +419,7 @@ always @(posedge clk or negedge rst_n)
     end
 
 //-----------------------------------------------------------------------------
-// UART to the ESP32 Bluetooth part (esp32/esp32.ino): 8N1, 512-byte receive FIFO (one M9K, ~45 ms of
+// UART to the ESP32 Bluetooth part (esp32_v2/esp32_v2.ino): 8N1, 512-byte receive FIFO (one M9K, ~45 ms of
 // continuous data: the firmware may be busy for a few ms, e.g. redrawing the OSD)
 //-----------------------------------------------------------------------------
 wire       uart_wr = wr && sel_io && reg_a == 4'd15;

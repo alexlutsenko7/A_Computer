@@ -117,7 +117,7 @@ All signals 3.3 V.
   two 1x15 female sockets 25.4 mm apart (footprint `Extra_PCB_CycloneIV:ESP32_DevKit_30pin_Socket`; courtyard = socket rows only,
   low parts sit under the module; module outline on F.Fab). VIN <- +5V, GND x2; D26/D25/D22 = I2S BCLK/LRCK/DATA,
   RX2/TX2 = control UART, D14/D13/D33/D35/D34 = SPI link + IRQ to the FPGA, D18/D19/D23/D5 = microSD (see
-  `../LSpectrum/esp32/README.md`). The module's 3V3 pin is not connected.
+  `../LSpectrum/esp32_v1/README.md`). The module's 3V3 pin is not connected.
 - **Power**: +5 V from J1 (core board VIN, U8.63/64) feeds the keyboard module and U1, a small 7803 switching module (SIP-3,
   2.54 mm, 1 = in, 2 = GND, 3 = out) -> +3.3 V for the pull-ups and the SD card. 10 uF at U1 in/out, 100 nF x3 on
   3.3 V, x2 on 5 V. Do not connect the host's 3V3 to this board.

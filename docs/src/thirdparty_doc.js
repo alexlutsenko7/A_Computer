@@ -137,7 +137,7 @@ C.push(h1("3. ESP32 firmware libraries"));
 C.push(table([2600, 2300, 4460], ["Library", "Licence", "What is used"], [
   ["**Arduino-ESP32** core 3.3.2 (Espressif)", "core: LGPL-2.1 or later; SD, Preferences and ESP-IDF: Apache-2.0", "`SPI` (link to the FPGA, SD card), `SD` (raw sector access only; the FAT code is ours), `Preferences` (Bluetooth settings), the I2S driver, GPIO and FreeRTOS from ESP-IDF, the Bluedroid Bluetooth stack. Linked, not copied."],
   ["**ESP32-A2DP** 1.8.11 (Phil Schatzmann)", "Apache-2.0", "The A2DP source (`BluetoothA2DPSource`, `BluetoothA2DPCommon`, volume control): about 2,700 of its 5,900 lines; the sink part is not used. Installed separately, not in the repository."],
-  ["AAudioLinkFix (in `LSpectrum/esp32/libraries/`)", "ours (MIT)", "A small library that wraps one function of the Bluetooth stack (codec set-up fix); ours, listed here because it sits in a libraries folder."],
+  ["AAudioLinkFix (in `LSpectrum/esp32_v2/libraries/`)", "ours (MIT)", "A small library that wraps one function of the Bluetooth stack (codec set-up fix); ours, listed here because it sits in a libraries folder."],
 ]));
 C.push(gap());
 C.push(p("The firmware itself (browser, FAT16 / FAT32, TAP / TZX player, recorder, .z80 snapshots, C64 loaders, 1541 track service, ROM install, Bluetooth menu) is our own C / C++."));
@@ -146,7 +146,7 @@ C.push(p("The firmware itself (browser, FAT16 / FAT32, TAP / TZX player, recorde
 C.push(h1("4. ROMs and other data"));
 C.push(h2("4.1 ZX Spectrum 128K ROMs"));
 C.push(b("`roms/zx128.rom` (32 KB), in `LSpectrum/roms48k.hex` and the simulation image. (c) Amstrad, who allow redistribution for emulator use with the copyright messages unchanged and not for sale."));
-C.push(b("The Spectrum ROM's character set (`LSpectrum/rtl/osd_font.hex`, made by `esp32/tools/mkfont.py`) only labels the documentation diagrams; the on-screen text uses the Spleen font (below)."));
+C.push(b("The Spectrum ROM's character set (`LSpectrum/rtl/osd_font.hex`, made by `esp32_v2/tools/mkfont.py`) only labels the documentation diagrams; the on-screen text uses the Spleen font (below)."));
 C.push(b("The machine menu's font is **Spleen 8x16** 2.1.0 by Frederic Cambus (github.com/fcambus/spleen), BSD 2-Clause: `AMenu/font/` with its `LICENSE`, converted by `AMenu/tools/mk_menufont.py` into `AMenu/rtl/menu_font.hex`, used by the menu and the machines' on-screen displays."));
 C.push(h2("4.2 DiagROM"));
 C.push(b("Retroleum ZX Spectrum diagnostics (16 KB, F1 at start). Its licence is not known, so it is **not in the public repository**: the published `LSpectrum/roms48k.hex` and `L.jic` have a copy of the 48K BASIC ROM in that slot. `LSpectrum/tools/mk_roms48k.py` builds the image with your own copy."));
