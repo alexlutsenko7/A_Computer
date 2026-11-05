@@ -11,7 +11,7 @@ import os, re, shutil, sys, fnmatch
 ROOT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else '.')
 DST = os.path.join(ROOT, 'github')
 
-TOP = ['AMenu', 'LSpectrum', 'L64', 'LTari', 'T65', 'T80', 'DDR_TEST', 'VGA_TEST', 'docs', 'tests', 'tools',
+TOP = ['AMenu', 'LSpectrum', 'L64', 'LTari', 'T65', 'T80', 'DDR_TEST', 'VGA_TEST', 'FirstLight', 'docs', 'tests', 'tools',
        'Extra_PCB_CycloneIV', 'Extra_PCB_CycloneIV_R2', 'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md']
 
 SKIP_DIRS = {'db', 'incremental_db', 'greybox_tmp', '.qsys_edit', '__pycache__', 'node_modules', '.git',
