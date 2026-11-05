@@ -16,7 +16,9 @@ board (EP4CE15F23C8) and the L I/O board.
 | `rtl/vga_timing.v` | sync generator for both modes |
 | `rtl/vga_pll.v` | PLL: 25.208 and 27.009 MHz from one VCO (as LSpectrum) |
 | `rtl/vga_clkmux.v` | global clock control block: glitch-free switch between the two pixel clocks |
-| `sim/tb_vga_timing.sv`, `sim/run_sim.sh` | Questa test of both modes (clocks per line, lines per frame, visible area): PASS |
+| `sim/tb_vga_timing.sv` | Questa test of vga_timing alone, both modes (clocks per line, lines per frame, visible area): PASS |
+| `sim/tb_first_light.sv` | the whole design with models of the PLL and the clock control block: line period at 60 Hz, KEY1, line period at 50 Hz, pixel colors: PASS (about 40 s) |
+| `sim/run_sim.sh` | runs both testbenches |
 
 Build: `quartus_sh --flow compile first_light`, then load `output_files/first_light.sof` with the Programmer
 (JTAG). The .sof is lost at power-off; the flash (menu and machines) is not touched.
