@@ -167,7 +167,7 @@ C.push(p("Or open `LSpectrum/esp32_v2/esp32_v2.ino` in the Arduino IDE, board \"
 // ------------------------------------------------------------------ 5
 C.push(h1("5. The SD card"));
 C.push(stepOf("card")("Use a microSD card formatted **FAT32** (or FAT16). exFAT is not supported: most cards above 32 GB come as exFAT and must be reformatted."));
-C.push(stepOf("card")("For L64, make the folder **/ROMS/C64/** and copy Commodore ROM files into it that you are entitled to use (they are copyrighted and not part of the project): read from a C64 and 1541 you own, or licensed copies, for example from Cloanto's C64 Forever:"));
+C.push(stepOf("card")("For L64, make the folder **/ROMS/C64/** and copy Commodore ROM files into it that you are entitled to use (they are copyrighted and not part of the project): read from a C64 and 1541 you own, or licensed copies:"));
 C.push(table([2400, 1300, 5660], ["File name starts with", "Size", "Typical file name"], [
   ["**KERNAL**", "8 KB", "kernal-901227-03.bin"],
   ["**BASIC**", "8 KB", "basic-901226-01.bin"],

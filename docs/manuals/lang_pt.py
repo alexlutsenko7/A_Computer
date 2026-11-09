@@ -37,7 +37,7 @@ INSTALL = dict(
         ('p', 'O conjunto de placas e esta pasta **não contêm jogos nem outros programas**, nem **as ROM do Commodore 64**. Obtenha-os por si e copie-os para o cartão SD. Respeite os direitos de autor: use apenas software e ROM que tenha autorização para usar; um jogo não é livre só por ser antigo. Muitos programas antigos podem ser partilhados livremente com a autorização dos autores; outros não.'),
         ('table', ['Máquina', 'Precisa no cartão SD', 'Onde procurar (exemplos)'], [
             ['LSpectrum', 'Nada para arrancar. Programas: .tap, .tzx, .z80', 'Spectrum Computing (spectrumcomputing.co.uk), arquivos do World of Spectrum'],
-            ['L64', '**As ROM do C64 (uma vez, ver abaixo).** Programas: .d64, .prg, .t64, .tap', 'Use apenas cópias que tenha direito a usar: lidas de um C64 e de uma 1541 que possua, ou licenciadas (por exemplo, no C64 Forever da Cloanto). Programas: CSDb (csdb.dk), arquivos Commodore'],
+            ['L64', '**As ROM do C64 (uma vez, ver abaixo).** Programas: .d64, .prg, .t64, .tap', 'Use apenas cópias que tenha direito a usar: lidas de um C64 e de uma 1541 que possua, ou licenciadas. Programas: CSDb (csdb.dk), arquivos Commodore'],
             ['LTari', 'Nada para arrancar. Programas: .atr, .xex, .car', 'Atarimania (atarimania.com), arquivos Atari'],
         ], [16, 38, 46]),
         ('h2', 'Instalar as ROM do Commodore 64 (uma vez)'),

@@ -23,12 +23,13 @@ R = "Resistor_SMD:R_0603_1608Metric"; C6 = "Capacitor_SMD:C_0603_1608Metric"; C8
 DB9 = "Connector_Dsub:DSUB-9_Pins_Horizontal_P2.77x2.84mm_EdgePinOffset7.70mm_Housed_MountingHolesOffset9.12mm"
 # (value, footprint) -> LCSC part
 LCSC = {
-    ("510", R): "C23193", ("1k", R): "C21190", ("2k", R): "C22975", ("4.7k", R): "C23162",     # DAC (all Basic)
-    ("22", R): "C23345", ("3k3", R): "C22978", ("10k", R): "C25804", ("100", R): "C22775", ("2.2k", R): "C4190",
+    ("523", R): "C23199", ("1.05k", R): "C22832", ("2.1k", R): "C22902", ("4.22k", R): "C23042",  # DAC
+    ("1k", R): "C21190",
+    ("22", R): "C23345", ("3k3", R): "C22978", ("10k", R): "C25804", ("68", R): "C27592", ("2.2k", R): "C4190",
     ("5.1k", R): "C23186",                                            # 0603WAF5101T5E (USB-C CC)
     ("22k", R): "C31850",                                             # 0603WAF2202T5E (CP2102N VBUS divider)
-    ("47k", R): "C25819",                                             # 0603WAF4702T5E (CP2102N VBUS divider)
-    ("10p", C6): "C1634", ("0.1u", C6): "C14663",                     # 10p: Samsung CL10C100JB8NNNC C0G
+    ("47.5k", R): "C23061",                                           # CP2102N VBUS divider
+    ("6p8", C6): "C318672", ("0.1u", C6): "C14663",
     ("1u", C6): "C15849",                                             # Samsung CL10A105KB8NNNC 50 V X5R
     ("4.7u", C6): "C19666",                                           # Samsung CL10A475KO8NNNC 16 V X5R
     ("10u", C8): "C15850",                                            # Samsung CL21A106KAYNNNE 25 V
@@ -45,8 +46,8 @@ LCSC = {
     ("LDL1117S33R", "Package_TO_SOT_SMD:SOT-223-3_TabPin2"): "C435835",
     ("MMBT3904", "Package_TO_SOT_SMD:SOT-23"): "C20526",                # JSCJ MMBT3904
     ("USBLC6-2SC6", "Package_TO_SOT_SMD:SOT-23-6"): "C7519",            # ST
-    ("USB keyboard", "Connector_USB:USB_A_Connfly_DS1095"): "C112456",     # SOFNG USB-302-T, THT R/A (user's JLCPCB choice)
-    ("USB 5V (HDMI dongle)", "Connector_USB:USB_A_Connfly_DS1095"): "C112456",
+    ("USB keyboard", "Connector_USB:USB_A_Connfly_DS1095"): "C19944603",   # CONNFLY DS1095-WNR0, THT R/A
+    ("USB 5V (HDMI dongle)", "Connector_USB:USB_A_Connfly_DS1095"): "C19944603",
     ("USB-C 5V / console", "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12"): "C165948",
 }
 

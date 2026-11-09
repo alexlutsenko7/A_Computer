@@ -37,7 +37,7 @@ HDR = {1: "GND", 2: "GND",
        57: "VGA_B3", 58: "VGA_B1", 59: "VGA_B2", 60: "VGA_B0",
        61: "GND", 62: "GND", 63: "+5V", 64: "+5V"}
 
-DAC_R = {3: "510", 2: "1k", 1: "2k", 0: "4.7k"}   # JLCPCB Basic parts
+DAC_R = {3: "523", 2: "1.05k", 1: "2.1k", 0: "4.22k"}
 
 # comp: ref, lib_id, value, footprint, {pin: net or None (no connect)}, mpn (manufacturer part number for the BOM)
 comps = []
@@ -56,7 +56,7 @@ for col, out in (("R", "RED"), ("G", "GRN"), ("B", "BLU")):
 add("R13", "Device:R_Small_US", "22", FP_R, {"1": "VGA_HS", "2": "HSYNC"}, grp="sync")
 add("R14", "Device:R_Small_US", "22", FP_R, {"1": "VGA_VS", "2": "VSYNC"}, grp="sync")
 for i, net in enumerate(("RED", "GRN", "BLU", "VGA_HS", "VGA_VS")):
-    add(f"C{i+1}", "Device:C_Small", "10p", FP_C, {"1": net, "2": "GND"}, grp="vgac")
+    add(f"C{i+1}", "Device:C_Small", "6p8", FP_C, {"1": net, "2": "GND"}, grp="vgac")
 db15 = {"0": "GND", "1": "RED", "2": "GRN", "3": "BLU", "4": None, "5": "GND", "6": "GND", "7": "GND",
         "8": "GND", "9": None, "10": "GND", "11": None, "12": None, "13": "HSYNC", "14": "VSYNC", "15": None}
 add("J2", LIB + ":DB15_Female_HighDensity", "VGA", FP_DB15, db15, mpn="DS1038-15FBNSiA74-0CC")
@@ -82,7 +82,7 @@ add("C6", "Device:C_Small", "0.1u", FP_C, {"1": "+3V3", "2": "GND"}, grp="sd")
 add("C7", "Device:C_Small", "10u", FP_C10, {"1": "+3V3", "2": "GND"}, grp="sd")
 
 # ---------------- audio line out (revision 1's circuit, SMD capacitors) ----------------
-add("R30", "Device:R_Small_US", "100", FP_R, {"1": "AUDIO_AY", "2": "AY_LP"}, grp="audio")
+add("R30", "Device:R_Small_US", "68", FP_R, {"1": "AUDIO_AY", "2": "AY_LP"}, grp="audio")
 add("C8", "Device:C_Small", "0.1u", FP_C, {"1": "AY_LP", "2": "GND"}, grp="audio")
 add("C9", "Device:C_Small", "10u", FP_C10, {"1": "AY_LP", "2": "AY_AC"}, grp="audio")
 add("C10", "Device:C_Small", "10u", FP_C10, {"1": "AUDIO_BEEP", "2": "BEEP_AC"}, grp="audio")
@@ -114,7 +114,7 @@ add("U3", "Interface_USB:CP2102N-Axx-xQFN24", "CP2102N-A02-GQFN24",
      "18": None, "19": "CP_RTS", "20": "ESP_TXD0", "21": "ESP_RXD0", "22": None, "23": "CP_DTR", "24": None,
      "25": "GND"}, mpn="CP2102N-A02-GQFN24R")
 add("R40", "Device:R_Small_US", "22k", FP_R, {"1": "+5V", "2": "CP_VBUS"}, grp="cp")
-add("R41", "Device:R_Small_US", "47k", FP_R, {"1": "CP_VBUS", "2": "GND"}, grp="cp")
+add("R41", "Device:R_Small_US", "47.5k", FP_R, {"1": "CP_VBUS", "2": "GND"}, grp="cp")
 add("R42", "Device:R_Small_US", "1k", FP_R, {"1": "+3V3", "2": "CP_RST_N"}, grp="cp")
 add("C14", "Device:C_Small", "1u", FP_C, {"1": "+3V3", "2": "GND"}, grp="cp")
 add("C15", "Device:C_Small", "0.1u", FP_C, {"1": "+3V3", "2": "GND"}, grp="cp")
@@ -159,12 +159,12 @@ add("C21", "Device:C_Small", "0.1u", FP_C, {"1": "+5V", "2": "GND"}, grp="usba")
 add("U6", "Power_Protection:USBLC6-2SC6", "USBLC6-2SC6", FP_SOT236,
     {"1": "KB1_DP", "6": "KB1_DP", "3": "KB1_DM", "4": "KB1_DM", "2": "GND", "5": "+5V"}, mpn="USBLC6-2SC6")
 add("J8", "Connector:USB_A", "USB keyboard", FP_USBA,
-    {"1": "+5V", "2": "KB1_DM", "3": "KB1_DP", "4": "GND", "SH": "GND"}, mpn="USB-302-T")
+    {"1": "+5V", "2": "KB1_DM", "3": "KB1_DP", "4": "GND", "SH": "GND"}, mpn="DS1095-WNR0")
 # USB 2 (J9): 5 V only, beside the VGA socket, for a VGA2HDMI dongle's power lead (data pins open)
 add("C20", "Device:C_Small", "100u", FP_C100, {"1": "+5V", "2": "GND"}, grp="usba")
 add("C22", "Device:C_Small", "0.1u", FP_C, {"1": "+5V", "2": "GND"}, grp="usba")
 add("J9", "Connector:USB_A", "USB 5V (HDMI dongle)", FP_USBA,
-    {"1": "+5V", "2": None, "3": None, "4": "GND", "SH": "GND"}, mpn="USB-302-T")
+    {"1": "+5V", "2": None, "3": None, "4": "GND", "SH": "GND"}, mpn="DS1095-WNR0")
 
 # ---------------- power: +5V -> LDO -> +3V3 ----------------
 add("U1", "Regulator_Linear:AMS1117-3.3", "LDL1117S33R", "Package_TO_SOT_SMD:SOT-223-3_TabPin2",

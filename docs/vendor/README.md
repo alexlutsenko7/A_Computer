@@ -11,4 +11,4 @@ in the repository. They are free downloads from their publishers:
 | ADV7513 HDMI transmitter: datasheet, hardware user's guide, programming guide | Analog Devices |
 | MS7210 HDMI transmitter | MacroSilicon |
 | CH9350 USB keyboard / mouse to UART | WCH |
-| SOFNG USB-302-T USB-A socket (I/O board rev 2 J8 / J9, LCSC C112456) | SOFNG, via LCSC |
+| SOFNG USB-302-T USB-A socket (alternative for I/O board rev 2 J8 / J9, LCSC C112456) | SOFNG, via LCSC |

@@ -1115,3 +1115,15 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   left the link connected but silent (media state idle, the 3 s kick did not help): after 15 more seconds without audio
   the sketch now drops the link and reconnects (`relinks`). User: survives repeated reconnects during play. esp32_v1
   flashed on hardware; esp32_v2 has the same changes (built, not on hardware). Static RAM v1 76,892 -> 77,764 B.
+- (2026-11-05, later) FirstLight/ (the book's Chapter 4 project, from VGA_TEST for the I/O board's 4-bit VGA): LED, KEY1 swaps
+  640x480@60 / 576p50 (25.208 / 27.009 MHz, clock control block), 8 color bars + 16-step gray ramp + 1 px frame; 233 LEs, timing
+  clean, no unconstrained paths; sim/tb_vga_timing + tb_first_light (PLL / clkmux models) PASS; **works on hardware** (user; the
+  monitor reports 576p as "800x600@50"). Published (make_github.py TOP). ROM wording everywhere (manuals in 9 languages, L64
+  README, BUILDING_AND_LICENSES, build guide, L64 keys sheet, mk_c64rom.py): Commodore ROMs = copies the user is entitled to
+  (read from own hardware or licensed, e.g. Cloanto C64 Forever); no "get them from VICE / the internet". PDFs and .docx rebuilt.
+- (2026-11-09) I/O board revision 2: back to the production BOM everywhere (user), since JLCPCB builds the order as submitted and it was never changed: DAC 523 / 1.05k / 2.1k /
+  4.22k, 6p8, 68R, 47.5k, USB-A CONNFLY DS1095-WNR0 C19944603 (JLCPCB proposed it after a temporary stock problem with C112456). Changed values / MPN only in the schematic, board, design.py,
+  jlc_export.py and jlcpcb/ BOM; export from the schematic = JLCPCB's CSV byte for byte, Gerbers and CPL unchanged, netlist PASS, ERC 0. DAC recomputed: full scale 0.698 V, steps 46.2-48.1 mV.
+  Basic-part variant in Extra_PCB_CycloneIV_R2/archive/2026-11-09_basic_part_swaps/. Book updated (Table 1.2, Ch 2, 4, 24, App. A, Fig. 24.1).
+- (2026-11-09) C64 ROM wording: C64 Forever is no longer named as a source of the ROMs (user: it has no C64 ROMs included; Cloanto's pages do not say it does).
+  Now "read from a C64 and 1541 you own, or licensed ones" in the book, 9 Installation Guides (PDFs rebuilt), L64/README, BUILDING_AND_LICENSES, L_Build_and_Install and L64_Keys.

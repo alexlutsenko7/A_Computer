@@ -37,7 +37,7 @@ INSTALL = dict(
         ('p', '보드 세트와 이 폴더에는 **게임이나 다른 프로그램이 없으며**, **Commodore 64 ROM도 없습니다**. 직접 준비하여 SD 카드에 복사하십시오. 저작권을 존중해 주십시오: 사용할 권리가 있는 소프트웨어와 ROM만 사용하십시오. 오래된 게임이라고 해서 자유롭게 쓸 수 있는 것은 아닙니다. 많은 옛 프로그램은 저작자의 허락으로 자유롭게 공유할 수 있지만, 그렇지 않은 것도 있습니다.'),
         ('table', ['머신', 'SD 카드에 필요한 것', '찾을 곳(예)'], [
             ['LSpectrum', '시작에는 필요 없음. 프로그램: .tap, .tzx, .z80', 'Spectrum Computing(spectrumcomputing.co.uk), World of Spectrum 아카이브'],
-            ['L64', '**C64 ROM(한 번, 아래 참조).** 프로그램: .d64, .prg, .t64, .tap', '사용 권한이 있는 사본만 사용하십시오: 직접 소유한 C64와 1541에서 읽어 낸 것, 또는 라이선스 제품(예: Cloanto의 C64 Forever). 프로그램: CSDb(csdb.dk), Commodore 아카이브'],
+            ['L64', '**C64 ROM(한 번, 아래 참조).** 프로그램: .d64, .prg, .t64, .tap', '사용 권한이 있는 사본만 사용하십시오: 직접 소유한 C64와 1541에서 읽어 낸 것, 또는 라이선스 제품. 프로그램: CSDb(csdb.dk), Commodore 아카이브'],
             ['LTari', '시작에는 필요 없음. 프로그램: .atr, .xex, .car', 'Atarimania(atarimania.com), Atari 아카이브'],
         ], [16, 38, 46]),
         ('h2', 'Commodore 64 ROM 설치(한 번)'),

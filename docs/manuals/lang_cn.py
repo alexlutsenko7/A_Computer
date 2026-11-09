@@ -37,7 +37,7 @@ INSTALL = dict(
         ('p', '开发板套件和本文件夹 **不包含任何游戏或其他程序**，也 **不包含 Commodore 64 的 ROM**。请自行获取并复制到 SD 卡。请尊重版权：只使用您有权使用的软件和 ROM；游戏并不会因为年代久远就成为免费的。许多老程序经作者许可可以自由传播，但也有一些不行。'),
         ('table', ['机器', 'SD 卡上需要', '获取途径（示例）'], [
             ['LSpectrum', '启动无需任何文件。程序：.tap、.tzx、.z80', 'Spectrum Computing（spectrumcomputing.co.uk）、World of Spectrum 存档'],
-            ['L64', '**C64 ROM（一次，见下文）。** 程序：.d64、.prg、.t64、.tap', '只使用您有权使用的副本：从您自己的 C64 和 1541 中读出，或购买授权副本（例如 Cloanto 的 C64 Forever）。程序：CSDb（csdb.dk）、Commodore 存档'],
+            ['L64', '**C64 ROM（一次，见下文）。** 程序：.d64、.prg、.t64、.tap', '只使用您有权使用的副本：从您自己的 C64 和 1541 中读出，或购买授权副本。程序：CSDb（csdb.dk）、Commodore 存档'],
             ['LTari', '启动无需任何文件。程序：.atr、.xex、.car', 'Atarimania（atarimania.com）、Atari 存档'],
         ], [16, 38, 46]),
         ('h2', '安装 Commodore 64 ROM（一次）'),

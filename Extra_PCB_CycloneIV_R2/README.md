@@ -29,12 +29,11 @@ texts not tidied yet). The KiCad board is the source of truth (mounting holes mo
 
 ## Parts choice
 
-All resistors and small capacitors are JLCPCB **Basic** parts (no per-line fee): the VGA DAC is 510 / 1k / 2k / 4.7k per
-colour (full scale 0.71 V into 75 Ohm, steps even within about 0.2 LSB), 10p C0G on the VGA lines, 100 Ohm in the AY
-low-pass (16 kHz with 0.1 uF). Extended parts: ESP32-WROVER-E, CP2102N, CH9350L, LDL1117S33R (kept over the Basic
+Most resistors and small capacitors are JLCPCB **Basic** parts (no per-line fee). Extended parts: the VGA DAC, 523 / 1.05k / 2.1k /
+4.22k per colour (full scale 0.70 V into 75 Ohm, steps even within about 0.02 LSB), 6p8 on the VGA lines, 68 Ohm in the AY low-pass
+(23 kHz with 0.1 uF), 47.5k in the CP2102N VBUS divider, ESP32-WROVER-E, CP2102N, CH9350L, LDL1117S33R (kept over the Basic
 AMS1117 for its lower dropout and better PSRR), USBLC6-2SC6, PTS810 buttons, and the connectors. USB-A J8 / J9:
-SOFNG USB-302-T (C112456; datasheet `../docs/vendor/SOFNG_USB-302-T_C112456.pdf`, hole pattern identical to the DS1095
-footprint). Older states of the board and its order files are in `archive/` (the ordered set: `archive/2026-11-03_as_ordered/`).
+CONNFLY DS1095-WNR0 (C19944603). Older states of the board and its order files are in `archive/` (the ordered set: `archive/2026-11-03_as_ordered/`).
 
 ## JLCPCB order files (`jlcpcb/`, made by `python3 tools/jlc_export.py` in WSL)
 
@@ -74,7 +73,7 @@ Revision 1's outline (84.1 x 83.4 mm) and J1 position. Connectors on the edges:
 | Right | ESP32-WROVER-E U2 with the antenna end 1 mm inside the edge (nothing sticks out; keep-out in the footprint), USB-C J5, USB 1 J8 (keyboard) |
 | Bottom | J1 host connector (as revision 1) |
 
-Groups: joystick pull-ups under their DB9s; VGA DAC resistors and 10p caps beside J2; microSD pull-ups beside J7;
+Groups: joystick pull-ups under their DB9s; VGA DAC resistors and 6p8 caps beside J2; microSD pull-ups beside J7;
 audio filter left of the ESP32; ESP32 decoupling and EN RC above its pins 2 / 3, left of the antenna; CP2102N, ESD, CC resistors and
 the auto-reset transistors between the ESP32 and USB-C; EN / BOOT buttons left of them; LDO in the middle; CH9350L
 with the ESD part and bulk caps beside J8. Mounting holes H1-H4 inside the board (the corners hold connectors or the antenna clearance).
@@ -104,7 +103,7 @@ ESP32), audio line-out jack (J3), four M3 holes.
 
 - **USB-C (J5)**: 5.1k on CC1 / CC2 (a USB-C source gives 5 V), USBLC6-2SC6 (U5) on D+/D-. VBUS is +5V directly (no
   diode): supply the system from USB-C (a self-powered hub or charger, >= 1.5 A) or from the core board's input, not both.
-- **CP2102N (U3)**: self-powered from +3V3 (VREGIN = VDD = VIO), VBUS sensed through 22k / 47k (3.4 V at 5 V), RST pulled up (1k).
+- **CP2102N (U3)**: self-powered from +3V3 (VREGIN = VDD = VIO), VBUS sensed through 22k / 47.5k (3.4 V at 5 V), RST pulled up (1k).
   TXD -> ESP32 RXD0, RXD <- TXD0. Auto-reset as on the DevKit: Q1 (base from DTR, emitter RTS) pulls EN,
   Q2 (base from RTS, emitter DTR) pulls IO0.
 - **ESP32 (U2)**: EN 10k + 1 uF, IO0 10k pull-up, 22 uF + 0.1 uF. GPIOs: link SCK 14, MOSI 13, CS 33, MISO 35, IRQ 34;
