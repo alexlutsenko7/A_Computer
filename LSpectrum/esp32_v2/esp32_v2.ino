@@ -58,17 +58,16 @@ extern "C" uint8_t __wrap_bta_av_co_audio_set_codec(const void *feeding, void *s
   return 1;
 }
 
-// SBC bitpool cap (2026-11-05). On some connections (both speakers, any machine; reconnecting
-// clears it) the Bluedroid source took only ~2/3 of the audio (29,900 of 44,100 frames/s, steps
-// on time): its packets do not get out fast enough. btc_a2dp_source_encoder_update() takes the
+// SBC bitpool cap (`bitpool <n>`, 0 = none = default). btc_a2dp_source_encoder_update() takes the
 // sink's bitpool range from bta_av_co_get_remote_bitpool_pref() when that returns TRUE (the sink
-// sent SET CONFIG), otherwise the current SBC configuration's range. The wrapper always returns
-// TRUE with the range capped (the configuration's range when the sink gave none), so the encoder
-// sends a lower bitrate. Bitpool 53 (Bluedroid's default) = 328 kbit/s,
-// 35 = 229 kbit/s, 29 = 196 kbit/s at 44.1 kHz joint stereo. 35 still lost 3-4 % on a weak link
-// (a 0.2-0.3 s gap every 4-6 s); 29 kept up on every machine, quality fine (user, 2026-11-05).
-// `bitpool <n>` (0 = no cap) is stored and used from the next stream start (reconnect).
-static volatile uint8_t bitpool_cap = 29;
+// sent SET CONFIG), otherwise the current SBC configuration's range. With a cap set, the wrapper
+// always returns TRUE with the range capped (the configuration's range when the sink gave none), so
+// the encoder sends a lower bitrate: bitpool 53 (Bluedroid's default) = 328 kbit/s, 35 = 229 kbit/s,
+// 29 = 196 kbit/s at 44.1 kHz joint stereo. Stored; used from the next stream start (reconnect).
+// History: 29 was the default from 2026-11-05 to 2026-11-10, when some connections carried only 2/3
+// of the audio. The cause was not the radio but the internal heap (see "Media packets" below): with
+// a smaller bitpool one packet per tick was enough.
+static volatile uint8_t bitpool_cap = 0;
 static volatile uint8_t bp_peer_min, bp_peer_max, bp_max;   // range from the codec config, max used
 static volatile uint32_t bp_calls;
 
@@ -98,6 +97,64 @@ extern "C" uint8_t __wrap_bta_av_co_get_remote_bitpool_pref(uint8_t *min, uint8_
   bp_max = *max;
   bp_calls = bp_calls + 1;
   return bitpool_cap ? 1 : r;
+}
+
+// Link role and power mode of the open link, shown by `status` / `rates` (diagnosis; Bluedroid
+// accepts an incoming connection as slave and never asks for a switch, the audio does not depend on it).
+extern "C" int BTM_GetRole(uint8_t *bda, uint8_t *role);               // 0 = BTM_SUCCESS
+extern "C" int BTM_ReadPowerMode(uint8_t *bda, uint8_t *mode);         // 0 active, 2 sniff
+static uint8_t link_role = 0xff, link_mode = 0xff;   // 0 master, 1 slave; 0xff = no link
+static uint32_t role_changes;
+
+static const char *role_name(uint8_t r) { return r == 0 ? "master" : r == 1 ? "slave" : "-"; }
+static const char *mode_name(uint8_t m) {
+  return m == 0 ? "active" : m == 1 ? "hold" : m == 2 ? "sniff" : m == 3 ? "park" : "-";
+}
+
+// Media packets. Bluedroid builds every A2DP media packet in a 4112-byte buffer from the internal
+// heap (osi_malloc(BTC_MEDIA_AA_BUF_SIZE) in btc_media_aa_prep_sbc_2_send) and fills it up to the
+// sink's MTU: 7 SBC frames at bitpool 53 with an MTU of 883, so a 30 ms tick (10.3 frames) needs two
+// packets. When the second allocation fails the function returns without a word: those frames are
+// never read, the sink gets 2/3 of the audio (29,867 Hz pulled; choppy, "sped up"), and with less
+// memory still nothing at all (connected, silent). Found 2026-11-10; the heap then had 13-18 KB free
+// while streaming. Keep the internal heap well above 20 KB while streaming (`status`, heap line).
+// Counted where BTA hands a packet to AVDTP: packets, SBC frames (layer_specific) and bytes.
+struct BtHdr { uint16_t event, len, offset, layer_specific; };
+static volatile uint32_t pk_n, pk_frames, pk_err;
+static volatile uint16_t pk_max_len, pk_max_frames;
+static uint32_t meas_pk_hz, meas_pkfr_hz;
+extern "C" uint16_t __real_AVDT_WriteReqOpt(uint8_t handle, void *pkt, uint32_t ts, uint8_t m_pt, uint8_t opt);
+extern "C" uint16_t __wrap_AVDT_WriteReqOpt(uint8_t handle, void *pkt, uint32_t ts, uint8_t m_pt, uint8_t opt) {
+  const BtHdr *h = (const BtHdr *)pkt;
+  uint16_t len = h->len, fr = h->layer_specific & 0x0f;   // read before the stack takes the buffer
+  uint16_t r = __real_AVDT_WriteReqOpt(handle, pkt, ts, m_pt, opt);
+  pk_n = pk_n + 1;
+  pk_frames = pk_frames + fr;
+  if (len > pk_max_len) pk_max_len = len;
+  if (fr > pk_max_frames) pk_max_frames = fr;
+  if (r) pk_err = pk_err + 1;
+  return r;
+}
+
+// More of the same: how many buffers L2CAP still holds for the media channel when BTA asks (it sends
+// a new packet only below a limit), packets BTA dropped, and the number of ACL links the stack counts.
+static volatile uint16_t l2c_last, l2c_max;
+static volatile uint32_t l2c_calls, co_drops;
+extern "C" uint16_t BTM_GetNumAclLinks(void);
+extern "C" uint16_t __real_L2CA_FlushChannel(uint16_t lcid, uint16_t num);
+extern "C" uint16_t __wrap_L2CA_FlushChannel(uint16_t lcid, uint16_t num) {
+  uint16_t r = __real_L2CA_FlushChannel(lcid, num);
+  if (num == 0) {                      // L2CAP_FLUSH_CHANS_GET: a query
+    l2c_last = r;
+    if (r > l2c_max) l2c_max = r;
+    l2c_calls = l2c_calls + 1;
+  }
+  return r;
+}
+extern "C" void __real_bta_av_co_audio_drop(uint8_t hndl);
+extern "C" void __wrap_bta_av_co_audio_drop(uint8_t hndl) {
+  co_drops = co_drops + 1;
+  __real_bta_av_co_audio_drop(hndl);
 }
 
 static const uint32_t SAMPLE_RATE = 44100;
@@ -151,15 +208,21 @@ static volatile bool muted;
 static i2s_chan_handle_t i2s_rx;
 static volatile uint32_t i2s_underruns;
 // The I2S clock (APLL, 44.1 kHz) and the A2DP stack's sending timer are different clocks: a few
-// ppm apart, the DMA backlog drifts. Left alone it fills the 8 buffers and the driver overwrites
-// one (a 5.8 ms skip forward, heard as a short "speed-up"), or runs dry (silence). The backlog is
-// kept near BACKLOG_MID by dropping or repeating one sample frame per step when it drifts out of
-// [BACKLOG_LO, BACKLOG_HI] (at most ~0.2 %, not audible).
+// ppm apart, the DMA backlog drifts. Left alone it fills the buffers and the driver overwrites one
+// (a 5.8 ms skip forward, heard as a short "speed-up"), or runs dry (silence).
+// The stack takes the audio in bursts: every 30 ms tick about 1,300-1,400 frames within a few ms. So
+// the backlog is looked at once per tick, at the first read of the burst (its highest point), and
+// kept in [BACKLOG_LO, BACKLOG_HI] by dropping or repeating one sample frame in that tick (at most
+// 33 frames/s = 750 ppm). The lowest point is then about 400 frames or more, the highest stays 3
+// buffers below the 12 the DMA has. Far outside (stream start, a hiccup): one jump back to
+// BACKLOG_MID, by throwing frames away or by a tick or two of silence.
 static volatile uint32_t i2s_rx_frames;   // frames the DMA delivered (ISR)
 static uint32_t i2s_rd_frames;            // frames read by get_frames
 static volatile uint32_t i2s_overflows;   // DMA buffers overwritten (ISR)
 static uint32_t i2s_drops, i2s_dups;      // drift corrections
-static const int32_t BACKLOG_LO = 512, BACKLOG_MID = 768, BACKLOG_HI = 1024;   // frames (256 per buffer)
+static uint32_t i2s_resyncs;              // jumps back to BACKLOG_MID
+static const int DMA_BUFS = 12, DMA_LEN = 256;                                     // 12 x 5.8 ms
+static const int32_t BACKLOG_LO = 1792, BACKLOG_MID = 2048, BACKLOG_HI = 2304;   // frames at the start of a tick
 // The A2DP stack asks for audio in steady steps (~10-20 ms). A step much later than that means the
 // sending side was held up (the speaker's buffer can run dry: a short gap); the radio side shows no
 // late step. Counted while connected; the F3 menu shows both counters.
@@ -182,7 +245,7 @@ static volatile uint8_t  sbc_cfg;       // first SBC byte of the last ESP_A2D_AU
 static volatile uint32_t cfg_events;
 static volatile int8_t link_rssi;     // ESP_BT_GAP_READ_RSSI_DELTA_EVT: 0 = in the golden range, < 0 weaker
 static volatile uint32_t rssi_reads;
-struct RateLog { uint32_t ms, i2s_hz, a2dp_hz, ovf, fix; int8_t rssi; uint8_t bitpool; };
+struct RateLog { uint32_t ms, i2s_hz, a2dp_hz, ovf, fix; int8_t rssi; uint8_t bitpool, role, mode; };
 static RateLog rate_log[24];            // ring
 static uint32_t rate_log_n;             // entries written
 
@@ -190,7 +253,14 @@ static uint32_t sbc_hz(uint8_t b) {     // A2DP SBC codec byte 0: sampling frequ
   return b & 0x80 ? 16000 : b & 0x40 ? 32000 : b & 0x20 ? 44100 : b & 0x10 ? 48000 : 0;
 }
 
-static int16_t sine_tab[1024];
+struct SineTab {                      // built by the compiler: in flash, not in RAM
+  int16_t v[1024];
+  constexpr SineTab() : v{} {
+    for (int i = 0; i < 1024; i++) v[i] = (int16_t)__builtin_lround(32767.0 * __builtin_sin(i * 2.0 * 3.14159265358979323846 / 1024));
+  }
+};
+static constexpr SineTab sine_tab_c;
+static const int16_t *const sine_tab = sine_tab_c.v;
 static volatile uint32_t phase_inc;   // phase step per sample, 2^32 = one period
 static volatile int32_t amp;          // 0..32767
 static volatile bool square_wave;
@@ -222,13 +292,42 @@ static void tone_frames(Frame *f, int32_t n) {
   }
 }
 
+static void i2s_discard(int32_t frames) {
+  Frame junk[64];
+  while (frames > 0) {
+    size_t want = (size_t)(frames < 64 ? frames : 64) * sizeof(Frame), r = 0;
+    i2s_channel_read(i2s_rx, junk, want, &r, 0);
+    i2s_rd_frames += r / sizeof(Frame);
+    frames -= 64;
+    if (r < want) break;
+  }
+}
+
 // I2S and A2DP both run from the ESP32's clocks, so on average the data is there;
 // a short wait (at most ~8 ms) covers the DMA buffer granularity, silence beyond.
-static void i2s_frames(Frame *f, int32_t n) {
+// first = the first read of a tick's burst.
+static void i2s_frames(Frame *f, int32_t n, bool first) {
+  static bool filling;                 // silence until the backlog is back at BACKLOG_MID
   uint8_t *p = (uint8_t *)f;
-  int32_t backlog = (int32_t)(i2s_rx_frames - i2s_rd_frames);
-  // too much waiting: read one frame more and drop it; too little: read one less and repeat the last
-  int adj = n > 2 && backlog > BACKLOG_HI ? 1 : n > 2 && backlog < BACKLOG_LO && backlog >= 0 ? -1 : 0;
+  int adj = 0;
+  if (first) {
+    int32_t backlog = (int32_t)(i2s_rx_frames - i2s_rd_frames);
+    if (backlog > BACKLOG_HI + 512) {                  // far too much: throw the excess away
+      i2s_discard(backlog - BACKLOG_MID);
+      i2s_resyncs++;
+    } else if (backlog < BACKLOG_LO - 512) {           // not enough for this burst: let it fill
+      if (!filling) i2s_resyncs++;
+      filling = true;
+    } else if (filling) {
+      if (backlog >= BACKLOG_MID - 256) filling = false;
+    } else if (n > 2) {
+      adj = backlog > BACKLOG_HI ? 1 : backlog < BACKLOG_LO ? -1 : 0;
+    }
+  }
+  if (filling) {
+    memset(p, 0, (size_t)n * sizeof(Frame));
+    return;
+  }
   size_t want = (size_t)(n - (adj < 0 ? 1 : 0)) * sizeof(Frame), got = 0;
   for (int tries = 0; got < want && tries < 4; tries++) {
     size_t r = 0;
@@ -248,7 +347,6 @@ static void i2s_frames(Frame *f, int32_t n) {
     f[n - 1] = f[n - 2];                                       // repeated
     i2s_dups++;
   }
-  if (backlog > 8 * 256 || backlog < -8 * 256) i2s_rd_frames = i2s_rx_frames - BACKLOG_MID;   // resync (start)
   int32_t pk = i2s_peak;
   for (int32_t i = 0; i < n; i++) {
     int32_t a = abs(f[i].channel1);
@@ -264,9 +362,10 @@ static int32_t get_frames(Frame *f, int32_t n) {
     if (d > cb_max_us) cb_max_us = d;
     if (d > LATE_US) cb_late = cb_late + 1;
   }
+  bool first = !cb_last || now - cb_last > 12000;   // the calls of one tick follow each other within a few ms
   cb_last = now;
   a2dp_req = a2dp_req + n;
-  if (src_i2s) i2s_frames(f, n);
+  if (src_i2s) i2s_frames(f, n, first);
   else tone_frames(f, n);
   if (muted) memset(f, 0, (size_t)n * sizeof(Frame));
   return n;
@@ -280,14 +379,14 @@ static bool IRAM_ATTR i2s_on_recv(i2s_chan_handle_t, i2s_event_data_t *e, void *
 
 static bool IRAM_ATTR i2s_on_ovf(i2s_chan_handle_t, i2s_event_data_t *e, void *) {
   i2s_overflows = i2s_overflows + 1;
-  i2s_rx_frames = i2s_rx_frames - (e && e->size ? e->size : 256 * sizeof(Frame)) / sizeof(Frame);   // that buffer is gone
+  i2s_rx_frames = i2s_rx_frames - (e && e->size ? e->size : DMA_LEN * sizeof(Frame)) / sizeof(Frame);   // that buffer is gone
   return false;
 }
 
 static void i2s_start() {
   i2s_chan_config_t chan = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
-  chan.dma_desc_num = 8;
-  chan.dma_frame_num = 256;           // 8 x 5.8 ms of buffering
+  chan.dma_desc_num = DMA_BUFS;
+  chan.dma_frame_num = DMA_LEN;
   ESP_ERROR_CHECK(i2s_new_channel(&chan, nullptr, &i2s_rx));
   i2s_std_config_t cfg = {
       .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
@@ -592,8 +691,9 @@ static void status(Print &out) {
   out.printf("   stream: media state %d, audio state %d (%u events), restarts=%u, relinks=%u, last audio %ld ms ago\r\n",
              a2dp.media_state(), (int)audio_state, (unsigned)audio_events, (unsigned)media_restarts, (unsigned)relinks,
              cb_last ? (long)((esp_timer_get_time() - cb_last) / 1000) : -1L);
-  out.printf("   i2s backlog=%d frames, overflows=%u, drift fixes: dropped=%u repeated=%u\r\n",
-             (int)(i2s_rx_frames - i2s_rd_frames), (unsigned)i2s_overflows, (unsigned)i2s_drops, (unsigned)i2s_dups);
+  out.printf("   i2s backlog=%d frames, overflows=%u, drift fixes: dropped=%u repeated=%u, resyncs=%u\r\n",
+             (int)(i2s_rx_frames - i2s_rd_frames), (unsigned)i2s_overflows, (unsigned)i2s_drops, (unsigned)i2s_dups,
+             (unsigned)i2s_resyncs);
   out.printf("   rates: i2s %u Hz, a2dp %u Hz, codec %u Hz (0x%02x, %u cfg events), history %u (`rates`)\r\n",
              (unsigned)meas_i2s_hz, (unsigned)meas_a2dp_hz, (unsigned)sbc_hz(sbc_cfg), (unsigned)sbc_cfg,
              (unsigned)cfg_events, (unsigned)rate_log_n);
@@ -601,6 +701,28 @@ static void status(Print &out) {
              (int)link_rssi, (unsigned)rssi_reads, (unsigned)bp_peer_min, (unsigned)bp_peer_max,
              bp_from_peer ? "sink" : "config",
              (unsigned)bitpool_cap, (unsigned)bp_max, (unsigned)bp_calls);
+  {
+    uint8_t cie[8] = {0};
+    uint16_t mtu = 0;
+    bta_av_co_audio_get_sbc_config(cie, &mtu);
+    out.printf("   packets: %u/s with %u frames/s, largest %u frames / %u bytes, mtu %u, write errors %u, total %u\r\n",
+               (unsigned)meas_pk_hz, (unsigned)meas_pkfr_hz, (unsigned)pk_max_frames, (unsigned)pk_max_len,
+               (unsigned)mtu, (unsigned)pk_err, (unsigned)pk_n);
+    pk_max_frames = 0;
+    pk_max_len = 0;
+    // Each media packet is a 4112-byte buffer from the internal heap (osi_malloc, BTC_MEDIA_AA_BUF_SIZE);
+    // a tick that needs two packets needs two such blocks at once.
+    out.printf("   heap: free %u, largest block %u, lowest free ever %u (internal RAM)\r\n",
+               (unsigned)heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL),
+               (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL),
+               (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL));
+    out.printf("   l2cap: %u buffers waiting (max %u, %u queries), dropped packets %u, acl links %u\r\n",
+               (unsigned)l2c_last, (unsigned)l2c_max, (unsigned)l2c_calls, (unsigned)co_drops,
+               (unsigned)BTM_GetNumAclLinks());
+    l2c_max = 0;
+  }
+  out.printf("   role: %s, mode %s (changes %u)\r\n", role_name(link_role), mode_name(link_mode),
+             (unsigned)role_changes);
   {
     esp_power_level_t lo = ESP_PWR_LVL_N0, hi = ESP_PWR_LVL_N0;
     esp_bredr_tx_power_get(&lo, &hi);
@@ -637,8 +759,8 @@ static void help(Print &out) {
       "  src i2s|tone            audio from the FPGA or the test tone\r\n"
       "  vol <0..127>            A2DP volume (also sent to the speaker)\r\n"
       "  mute on|off\r\n"
-      "  bitpool <n>             SBC bitpool cap, 0 = none (default 29); next connection\r\n"
-      "  rates                   sample rate history: i2s in / a2dp out per 2 s, rssi, bitpool\r\n"
+      "  bitpool <n>             SBC bitpool cap, 0 = none (default); next connection\r\n"
+      "  rates                   sample rate history: i2s in / a2dp out per 2 s, rssi, bitpool, role, mode\r\n"
       "  tone <hz>               test tone, 0 = silence (20..20000)\r\n"
       "  wave sine|square        tone shape (square ~ ZX beeper)\r\n"
       "  level <0..100>          tone amplitude in %\r\n");
@@ -663,12 +785,13 @@ static void command(char *line, Print &out) {
     loader_info(out);
   } else if (!strcasecmp(cmd, "rates")) {
     uint32_t n = rate_log_n < 24 ? rate_log_n : 24;
-    out.printf("OK rates: %u entries (ms since start, i2s Hz, a2dp Hz, overflows, drift fixes, rssi delta, bitpool)\r\n",
+    out.printf("OK rates: %u entries (ms since start, i2s Hz, a2dp Hz, overflows, drift fixes, rssi delta, bitpool, role, mode)\r\n",
                (unsigned)rate_log_n);
     for (uint32_t i = rate_log_n - n; i < rate_log_n; i++) {
       const RateLog &r = rate_log[i % 24];
-      out.printf("   %8u %6u %6u %8u %8u %4d %3u\r\n", (unsigned)r.ms, (unsigned)r.i2s_hz, (unsigned)r.a2dp_hz,
-                 (unsigned)r.ovf, (unsigned)r.fix, (int)r.rssi, (unsigned)r.bitpool);
+      out.printf("   %8u %6u %6u %8u %8u %4d %3u %s %s\r\n", (unsigned)r.ms, (unsigned)r.i2s_hz, (unsigned)r.a2dp_hz,
+                 (unsigned)r.ovf, (unsigned)r.fix, (int)r.rssi, (unsigned)r.bitpool, role_name(r.role),
+                 mode_name(r.mode));
     }
   } else if (!strcasecmp(cmd, "list")) {
     list_devs(out);
@@ -816,15 +939,13 @@ void setup() {
   Serial2.begin(115200, SERIAL_8N1, UART2_RX, UART2_TX);
   gpio_pullup_en((gpio_num_t)UART2_RX);   // idle-high when the FPGA is not connected
 
-  for (int i = 0; i < 1024; i++) sine_tab[i] = (int16_t)lroundf(32767.0f * sinf(i * 2.0f * (float)M_PI / 1024));
-
   prefs.begin("btaudio", false);
   set_tone(prefs.getUInt("tone", 1000));
   set_level(prefs.getUInt("level", 30));
   square_wave = prefs.getBool("square", false);
   src_i2s = prefs.getBool("i2s", true);
   volume = prefs.getUInt("vol", 64);
-  bitpool_cap = prefs.getUChar("bitpool", 29);
+  bitpool_cap = prefs.getUChar("bitpool", 0);
   strlcpy(target, prefs.getString("target", "").c_str(), sizeof target);
   strlcpy(pin_fixed, prefs.getString("pin", "").c_str(), sizeof pin_fixed);
   want_connect = target[0] != 0;
@@ -832,6 +953,7 @@ void setup() {
   i2s_start();
 
   a2dp.set_local_name("LSpectrum");
+  a2dp.set_reset_ble(true);               // Classic BT only: the controller's BLE memory goes back to the heap
   a2dp.set_auto_reconnect(true);          // reconnect to the last peer stored in NVS
   a2dp.set_data_callback_in_frames(get_frames);
   a2dp.set_volume(volume);
@@ -938,9 +1060,29 @@ void loop() {
   int64_t now_us = esp_timer_get_time();
   if (now_us - rate_t >= 2000000) {
     uint32_t g = i2s_gross, q = a2dp_req;
+    static uint32_t pk_n0, pk_f0;
+    if (rate_t) {
+      uint32_t pn = pk_n, pf = pk_frames;
+      meas_pk_hz = (uint32_t)((pn - pk_n0) * 1e6 / (now_us - rate_t) + 0.5);
+      meas_pkfr_hz = (uint32_t)((pf - pk_f0) * 1e6 / (now_us - rate_t) + 0.5);
+      pk_n0 = pn;
+      pk_f0 = pf;
+    }
     static uint32_t rssi_n;
     if (conn == ESP_A2D_CONNECTION_STATE_CONNECTED && rssi_n++ % 5 == 0)   // every 10 s
       esp_bt_gap_read_rssi_delta(*a2dp.get_last_peer_address());
+    // Link role and power mode (see BTM_GetRole above)
+    uint8_t lr = 0xff, lm = 0xff;
+    if (conn == ESP_A2D_CONNECTION_STATE_CONNECTED) {
+      BTM_GetRole(*a2dp.get_last_peer_address(), &lr);
+      BTM_ReadPowerMode(*a2dp.get_last_peer_address(), &lm);
+    }
+    if (lr != link_role || lm != link_mode) {
+      if (lr != 0xff && link_role != 0xff && lr != link_role) role_changes++;
+      link_role = lr;
+      link_mode = lm;
+      if (lr != 0xff) event("link role %s, mode %s", role_name(lr), mode_name(lm));
+    }
     if (rate_t) {
       double sec = (now_us - rate_t) / 1e6;
       meas_i2s_hz = (uint32_t)((g - rate_g0) / sec + 0.5);
@@ -955,7 +1097,7 @@ void loop() {
         kept_i2s = meas_i2s_hz;
         kept_a2dp = meas_a2dp_hz;
         rate_log[rate_log_n % 24] = {millis(), meas_i2s_hz, meas_a2dp_hz, i2s_overflows, i2s_drops + i2s_dups,
-                                     link_rssi, bp_max};
+                                     link_rssi, bp_max, link_role, link_mode};
         rate_log_n++;
       }
     }

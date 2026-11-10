@@ -83,7 +83,7 @@ Unsolicited events start with `EV` and go to both ports.
 | `help`, `status` | command list; connection, target, PIN, audio source, I2S peak (since the last `status`), underruns, overflows, drift fixes, stream state (restarts, relinks), measured rates, link RSSI delta, bitpool, transmit power |
 | `info` | one line for the menu: `OK info <state> <scan\|idle> <MAC> <vol> <pin> <i2s\|tone> <short> <skip> <fix> <i2s Hz> <a2dp Hz> <history> <name>` |
 | `rates` | sample-rate history: the first 5 measurements (every 2 s) of each stream and each change > 2 %: I2S in, A2DP out, overflows, drift fixes, RSSI delta, bitpool |
-| `bitpool <n>` | SBC bitpool cap, 2..250, 0 = none; default 29; used from the next connection |
+| `bitpool <n>` | SBC bitpool cap, 2..250, 0 = none (default); used from the next connection |
 | `scan` | drop the current link (if any) and search; each device found is reported as `EV found <n> <MAC> <rssi> <name>` |
 | `list` | devices found so far |
 | `connect <n\|MAC\|name>` | connect to entry n of the list, a MAC, or an exact name (case-insensitive); saved as the target |
@@ -129,14 +129,27 @@ A speaker has no screen, so it never shows a PIN prompt; the source (the ESP32) 
   chose. `status` shows `codec-fix=<n>` and `EV codec set up by the IDF fix` marks each use. (Arduino passes a
   library's `ldflags` only for a precompiled library, hence the stub archive in AAudioLinkFix.)
 - The library's discovery loop would keep running while connected; the sketch stops it then.
-- **Bitrate on a weak link.** At Bluedroid's default SBC bitpool 53 (328 kbit/s) some connections could not carry the
-  stream (RSSI delta about -20 dB at 40 cm): the source read only part of the audio (about 2/3, or 96 %), the I2S DMA
-  overflowed and the sink heard chopped sound or a 0.2-0.3 s gap every few seconds. The sketch caps the bitpool at 29
-  (196 kbit/s at 44.1 kHz joint stereo; `bitpool <n>`): it wraps `bta_av_co_get_remote_bitpool_pref()` (second
-  `--wrap` in AAudioLinkFix), which the encoder asks for the sink's range, and returns the range capped (the
-  configuration's range when the sink gave none). The BR/EDR transmit power is 0..+9 dBm (controller default 0..+3),
-  set in `bt_start()` between controller start and Bluedroid start. `status` / `rates` show both rates, the RSSI
-  delta (asked every 10 s) and the bitpool in use.
+- **Internal memory and the audio.** Bluedroid builds every A2DP media packet in a 4112-byte buffer from the ESP32's
+  internal heap and fills it up to the sink's MTU (7 SBC frames at bitpool 53 with an MTU of 883), so a 30 ms tick
+  needs two packets. When the second buffer cannot be allocated, the stack skips that packet without an error: the
+  sink gets 2/3 of the audio (choppy, "sped up"; 29,867 Hz pulled instead of 44,100), and with less memory still
+  nothing (connected, silent). So the internal heap must stay well above 20 KB while streaming: about 45 KB now.
+  `status` shows it (`heap: free / largest block / lowest free ever`) together with the packets per second (67 when
+  all is well, 33 in the bad state), frames per packet, MTU, buffers waiting in L2CAP and packets dropped by BTA
+  (`--wrap` of `AVDT_WriteReqOpt`, `L2CA_FlushChannel`, `bta_av_co_audio_drop` in AAudioLinkFix). Two things keep the
+  heap free: the SD card is used without the SD library's FAT mount (`sdcard_init` + `disk_initialize`, raw sector
+  calls; `SD.begin()` takes about 25 KB for a volume the loader never uses), and `set_reset_ble(true)` gives the
+  controller's BLE memory back. Check the heap line after adding buffers or libraries.
+- **Bitpool cap.** `bitpool <n>` limits the SBC bitrate (53 = 328 kbit/s = Bluedroid's default, 35 = 229, 29 = 196 at
+  44.1 kHz joint stereo); default 0 = no cap. It wraps `bta_av_co_get_remote_bitpool_pref()`, which the encoder asks
+  for the sink's range, and returns the range capped (the configuration's range when the sink gave none). The BR/EDR
+  transmit power is 0..+9 dBm (controller default 0..+3), set in `bt_start()` between controller start and Bluedroid
+  start. `status` / `rates` show both sample rates, the RSSI delta (asked every 10 s), the bitpool in use, the link
+  role and the power mode.
+- **Clock drift.** The I2S input (APLL) and the A2DP stack's timer are different clocks. The stack takes the audio in
+  bursts (about 1,300-1,400 frames every 30 ms), so the backlog in the 12 DMA buffers (256 frames each) is checked
+  once per tick, at the start of the burst, and kept between 1,792 and 2,304 frames by dropping or repeating one
+  sample frame in that tick; far outside that range (stream start) it jumps back to 2,048 (`resyncs`).
 - **A stream that stops.** A sink that suspends the stream leaves the link connected with no audio pulled. After 3 s
   without audio the sketch sets the library's media state back to idle, so its heart beat starts the stream again
   (`restarts`); if there is still no audio 15 s later (seen after quick disconnects / reconnects from the

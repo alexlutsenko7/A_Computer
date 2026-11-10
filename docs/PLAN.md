@@ -1127,3 +1127,62 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   Basic-part variant in Extra_PCB_CycloneIV_R2/archive/2026-11-09_basic_part_swaps/. Book updated (Table 1.2, Ch 2, 4, 24, App. A, Fig. 24.1).
 - (2026-11-09) C64 ROM wording: C64 Forever is no longer named as a source of the ROMs (user: it has no C64 ROMs included; Cloanto's pages do not say it does).
   Now "read from a C64 and 1541 you own, or licensed ones" in the book, 9 Installation Guides (PDFs rebuilt), L64/README, BUILDING_AND_LICENSES, L_Build_and_Install and L64_Keys.
+- (2026-11-10) Bluetooth, the connections that carry only ~220 kbit/s (reason for the bitpool cap 29): read in the
+  ESP-IDF 5.5 Bluedroid source (07e9bf49). The pull is limited by the A2DP transmit queue (`btc_get_num_aa_frame`:
+  frames per 30 ms tick <= 27 - queue length), so the radio side is the limit. Bluedroid accepts an incoming connection
+  as the piconet's slave (`L2CAP_DESIRED_LINK_ROLE` = slave) and ESP-IDF enables A2DP without `BTA_AV_FEAT_MASTER`, so
+  the ESP32 never asks to be master: when the speaker connects first, the audio is sent as a slave. Suspected cause,
+  not confirmed. Added to esp32_v1 / esp32_v2 (built, not flashed): link role + power mode in `status` / `rates`,
+  `EV link role ...`, `role master|slave` (switch on the open link), `master on|off` (stored, default off: accept as
+  master via `L2CA_SetDesireRole`, one `BTM_SwitchRole` when connected as slave). Test: `bitpool 0`, connect both ways
+  (headphones switched on = they connect; F3 connect = we connect), compare role and `a2dp` rate; on a bad one
+  `role master` and watch the rate.
+- (2026-11-10, later) The role idea is wrong: a bad connection (29,867 Hz pulled at bitpool 53) was caught with the
+  ESP32 as master, mode active. What the numbers say instead: the bad state sends exactly one media packet per 30 ms
+  tick. The Bose's MTU is 883, which holds 7 SBC frames of 119 bytes: 7 x 128 samples x 33.3 = 29,867 Hz. Bitpool 35
+  (83-byte frames) gives 10 frames = 96.8 %, bitpool 29 (71 bytes) 12 frames = enough, which is every figure measured
+  on 2026-11-05. A good connection sends 66 packets/s (two per tick). So the limit is in the stack's send chain, not
+  the radio. `status` now also shows packets/s, frames per packet, MTU, L2CAP buffers waiting, packets dropped by BTA
+  and the ACL link count (`--wrap` of `AVDT_WriteReqOpt`, `L2CA_FlushChannel`, `bta_av_co_audio_drop`); esp32_v1
+  flashed, esp32_v2 built. Waiting for the next bad start (seen after: Bose on, cold start of the boards).
+  Also seen: the drift fix drops / repeats ~200 frames/s (pull bursts of ~1300 frames against a 512-frame window): to
+  be changed to an averaged backlog. Rev 1 signal (-67 dBm in a scan at 40 cm): the DevKit's antenna is mid-board,
+  10 mm above GND pours on both layers; rev 2 has the antenna at the edge with a keep-out.
+- (2026-11-10, result) **Cause of the choppy Bluetooth audio found and reproduced: the ESP32's internal heap runs out.**
+  Every A2DP media packet is a 4112-byte buffer (`osi_malloc(BTC_MEDIA_AA_BUF_SIZE)` in `btc_media_aa_prep_sbc_2_send`);
+  at bitpool 53 a 30 ms tick needs two packets. When the second allocation fails the function just returns: those
+  frames are never read, nothing is counted as an error. Measured on esp32_v1 (`status` heap line): 13-18 KB free
+  while streaming, largest block 8-16 KB, 2-7 KB at the lowest point of a connection setup. Test command `eat <bytes>`
+  (takes internal heap away on a live, good connection): 6000 -> still 67 packets/s; 9000 -> 33 packets/s, 29,568 Hz
+  (the bad state exactly); 13000 -> connected, 0 packets (silence); 0 -> back to 67 packets/s. So the bitpool cap helps
+  because one packet per tick is then enough, and the earlier "static RAM must stay near 76.7 KB" rule was this.
+  Next: free internal RAM in esp32_v1 (loader stack, browser list, screen / snapshot buffers, sine table, I2S DMA);
+  esp32_v2 has PSRAM, where allocations above 4096 bytes go by default: to be checked on the rev 2 board.
+- (2026-11-10, fix) Internal RAM freed in esp32_v1 / esp32_v2: (1) the SD card is started with the SD library's driver
+  calls (`sdcard_init` + `disk_initialize`, `sd_read_raw` / `sd_write_raw`) and no longer mounted: `SD.begin()` registered
+  a FAT volume nobody used (the loader has its own `fat.cpp`), about 25 KB of heap (4096-byte sector buffers for the
+  volume and 5 files) and 32 KB of flash; (2) `a2dp.set_reset_ble(true)`: the library's default left the controller's
+  BLE memory allocated; (3) the test tone's sine table is a compile-time constant (flash, 2 KB). Measured on esp32_v1
+  (rev 1 board, Bose, bitpool 53): free heap while streaming 50.6 KB (was 13.5-18 KB), lowest point 41.7 KB (was
+  2.3-7.4 KB), 67 packets/s. Static RAM 75,384 B, sketch 1,174,075 B. esp32_v2 built (63,944 B static). To do after
+  the user's tests (browser, load, save, snapshots, .d64, .atr, SD update): default bitpool cap (29) up or off,
+  remove the test commands (`eat`, `role`, `master`), the drift fix (averaged backlog). Not needed now, still possible:
+  loader stack 16 KB (14.6 KB never used so far), screenshot buffer 6.9 KB and .A64 buffer 4 KB (static, used rarely).
+- (2026-11-10, user) On hardware with the memory fix, no bitpool cap: restart by Ctrl+Alt+Del and USB unplug / plug
+  with the headphones on: sound good; loading from the card works. Then cleaned up (esp32_v1 flashed, esp32_v2
+  built): default bitpool cap 0 (none); test commands `eat`, `role`, `master` and the role switching removed (role /
+  mode stay in `status` / `rates`); drift correction once per 30 ms tick at the start of the burst, 12 DMA buffers,
+  window 1,792-2,304 frames, resync to 2,048 (first minute on hardware: 3 frames dropped, 0 repeated, 1 resync at the
+  stream start, no underruns, no overflows; before: about 200 drops / repeats per second). Heap while streaming
+  42-46 KB. READMEs updated. Still to test on hardware: saving, snapshots, Print Screen, .d64 / .atr, SD update.
+- (2026-11-10, user) Final esp32_v1 build on hardware: cold starts, Ctrl+Alt+Del restarts, games loaded on all
+  three machines, Bluetooth audio: all fine. Not tried yet with the unmounted SD card: saving, snapshots, Print
+  Screen, .d64 write-back, SD update.
+- (2026-11-10, user) Saving to the card works too (unmounted SD, esp32_v1).
+- (2026-11-10) Everything brought up to date with the Bluetooth result: docs/KNOWN_ISSUES.md, docs/SD_TAPE_LOADER.md,
+  both esp32 READMEs, AMenu/output_files/LESP32.BIN (= the new esp32_v1 build), `github/` rebuilt by make_github.py
+  (17 changed files, for the user to commit), and the book: Chapter 12 rewritten around the real cause ("The missing
+  third", "The memory budget", the reworked drift fix, five wrapped functions), Chapter 11's SD paragraph, the
+  build chapter's library note and the troubleshooting table (backup Book/backup/Book_before_bluetooth_heap.docx).
+- (2026-11-10, user) First test of a pairing from scratch: `forget` on the ESP32, device list cleared on the Bose
+  QC35, paired again: works.

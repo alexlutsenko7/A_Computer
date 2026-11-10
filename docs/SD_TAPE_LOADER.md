@@ -228,8 +228,8 @@ copies, the FAT32 free count is set to "unknown". No real dates (no clock on the
   skipped by length: 18 (CSW) 19 (generalized data) 28 (select) 2A (stop if 48K: this is a 128K) 30-35 40 5A and
   unknown blocks. Conventions: 100 ms low lead-in; a pause holds the level 1 ms if high, then low; TAP blocks =
   standard ROM timing with a 1 s pause.
-- `hw.h` + `esp_hw.cpp`: the FPGA's registers as proxy objects over the link, SD card sectors (Arduino SD
-  `readRAW`/`writeRAW`), the OSD as a shadow sent in changed ranges, the loader task (core 1). Every 0.5 s it checks
+- `hw.h` + `esp_hw.cpp`: the FPGA's registers as proxy objects over the link, SD card sectors (the Arduino SD
+  library's driver only, `sd_read_raw` / `sd_write_raw`; the card is not mounted, which saves 25 KB of heap), the OSD as a shadow sent in changed ranges, the loader task (core 1). Every 0.5 s it checks
   that the FPGA was not reset (KEY0 clears the IRQ mask it set); after a reset the ESP32 restarts.
 - The portable files are plain C (built as C++ on the ESP32, as C for the PC tests).
 

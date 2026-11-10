@@ -11,6 +11,8 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <SD.h>
+#include <sd_diskio.h>
+#include <diskio.h>
 #include <driver/gpio.h>
 #include <esp_heap_caps.h>
 #include <Update.h>
@@ -331,22 +333,36 @@ void osd_show(int full) { OSDC = OSD_ON | (full ? OSD_FULL : 0); }
 void osd_hide(void)     { OSDC = 0; }
 
 static bool sd_ok;
+// The card is used by raw sectors only (src/fat.cpp is the file system), so it is started with the SD
+// library's driver calls and never mounted: SD.begin() also registers a FAT volume, which takes about
+// 25 KB of internal heap (a 4096-byte sector buffer for the volume and for each of 5 files). That
+// memory is what the Bluetooth audio needs (see `status`, heap).
+static uint8_t sd_pdrv = 0xFF;
+
+static void sd_stop()
+{
+    if (sd_pdrv != 0xFF) sdcard_uninit(sd_pdrv);
+    sd_pdrv = 0xFF;
+}
 
 int sd_init(void)
 {
     static const uint32_t hz[] = {20000000, 4000000};
-    SD.end();
+    sd_stop();
     sd_ok = false;
     for (uint32_t f : hz) {
         sdspi.end();
         sdspi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
         gpio_pullup_en((gpio_num_t)SD_MISO);
-        if (SD.begin(SD_CS, sdspi, f)) {
+        sd_pdrv = sdcard_init(SD_CS, &sdspi, f);
+        if (sd_pdrv != 0xFF && !(disk_initialize(sd_pdrv) & STA_NOINIT)) {
             sd_ok = true;
-            Serial.printf("loader: SD card %llu MB at %lu MHz\r\n", SD.cardSize() >> 20, (unsigned long)(f / 1000000));
+            Serial.printf("loader: SD card %llu MB at %lu MHz\r\n",
+                          ((uint64_t)sdcard_num_sectors(sd_pdrv) * sdcard_sector_size(sd_pdrv)) >> 20,
+                          (unsigned long)(f / 1000000));
             return 0;
         }
-        SD.end();
+        sd_stop();
     }
     Serial.print("loader: no SD card\r\n");
     return -1;
@@ -357,7 +373,7 @@ int sd_ready(void) { return sd_ok; }
 int sd_read(uint32_t lba, uint8_t *buf)
 {
     if (!sd_ok) return -1;
-    if (SD.readRAW(buf, lba)) return 0;
+    if (sd_read_raw(sd_pdrv, buf, lba)) return 0;
     sd_ok = false;
     return -1;
 }
@@ -365,7 +381,7 @@ int sd_read(uint32_t lba, uint8_t *buf)
 int sd_write(uint32_t lba, const uint8_t *buf)
 {
     if (!sd_ok) return -1;
-    if (SD.writeRAW(const_cast<uint8_t *>(buf), lba)) return 0;
+    if (sd_write_raw(sd_pdrv, const_cast<uint8_t *>(buf), lba)) return 0;
     sd_ok = false;
     return -1;
 }

@@ -26,6 +26,11 @@ still worked, whether KEY0 or only a power cycle helped, and what the screen/LED
 - Bluetooth (ESP32, `LSpectrum/esp32_v2/`): controlled from the F3 menu (USB on the ESP32 is for debugging only); SBC latency
   ~150-250 ms (A2DP), so it suits music more than fast games. ESP-IDF 5.5 crashed when the headphones opened the
   stream themselves (Bose, 38/40 connects): fixed in the sketch by a link-time wrapper (`LSpectrum/esp32_v2/README.md`).
+  Choppy sound on some starts (2/3 of the audio sent, or none) was the ESP32's internal heap running out, not the
+  radio: solved 2026-11-10 (SD card without the library's FAT mount, BLE memory released). The ESP32's `status`
+  command shows the heap; it has to stay well above 20 KB while streaming (42-46 KB now).
+  On I/O board revision 1 the radio signal is weak (about -67 dBm in a scan at 40 cm): the DevKit's antenna sits in
+  the middle of the board, 10 mm above ground pours on both layers. It works; revision 2 has the antenna at the edge.
 - Tape loader: TZX 0x19 (generalized data), 0x18 (CSW) and 0x28 (select block) are not played; text/message blocks
   are not shown; `LOAD ""` is not typed automatically; at most 320 entries per folder; long names cut to 27 characters;
   exFAT cards are not supported (format FAT32).
