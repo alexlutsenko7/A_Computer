@@ -45,11 +45,11 @@ The FPGA → ESP32 wires are only tested at 115200 baud here. The 8 MHz MISO ret
 1. FPGA (in `Test_wires/fpga`): `quartus_sh --flow compile Test_wires`, then load `output_files/Test_wires.sof` over
    JTAG (`quartus_pgm -c USB-Blaster -m JTAG -o "p;output_files/Test_wires.sof"`). The flash is not touched;
    power-cycle the board to get LSpectrum back.
-2. ESP32 (in `Test_wires/esp32`): `arduino-cli compile -b esp32:esp32:esp32 -u -p COM10 Test_wires`
+2. ESP32 (in `ESP32_test/v1`): `arduino-cli compile -b esp32:esp32:esp32 -u -p COM10 Test_wires`
    (or open `Test_wires.ino` in the Arduino IDE, board "ESP32 Dev Module").
 3. Open the serial monitor at 115200 with line ending "New Line", then press the ESP32's EN (reset) button: the
    whole test runs. Load the FPGA first; if you load it later, press Enter to run the test again.
-4. Flash `LSpectrum/esp32_v1` (I/O board revision 1) or `LSpectrum/esp32_v2` (revision 2) back onto the ESP32 afterwards.
+4. Flash `ESP32/v1` (I/O board revision 1) or `ESP32/v2` (revision 2) back onto the ESP32 afterwards.
 
 Commands: Enter / `all` = everything, `sd`, `ls <path>`, `back`, `fwd`, `fast`,
 `set <hex>` (drive the 6 outputs to a fixed pattern for a multimeter; bit 0 = GPIO14 … bit 5 = GPIO17),

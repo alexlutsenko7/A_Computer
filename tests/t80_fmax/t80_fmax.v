@@ -1,5 +1,5 @@
-// t80_fmax -- timing-only test: T80 (T80se wrapper) with all I/O registered.
-// Not for hardware. Measures the T80's internal Fmax on EP4CE15F23C8.
+/* t80_fmax -- timing-only test: T80 (T80se wrapper) with all I/O registered. */
+/* Not for hardware. Measures the T80's internal Fmax on EP4CE15F23C8. */
 module t80_fmax (
     input  wire        clk,
     input  wire        reset_n, cen, wait_n, int_n, nmi_n, busrq_n,
@@ -10,12 +10,16 @@ module t80_fmax (
 );
     reg rst_r, cen_r, wait_r, int_r, nmi_r, busrq_r;
     reg [7:0] di_r;
+/* the CPU's outputs */
     wire [15:0] a_w; wire [7:0] do_w;
     wire m1, mreq, iorq, rd, wr, rfsh, halt, busak;
-    always @(posedge clk) begin
+    always @(posedge clk)
+    begin
+/* every input and output through a register */
         {rst_r, cen_r, wait_r, int_r, nmi_r, busrq_r} <= {reset_n, cen, wait_n, int_n, nmi_n, busrq_n};
         di_r <= di;
         a    <= a_w;
+/* data and control outputs; the CPU */
         dout <= do_w;
         ctl  <= {m1, mreq, iorq, rd, wr, rfsh, halt, busak};
     end

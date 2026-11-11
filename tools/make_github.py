@@ -2,7 +2,7 @@
 """make_github.py [ROOT] -- copy the publishable part of the project into ROOT/github (the public repo A_Computer).
 
 Left out: Commodore ROMs, Retroleum's DiagROM (licence unknown: the public LSpectrum ROM image and L.jic get
-48K BASIC in that slot), third-party PDFs (docs/vendor/README.md lists them), the Altirra manual (LTari/ref),
+48K BASIC in that slot), third-party PDFs (docs/vendor/README.md lists them), the Altirra manual (LTari/ep4_ce15/ref),
 game-derived files, build / simulation by-products, local notes. Run from the project root:
     python3 tools/make_github.py
 then check github/ and copy it into the clone of the public repository."""
@@ -11,12 +11,12 @@ import os, re, shutil, sys, fnmatch
 ROOT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else '.')
 DST = os.path.join(ROOT, 'github')
 
-TOP = ['AMenu', 'LSpectrum', 'L64', 'LTari', 'T65', 'T80', 'DDR_TEST', 'VGA_TEST', 'FirstLight', 'docs', 'tests', 'tools',
+TOP = ['AMenu', 'LSpectrum', 'L64', 'LTari', 'ESP32', 'ESP32_test', 'T65', 'T80', 'DDR_TEST', 'VGA_TEST', 'FirstLight', 'docs', 'tests', 'tools',
        'Extra_PCB_CycloneIV', 'Extra_PCB_CycloneIV_R2', 'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md']
 
 SKIP_DIRS = {'db', 'incremental_db', 'greybox_tmp', '.qsys_edit', '__pycache__', 'node_modules', '.git',
              'roms_local',          # C64 ROMs (copyright)
-             'ref',                 # LTari/ref: Altirra manual PDF + files from atari800
+             'ref',                 # LTari/ep4_ce15/ref: Altirra manual PDF + files from atari800
              'syn_check',           # LTari scratch synthesis check
              '.history', 'Extra_PCB_CycloneIV-backups', 'Extra_PCB_CycloneIV_R2-backups',   # KiCad history / backups
              'archive',             # Extra_PCB_CycloneIV_R2/archive: earlier local states (the repository has the history)
@@ -90,18 +90,18 @@ print('%d files, %.1f MB' % (n, size / 1e6))
 # repository files
 with open(os.path.join(DST, '.gitignore'), 'w', newline='\n') as f:
     f.write('''# Commodore ROMs (copyright): never in the repository
-L64/roms_local/
-L64/sim/c64roms*.mem
-L64/sim/c64roms*.hex
+L64/ep4_ce15/roms_local/
+L64/ep4_ce15/sim/c64roms*.mem
+L64/ep4_ce15/sim/c64roms*.hex
 # Quartus / Questa / tools: generated
 db/
 incremental_db/
 greybox_tmp/
 **/output_files/*
 !**/output_files/*.sof
-!AMenu/output_files/L.jic
-!AMenu/output_files/L_loader.jic
-!AMenu/output_files/LUPDATE.BIN
+!AMenu/*/output_files/L.jic
+!AMenu/*/output_files/L_loader.jic
+!AMenu/*/output_files/LUPDATE.BIN
 work*/
 *.log
 transcript
@@ -114,22 +114,28 @@ print('.gitignore written')
 
 # public ROM image (no DiagROM) and the public L.jic built from it
 import subprocess
-lsp = os.path.join(DST, 'LSpectrum')
+lsp = os.path.join(DST, 'LSpectrum', 'ep4_ce15')
 subprocess.run([sys.executable, '-I', 'tools/mk_roms48k.py', os.path.join(ROOT, 'roms', 'zx128.rom'), 'roms48k.hex',
                 'sim/roms.mem'], cwd=lsp, check=True)
 cpf = '/mnt/c/Altera/quartus/bin64/quartus_cpf.exe'
-subprocess.run([cpf, '-c', 'L.cof'], cwd=os.path.join(DST, 'AMenu'), check=True, stdout=subprocess.DEVNULL)
-os.remove(os.path.join(DST, 'AMenu', 'output_files', 'L.map'))
 import datetime
-subprocess.run([sys.executable, '-I', 'tools/mk_update.py', '--label', 'L %s' % datetime.date.today().isoformat()],
-               cwd=os.path.join(DST, 'AMenu'), check=True)
-subprocess.run([sys.executable, '-I', 'tools/mk_update.py', '--loader'], cwd=os.path.join(DST, 'AMenu'), check=True)
+# one flash image set per core board (AMenu/<board>/L.cof); 10cl025 uses ep4_ce15's tools and ROM images
+for board in ('ep4_ce15', '10cl025'):
+    am = os.path.join(DST, 'AMenu', board)
+    if not os.path.exists(os.path.join(am, 'output_files', 'AMenu.sof')):
+        print('AMenu/%s: not built, no flash images' % board)
+        continue
+    upd = os.path.join(DST, 'AMenu', 'ep4_ce15', 'tools', 'mk_update.py')
+    subprocess.run([cpf, '-c', 'L.cof'], cwd=am, check=True, stdout=subprocess.DEVNULL)
+    os.remove(os.path.join(am, 'output_files', 'L.map'))
+    subprocess.run([sys.executable, '-I', upd, '--label', 'L %s' % datetime.date.today().isoformat()], cwd=am, check=True)
+    subprocess.run([sys.executable, '-I', upd, '--loader'], cwd=am, check=True)
 # INSTALL/: for buyers of a ready board set (ESP32 programmed, machine menu in the FPGA): only the machines'
 # image for the SD card and the manuals (docs/manuals/build_manuals.py). The developer files (L_loader.jic,
-# the ESP32 binaries) stay in AMenu/output_files and LSpectrum/esp32_v2/build.
+# the ESP32 binaries) stay in AMenu/ep4_ce15/output_files and ESP32/v2/build.
 inst = os.path.join(DST, 'INSTALL')
 os.makedirs(inst, exist_ok=True)
-shutil.copy2(os.path.join(DST, 'AMenu', 'output_files', 'LUPDATE.BIN'), os.path.join(inst, 'LUPDATE.BIN'))
+shutil.copy2(os.path.join(DST, 'AMenu', 'ep4_ce15', 'output_files', 'LUPDATE.BIN'), os.path.join(inst, 'LUPDATE.BIN'))
 man = os.path.join(ROOT, 'docs', 'manuals', 'pdf')
 for lang in sorted(os.listdir(man)):
     os.makedirs(os.path.join(inst, lang), exist_ok=True)
@@ -159,7 +165,7 @@ for d, _, fs in os.walk(DST):
         data = open(os.path.join(d, f), 'rb').read()
         if sig in data or sig_rev in data:
             sys.exit('DiagROM data left in ' + os.path.join(d, f))
-print('public roms48k.hex, sim/roms.mem, AMenu/output_files/L.jic, LUPDATE.BIN and L_loader.jic built (no DiagROM)')
+print('public roms48k.hex, sim/roms.mem, AMenu/ep4_ce15/output_files/L.jic, LUPDATE.BIN and L_loader.jic built (no DiagROM)')
 
 # github/ as a git working copy: files that differ from the last commit only in line endings are put back as
 # committed, so the commit shows only real changes

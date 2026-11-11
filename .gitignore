@@ -1,16 +1,16 @@
 # Commodore ROMs (copyright): never in the repository
-L64/roms_local/
-L64/sim/c64roms*.mem
-L64/sim/c64roms*.hex
+L64/ep4_ce15/roms_local/
+L64/ep4_ce15/sim/c64roms*.mem
+L64/ep4_ce15/sim/c64roms*.hex
 # Quartus / Questa / tools: generated
 db/
 incremental_db/
 greybox_tmp/
 **/output_files/*
 !**/output_files/*.sof
-!AMenu/output_files/L.jic
-!AMenu/output_files/L_loader.jic
-!AMenu/output_files/LUPDATE.BIN
+!AMenu/*/output_files/L.jic
+!AMenu/*/output_files/L_loader.jic
+!AMenu/*/output_files/LUPDATE.BIN
 work*/
 *.log
 transcript

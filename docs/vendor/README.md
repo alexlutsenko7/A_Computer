@@ -6,6 +6,7 @@ in the repository. They are free downloads from their publishers:
 | Document | Publisher / where |
 |---|---|
 | QMTECH Cyclone IV EP4CE15F23 core board: user manual V02, schematic V2, daughterboard schematic | QMTECH (github.com/ChinaQMTECH, CYCLONE_IV_EP4CE15) |
+| QMTECH Cyclone 10 LP 10CL025YU256 core board: user manual V01, schematic V1 (2023-11-09) | QMTECH (github.com/ChinaQMTECH, QMTECH_Cyclone10_10CL006_025) |
 | W9825G6KH SDRAM datasheet (rev. A04) | Winbond |
 | CONNFLY DS1037-09M (DB9) and DS1038-15F (VGA) connector datasheets | CONNFLY, via LCSC (parts C75750, C75754) |
 | ADV7513 HDMI transmitter: datasheet, hardware user's guide, programming guide | Analog Devices |

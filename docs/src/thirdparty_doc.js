@@ -93,10 +93,10 @@ C.push(h2("2.1 T80 (Z80 CPU), LSpectrum"));
 C.push(b("**Origin:** MiSTer ZX Spectrum core, `rtl/T80`, commit `af0e6723` (24 July 2026), copied unchanged into `T80/` (`T80/SOURCE.md`, with SHA-256 of every file)."));
 C.push(b("**Authors:** Daniel Wallner (T80 0250), MikeJ (T80(b) 303), Sorgelig (T80(c) 351, MiSTer)."));
 C.push(b("**Licence:** BSD-style (header of `T80.vhd`): redistribution in source and synthesised form allowed; keep the copyright notice in the source and reproduce it in the documentation of a synthesised (bitstream) distribution."));
-C.push(b("**Used:** `T80_Pack`, `T80_ALU`, `T80_MCode`, `T80_Reg`, `T80.vhd` = 4,498 lines of the folder's 6,306; the other variants (T80a, T80s, T80se, GBse, T8080se...) are not compiled. Our wrapper is `LSpectrum/rtl/cpu_t80.v`."));
+C.push(b("**Used:** `T80_Pack`, `T80_ALU`, `T80_MCode`, `T80_Reg`, `T80.vhd` = 4,498 lines of the folder's 6,306; the other variants (T80a, T80s, T80se, GBse, T8080se...) are not compiled. Our wrapper is `LSpectrum/ep4_ce15/rtl/cpu_t80.v`."));
 
 C.push(h2("2.2 JT49 (AY-3-8910 / 8912 sound), LSpectrum"));
-C.push(b("**Origin:** JT49 by Jose Tejada Gomez (jotego), version 1.0 (10 November 2018), as in the user's earlier DE10-Lite Spectrum; `LSpectrum/rtl/jt49/`."));
+C.push(b("**Origin:** JT49 by Jose Tejada Gomez (jotego), version 1.0 (10 November 2018), as in the user's earlier DE10-Lite Spectrum; `LSpectrum/ep4_ce15/rtl/jt49/`."));
 C.push(b("**Licence:** **GPL-3 or later**. A bitstream that contains it is a GPL-3 work: whoever receives the bitstream must be able to get the complete source (the GitHub repository)."));
 C.push(b("**Used:** all 7 files, 780 lines; unchanged. One synthesis setting: ROM recognition off for `jt49_exp` (the volume table stays in logic)."));
 
@@ -105,27 +105,27 @@ C.push(b("**Origin:** MiSTer Commodore 64 core, `rtl/t65`, commit `fe6dfe5` (6 S
 C.push(b("**Authors:** Daniel Wallner, Mike Johnson, Wolfgang Scherr, Morten Leikvoll, SzGy."));
 C.push(b("**Licence:** BSD-style (header of `T65.vhd`): source and synthesised redistribution allowed if the copyright notice is kept."));
 C.push(b("**Used:** all 4 files, 2,470 lines, twice: as the C64's 6510 (the I/O port at $00/$01 is ours, in `c64_system.v`) and as the 1541's 6502 (`c1541.v`)."));
-C.push(b("**LTari:** the same 4 files as the Atari's 6502C (`LTari/rtl/atari_system.v`)."));
+C.push(b("**LTari:** the same 4 files as the Atari's 6502C (`LTari/ep4_ce15/rtl/atari_system.v`)."));
 
 C.push(h2("2.4 VIC-II Kawari (video chip), L64"));
-C.push(b("**Origin:** VIC-II Kawari by Randy Rossi, https://github.com/randyrossi/vicii-kawari, commit `95ed201` (8 October 2026), path `hdl/`; `L64/rtl/vicii/` with `LICENSE` and `SOURCE.md`."));
+C.push(b("**Origin:** VIC-II Kawari by Randy Rossi, https://github.com/randyrossi/vicii-kawari, commit `95ed201` (8 October 2026), path `hdl/`; `L64/ep4_ce15/rtl/vicii/` with `LICENSE` and `SOURCE.md`."));
 C.push(b("**Licence:** **GPL-3** (every file has the GPL-3 header). The L64 bitstream is a GPL-3 work."));
 C.push(b("**Used:** only what a plain VIC-II needs: 18 files, 6,876 lines. Kawari's extensions (extra video modes, 80 columns, flash/EEPROM, SPI), its RGB / DVI / luma-chroma outputs and its scan doubler are not built; our `config.vh` sets this."));
 C.push(b("**Changes** (each marked `// L64:`): the 14-bit VIC address, the half-cycle tick and the colour index per dot are exported; an `ext_rst` input restarts its reset sequence; the character line buffer is read through a register so that it fits a block RAM; power-up values for simulation."));
 C.push(b("**Chosen** instead of FPGA-64 (syntiac), whose licence allows personal educational use only and forbids copying and redistribution."));
 
 C.push(h2("2.5 SID 6581 / 8580 (sound), L64"));
-C.push(b("**Origin:** MiSTer Commodore 64 core, `rtl/sid/`, commit `fe6dfe5`; `L64/rtl/sid/` (`SOURCE.md`)."));
+C.push(b("**Origin:** MiSTer Commodore 64 core, `rtl/sid/`, commit `fe6dfe5`; `L64/ep4_ce15/rtl/sid/` (`SOURCE.md`)."));
 C.push(b("**Licence:** `sid_dac.sv` and `sid_filter.sv` (Dag Lem's reDIP-SID, Alexey Melnikov): **CERN-OHL-S v2** (strongly reciprocal: modified versions and products made with them must make the source available). `sid_top.sv`, `sid_voice.sv`, `sid_envelope.sv`, `sid_tables.sv` have no header; they are part of the MiSTer C64 core, which is distributed under the GPL (2 or later)."));
 C.push(b("**Used:** all 6 files, 2,416 lines, unchanged; built with one filter curve set and one SID (`MULTI_FILTERS = 0`, `DUAL = 0`)."));
 
 C.push(h2("2.6 CIA 6526 (`mos6526.v`), L64"));
-C.push(b("**Origin:** MiSTer Commodore 64 core, `rtl/mos6526.v`, commit `fe6dfe5` (\"by Rayne, timers and interrupts rewritten by slingshot\"); `L64/rtl/cia/`."));
+C.push(b("**Origin:** MiSTer Commodore 64 core, `rtl/mos6526.v`, commit `fe6dfe5` (\"by Rayne, timers and interrupts rewritten by slingshot\"); `L64/ep4_ce15/rtl/cia/`."));
 C.push(b("**Licence:** no header; part of the MiSTer C64 core, distributed under the GPL (2 or later)."));
 C.push(b("**Used:** 1 file, 534 lines, twice (CIA1, CIA2). Two changes, marked: four signals are declared before their first use, so that Questa accepts the file; an output `state` gives CRA, CRB and the interrupt mask for snapshots."));
 
 C.push(h2("2.7 VIA 6522, L64 (1541 drive)"));
-C.push(b("**Origin:** `iecdrv_via6522.vhd` by Gideon Zweijtzer, from the MiSTer C64 core (`rtl/iec_drive/`, commit `fe6dfe5`); `L64/rtl/via/`."));
+C.push(b("**Origin:** `iecdrv_via6522.vhd` by Gideon Zweijtzer, from the MiSTer C64 core (`rtl/iec_drive/`, commit `fe6dfe5`); `L64/ep4_ce15/rtl/via/`."));
 C.push(b("**Licence:** **GPL-3** (\"Free to use, distribute and change to your own needs. Leaving a reference to the author will be highly appreciated.\")."));
 C.push(b("**Used:** 1 file, 714 lines, twice (VIA1 serial bus, VIA2 drive mechanics), unchanged. The rest of the 1541 (address decode, serial bus, stepper, GCR encoder / decoder, track buffer) is our code (`c1541.v`, `c1541_gcr.v`); MiSTer's own drive model is not used."));
 
@@ -137,7 +137,7 @@ C.push(h1("3. ESP32 firmware libraries"));
 C.push(table([2600, 2300, 4460], ["Library", "Licence", "What is used"], [
   ["**Arduino-ESP32** core 3.3.2 (Espressif)", "core: LGPL-2.1 or later; SD, Preferences and ESP-IDF: Apache-2.0", "`SPI` (link to the FPGA, SD card), `SD` (raw sector access only; the FAT code is ours), `Preferences` (Bluetooth settings), the I2S driver, GPIO and FreeRTOS from ESP-IDF, the Bluedroid Bluetooth stack. Linked, not copied."],
   ["**ESP32-A2DP** 1.8.11 (Phil Schatzmann)", "Apache-2.0", "The A2DP source (`BluetoothA2DPSource`, `BluetoothA2DPCommon`, volume control): about 2,700 of its 5,900 lines; the sink part is not used. Installed separately, not in the repository."],
-  ["AAudioLinkFix (in `LSpectrum/esp32_v2/libraries/`)", "ours (MIT)", "A small library that wraps one function of the Bluetooth stack (codec set-up fix); ours, listed here because it sits in a libraries folder."],
+  ["AAudioLinkFix (in `ESP32/v2/libraries/`)", "ours (MIT)", "A small library that wraps one function of the Bluetooth stack (codec set-up fix); ours, listed here because it sits in a libraries folder."],
 ]));
 C.push(gap());
 C.push(p("The firmware itself (browser, FAT16 / FAT32, TAP / TZX player, recorder, .z80 snapshots, C64 loaders, 1541 track service, ROM install, Bluetooth menu) is our own C / C++."));
@@ -145,16 +145,16 @@ C.push(p("The firmware itself (browser, FAT16 / FAT32, TAP / TZX player, recorde
 // ---------------------------------------------------------------- 4 data
 C.push(h1("4. ROMs and other data"));
 C.push(h2("4.1 ZX Spectrum 128K ROMs"));
-C.push(b("`roms/zx128.rom` (32 KB), in `LSpectrum/roms48k.hex` and the simulation image. (c) Amstrad, who allow redistribution for emulator use with the copyright messages unchanged and not for sale."));
-C.push(b("The Spectrum ROM's character set (`LSpectrum/rtl/osd_font.hex`, made by `esp32_v2/tools/mkfont.py`) only labels the documentation diagrams; the on-screen text uses the Spleen font (below)."));
-C.push(b("The machine menu's font is **Spleen 8x16** 2.1.0 by Frederic Cambus (github.com/fcambus/spleen), BSD 2-Clause: `AMenu/font/` with its `LICENSE`, converted by `AMenu/tools/mk_menufont.py` into `AMenu/rtl/menu_font.hex`, used by the menu and the machines' on-screen displays."));
+C.push(b("`roms/zx128.rom` (32 KB), in `LSpectrum/ep4_ce15/roms48k.hex` and the simulation image. (c) Amstrad, who allow redistribution for emulator use with the copyright messages unchanged and not for sale."));
+C.push(b("The Spectrum ROM's character set (`LSpectrum/ep4_ce15/rtl/osd_font.hex`, made by `ESP32_test/v2/tools/mkfont.py`) only labels the documentation diagrams; the on-screen text uses the Spleen font (below)."));
+C.push(b("The machine menu's font is **Spleen 8x16** 2.1.0 by Frederic Cambus (github.com/fcambus/spleen), BSD 2-Clause: `AMenu/ep4_ce15/font/` with its `LICENSE`, converted by `AMenu/ep4_ce15/tools/mk_menufont.py` into `AMenu/ep4_ce15/rtl/menu_font.hex`, used by the menu and the machines' on-screen displays."));
 C.push(h2("4.2 DiagROM"));
-C.push(b("Retroleum ZX Spectrum diagnostics (16 KB, F1 at start). Its licence is not known, so it is **not in the public repository**: the published `LSpectrum/roms48k.hex` and `L.jic` have a copy of the 48K BASIC ROM in that slot. `LSpectrum/tools/mk_roms48k.py` builds the image with your own copy."));
+C.push(b("Retroleum ZX Spectrum diagnostics (16 KB, F1 at start). Its licence is not known, so it is **not in the public repository**: the published `LSpectrum/ep4_ce15/roms48k.hex` and `L.jic` have a copy of the 48K BASIC ROM in that slot. `LSpectrum/ep4_ce15/tools/mk_roms48k.py` builds the image with your own copy."));
 C.push(h2("4.3 Commodore 64 and 1541 ROMs"));
-C.push(b("KERNAL, BASIC, character ROM and 1541 DOS: copyrighted (Commodore; today the rights holder licenses them, e.g. to emulator distributions). **Not part of the project, the repository or the .jic.** Users put their own ROM files on the SD card (`/ROMS/C64/`); the ESP32 writes them into the configuration flash. Local test copies live in the git-ignored `L64/roms_local/`."));
+C.push(b("KERNAL, BASIC, character ROM and 1541 DOS: copyrighted (Commodore; today the rights holder licenses them, e.g. to emulator distributions). **Not part of the project, the repository or the .jic.** Users put their own ROM files on the SD card (`/ROMS/C64/`); the ESP32 writes them into the configuration flash. Local test copies live in the git-ignored `L64/ep4_ce15/roms_local/`."));
 C.push(h2("4.4 AltirraOS and Altirra BASIC"));
-C.push(b("`LTari/roms/altirraos_xl.rom` (16 KB, AltirraOS 3.11) and `altirra_basic.rom` (8 KB, Altirra BASIC 1.59), free replacement ROMs by Avery Lee, taken from the atari800 emulator's source (`src/roms/`), in `LTari/roms/atarirom.hex` and the .jic at 0x540000."));
-C.push(b("**Licence:** \"Copying and distribution of this file, with or without modification, are permitted in any medium without royalty provided the copyright notice and this notice are preserved. This file is offered as-is, without any warranty.\" (copyright Avery Lee 2008-2018 / 2008-2022; `LTari/roms/README.md`)."));
+C.push(b("`LTari/ep4_ce15/roms/altirraos_xl.rom` (16 KB, AltirraOS 3.11) and `altirra_basic.rom` (8 KB, Altirra BASIC 1.59), free replacement ROMs by Avery Lee, taken from the atari800 emulator's source (`src/roms/`), in `LTari/ep4_ce15/roms/atarirom.hex` and the .jic at 0x540000."));
+C.push(b("**Licence:** \"Copying and distribution of this file, with or without modification, are permitted in any medium without royalty provided the copyright notice and this notice are preserved. This file is offered as-is, without any warranty.\" (copyright Avery Lee 2008-2018 / 2008-2022; `LTari/ep4_ce15/roms/README.md`)."));
 C.push(b("The Altirra Hardware Reference Manual (Avery Lee; a free download, not in the repository) is the documentation the LTari chips are written from; no other Atari FPGA core's HDL was used."));
 C.push(h2("4.5 Other material"));
 C.push(b("Data sheets and schematics (QMTECH, Winbond, CONNFLY, Analog Devices, MacroSilicon, WCH): the vendors' copyright; not in the repository, `docs/vendor/README.md` lists where to get them."));
@@ -164,7 +164,7 @@ C.push(b("Development tools (Quartus, Questa, Arduino IDE, gcc, Python, Node.js)
 C.push(h1("5. What the licences ask for"));
 C.push(b("**GPL-3 parts (JT49, Kawari, VIA):** the LSpectrum and L64 bitstreams, and the combined `L.jic`, are GPL-3 works. Anyone who gets a bitstream must be able to get its complete source under the GPL-3: publishing the repository does this. Our own MIT files are compatible (MIT may be combined into a GPL-3 work). The menu image (AMenu) and the LTari image contain no GPL part: LTari is our MIT code, T65 (BSD-style) and the Altirra ROMs (all-permissive)."));
 C.push(b("**CERN-OHL-S v2 (SID DAC / filter):** strongly reciprocal like the GPL: keep the notices, and make the source of the design that contains it available, which the public repository does."));
-C.push(b("**Altirra ROMs:** keep the copyright notice and the permission notice with the files (`LTari/roms/README.md`, this document)."));
+C.push(b("**Altirra ROMs:** keep the copyright notice and the permission notice with the files (`LTari/ep4_ce15/roms/README.md`, this document)."));
 C.push(b("**BSD-style (T80, T65):** keep the copyright notices in the source (they are in the file headers) and reproduce them in the documentation of a bitstream distribution: this document and the README name them."));
 C.push(b("**Apache-2.0 / LGPL-2.1 (ESP32 libraries):** the libraries are not modified; LGPL-2.1 for a statically linked firmware means the user must be able to relink it with a changed core, which the published source and Arduino build provide."));
 C.push(b("**Licence texts:** Kawari has its `LICENSE` file; the other parts carry their licence in the file headers. Recommended before publishing: add the GPL-3 text (`COPYING`) at the top of the repository, since the bitstreams are GPL-3 works."));

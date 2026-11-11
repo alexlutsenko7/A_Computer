@@ -14,7 +14,7 @@ How to read it:
 - Part H lists hands-on experiments for the board.
 
 The reference document for every number is the datasheet: `docs/vendor/W9825G6KH_datasheet.pdf` (Winbond,
-rev A04, March 2017). Page references are given as [DS p.N]. Our implementation is in `DDR_TEST/rtl/sdram_ram.v`.
+rev A04, March 2017). Page references are given as [DS p.N]. Our implementation is in `DDR_TEST/ep4_ce15/rtl/sdram_ram.v`.
 `docs/SDRAM_CONTROLLER.md` is the short reference for it.
 
 ---------------------------------------------------------------------------------------------------------------
@@ -476,7 +476,7 @@ Procedure used:
 Quartus only checks what it is told. Without an SDC for the SDRAM pins, the timing report is "clean" because
 nothing is checked: the vendor demo's report only checks the JTAG clock. The design may still fail.
 
-## F.2 Our SDC, line by line (`DDR_TEST/DDR_TEST.sdc`)
+## F.2 Our SDC, line by line (`DDR_TEST/ep4_ce15/DDR_TEST.sdc`)
 ```tcl
 create_clock -name CLOCK_50 -period 20.000 [get_ports CLOCK_50]
 derive_pll_clocks           ;# creates clk (pll1|clk[0]) and clk_sd (pll1|clk[1]) with their real phases
@@ -523,7 +523,7 @@ set_false_path -to   [get_ports LEDR]
 
 ## F.3 Reading the reports
 - `output_files/DDR_TEST.sta.summary`: worst slack per clock, per corner. All must be >= 0.
-- `DDR_TEST/sta_io.tcl` gives the SDRAM-specific view:
+- `DDR_TEST/ep4_ce15/sta_io.tcl` gives the SDRAM-specific view:
 ```
 SLACK slow  out_setup / out_hold / in_setup / in_hold / core_setup / core_hold
 SLACK fast  ...
@@ -554,7 +554,7 @@ Result: core slack from about 0 ns to +0.59 ns, Fmax about 122 MHz.
 
 # Part G — Verification and debugging
 
-## G.1 The SDRAM model (`DDR_TEST/sim/sdram_model.sv`)
+## G.1 The SDRAM model (`DDR_TEST/ep4_ce15/sim/sdram_model.sv`)
 A behavioural chip that:
 - stores data (sparse array) and implements ACT/READ/WRITE/PRE/REF/MRS with BL1;
 - drives read data only in its real window: X from S1 + tOH, valid from S1 + tAC, X again from S2 + tOH, Z after
@@ -665,7 +665,7 @@ This is the actual sequence from the first version of the controller to the one 
 the lessons in Parts E-G come directly from these steps.
 
 ## 3.1 The tools and how they were used
-- **Simulation:** Questa FSE (installed with Quartus 25.1), called from WSL by `DDR_TEST/sim/run_sim.sh [TCO] [PASSES] [SD_SHIFT]`.
+- **Simulation:** Questa FSE (installed with Quartus 25.1), called from WSL by `DDR_TEST/ep4_ce15/sim/run_sim.sh [TCO] [PASSES] [SD_SHIFT]`.
   The script compiles the RTL (`sdram_ram.v`, `ram_tester.v`) plus the testbench and SDRAM model, runs to the end,
   and prints:
   - pass count and error counts (tester, strict testbench read check, SDRAM model rule violations);

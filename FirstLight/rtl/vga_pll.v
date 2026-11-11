@@ -1,9 +1,9 @@
-// vga_pll -- 50 MHz in; c0 = 25.208 MHz (640x480@60 pixel clock, 50 * 121 / 240)
-//                      c1 = 27.009 MHz (720x576@50 pixel clock, 50 * 121 / 224)
-// Both from one VCO (756.25 MHz = 50 * 121 / 8; PFD 6.25 MHz), each +0.033 % against the
-// CEA-861 clocks 25.200 (VIC 1, 640x480p @ 60.00 Hz) and 27.000 MHz (VIC 17, 576p): well
-// inside the VESA / CEA / HDMI tolerance of +-0.5 %. The exact pair needs a VCO that is a
-// multiple of 378 MHz, which 50 MHz with a PFD >= 5 MHz cannot reach in 600..1300 MHz.
+/* vga_pll -- 50 MHz in; c0 = 25.208 MHz (640x480@60 pixel clock, 50 * 121 / 240) */
+/* c1 = 27.009 MHz (720x576@50 pixel clock, 50 * 121 / 224) */
+/* Both from one VCO (756.25 MHz = 50 * 121 / 8; PFD 6.25 MHz), each +0.033 % against the */
+/* CEA-861 clocks 25.200 (VIC 1, 640x480p @ 60.00 Hz) and 27.000 MHz (VIC 17, 576p): well */
+/* inside the VESA / CEA / HDMI tolerance of +-0.5 %. The exact pair needs a VCO that is a */
+/* multiple of 378 MHz, which 50 MHz with a PFD >= 5 MHz cannot reach in 600..1300 MHz. */
 `default_nettype none
 
 module vga_pll (
@@ -13,10 +13,12 @@ module vga_pll (
     output wire locked
 );
 
+/* the five outputs of the PLL; two are used */
 wire [4:0] clk_bus;
 assign c0 = clk_bus[0];
 assign c1 = clk_bus[1];
 
+/* the PLL: 50 MHz x 121 / 240 = 25.208 MHz and x 121 / 224 = 27.009 MHz */
 altpll altpll_component (
     .areset (1'b0),
     .inclk  ({1'b0, inclk0}),

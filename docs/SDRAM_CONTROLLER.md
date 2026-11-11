@@ -1,7 +1,7 @@
 # SDRAM controller — how it works and why each detail is there
 
-Covers `DDR_TEST/rtl/sdram_ram.v` (the controller), `DDR_TEST/rtl/DDR_TEST.v` / `sys_pll.v` (clocking),
-`DDR_TEST/DDR_TEST.qsf` / `DDR_TEST.sdc` (I/O placement and timing) and `DDR_TEST/sim/` (verification).
+Covers `DDR_TEST/ep4_ce15/rtl/sdram_ram.v` (the controller), `DDR_TEST/ep4_ce15/rtl/DDR_TEST.v` / `sys_pll.v` (clocking),
+`DDR_TEST/ep4_ce15/DDR_TEST.qsf` / `DDR_TEST.sdc` (I/O placement and timing) and `DDR_TEST/ep4_ce15/sim/` (verification).
 State as of 2026-10-05: 112 MHz, CL2, 18-bit (256 KB) window; passes simulation, static timing at all corners,
 and hardware.
 
@@ -297,7 +297,7 @@ set_multicycle_path -from sdram_clk -to clk -setup -end 2
   +11.5 ns hold slack where the truth was -0.55 ns.
 - `set_false_path` for CKE (constant), buttons and LED.
 
-Results at 112 MHz, worst slack per corner (`quartus_sta -t DDR_TEST/sta_io.tcl`):
+Results at 112 MHz, worst slack per corner (`quartus_sta -t DDR_TEST/ep4_ce15/sta_io.tcl`):
 
 | | out setup | out hold | in setup | in hold | core setup |
 |---|---|---|---|---|---|
@@ -305,6 +305,16 @@ Results at 112 MHz, worst slack per corner (`quartus_sta -t DDR_TEST/sta_io.tcl`
 | Fast 0 °C | 2.08 | 1.73 | 2.58 | 1.27 | 5.31 |
 
 All positive, so the design meets timing over temperature and voltage. Core logic Fmax ≈ 122 MHz.
+
+The same controller, constraints and clock shift on the second core board, QMTECH's Cyclone 10 LP 10CL025YU256I7G
+(`DDR_TEST/10cl025`, the same sources under a wrapper top; other package, other balls, SDRAM on banks 2 to 4):
+
+| | out setup | out hold | in setup | in hold | core setup |
+|---|---|---|---|---|---|
+| Slow 100 °C | 1.50 | 1.90 | 1.10 | 3.03 | 0.68 |
+| Fast -40 °C | 2.36 | 1.84 | 2.85 | 1.20 | 4.94 |
+
+No retune was needed: the windows moved by less than 0.4 ns. The test passes on that board at 112 MHz (2026-11-11).
 
 ### What made 112 MHz close (it did not at first)
 The critical path was the same-cycle request decode, ending at the IOE registers on the far edge of the chip:
@@ -320,7 +330,7 @@ The critical path was the same-cycle request decode, ending at the IOE registers
 
 ## 11. Verification
 
-1. **Simulation** (`DDR_TEST/sim`, Questa: `./run_sim.sh [TCO] [PASSES] [SD_SHIFT]`):
+1. **Simulation** (`DDR_TEST/ep4_ce15/sim`, Questa: `./run_sim.sh [TCO] [PASSES] [SD_SHIFT]`):
    - `sdram_model.sv`, a behavioural W9825G6KH. It checks **every** rule on every command: power-up pause,
      8 refreshes before MRS, ACT to an open bank, READ/WRITE to a closed bank, tRCD, tRP, tRAS, tRC, tRRD, tWR,
      tRFC, tMRD, refresh interval, illegal CL/burst mode, unknown write data. It drives read data only in the

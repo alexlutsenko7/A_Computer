@@ -1186,3 +1186,28 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   build chapter's library note and the troubleshooting table (backup Book/backup/Book_before_bluetooth_heap.docx).
 - (2026-11-10, user) First test of a pairing from scratch: `forget` on the ESP32, device list cleared on the Bose
   QC35, paired again: works.
+- (2026-11-11) Second core board: QMTECH Cyclone 10 LP 10CL025YU256I7G (one user key, nCONFIG button, same headers).
+  SDRAM test passes on hardware at 112 MHz with the same clock shift (`DDR_TEST/10cl025`). Folders split per core
+  board (user): AMenu, LSpectrum, L64, LTari and DDR_TEST each have `ep4_ce15/` (everything that was there) and
+  `10cl025/` (project files and outputs; the sources are ep4_ce15's). `tools/mk_10cl025_qsf.py` makes the 10cl025
+  .qsf files from the ep4_ce15 ones: device, ball names (on-board parts by signal, the I/O board's signals by their U8
+  pin), paths. KEY1 has no button on this board: header U7 pin 7 (G1) with a weak pull-up; the nCONFIG button
+  returns to the menu. `flash_if.v` uses `cyclone_asmiblock` on the Cyclone 10 LP (`CYCLONE10LP` macro in the .qsf).
+  All five revisions build and meet timing (L64: 15,268 LEs = 62 %, worst setup +1.50 ns); L.jic and LUPDATE.BIN
+  built in `AMenu/10cl025/output_files`. Not on hardware yet. Open: LUPDATE.BIN has no board ID (a file for the other
+  board would leave the FPGA without a valid image); remote update and the flash access are untested on this device.
+
+## 2026-11-11: coding standard applied; ESP32 folders at the top
+
+- The user's coding standard (docs/CODING_STANDARD.md) applied to all own C / C++ (both firmware versions, tests) and
+  all own Verilog (81 files: comments, constants as localparams). Proof for the FPGA: all 16 Quartus revisions give
+  bitstreams identical to the existing .sof files. Firmware v1 tested on hardware by the user (all machines, sound
+  wired and Bluetooth, power cycles, loading): OK. Python tools left as they are (user).
+- The ESP32 code moved out of LSpectrum (user: it is the same for both FPGA boards and all machines):
+  `ESP32/v1`, `ESP32/v2` = the firmware (sketch `v1.ino` / `v2.ino`, `src/`, `libraries/`); `ESP32_test/v1`, `/v2` =
+  the PC tests (`test/`) and their tools (`tools/`); `ESP32_test/v1/ESPLinkTest`, `/Test_wires` = the two hardware test
+  sketches (from `tests/`; the FPGA side of the wiring test stays in `tests/Test_wires/fpga`). v1 = the current board,
+  v2 = for the revision 2 boards. Entries above this one keep the old paths (`LSpectrum/ep4_ce15/esp32_vN`).
+  After the move: host tests PASS in both, both firmwares and both test sketches compile (v1 1,173,163 bytes, v2
+  1,188,771: 32 bytes less than before, the update screen names the file `vN.ino.bin` now). The v1 firmware on the
+  board is the build from before the move (same code but for that text).

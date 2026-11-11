@@ -170,7 +170,7 @@ const children = [
   h1("Good to know"),
   bullet("SD card: FAT32 or FAT16, not exFAT. The browser shows folders first, then files, up to 320 per folder."),
   bullet("The LTari 130 has 128 KB (the 130XE's extra 64 KB in banks of 16 KB); the LTari 800 has 64 KB."),
-  bullet("The chips are new designs from the Atari documentation; some rare hardware tricks may still be missing (see LTari/README.md)."),
+  bullet("The chips are new designs from the Atari documentation; some rare hardware tricks may still be missing (see LTari/ep4_ce15/README.md)."),
 ];
 
 const doc = new Document({

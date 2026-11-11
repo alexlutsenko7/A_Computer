@@ -1,22 +1,22 @@
-//=============================================================================
-// vga_clkmux -- Cyclone IV global clock control block: dynamic select between
-//               two PLL outputs, with clock enable (glitch-free gating on the
-//               falling edge of the output clock).
-//
-// Switch safely: ena = 0, wait a few clocks, change sel, wait, ena = 1
-// (sequenced by the caller from a clock that always runs).
-//=============================================================================
+/* vga_clkmux -- Cyclone IV global clock control block: dynamic select between */
+/* two PLL outputs, with clock enable (glitch-free gating on the */
+/* falling edge of the output clock). */
+/* */
+/* Switch safely: ena = 0, wait a few clocks, change sel, wait, ena = 1 */
+/* (sequenced by the caller from a clock that always runs). */
 `default_nettype none
 
 module vga_clkmux (
-    input  wire clk0,       // PLL c0, selected when sel = 0
-    input  wire clk1,       // PLL c1, selected when sel = 1
+/* PLL c0, selected when sel = 0 */
+    input  wire clk0,
+/* PLL c1, selected when sel = 1 */
+    input  wire clk1,
     input  wire sel,
     input  wire ena,
     output wire outclk
 );
 
-// inclk[3:2] are the PLL-output inputs of the clock control block
+/* inclk[3:2] are the PLL-output inputs of the clock control block */
 altclkctrl #(
     .clock_type             ("Global Clock"),
     .ena_register_mode      ("falling edge"),

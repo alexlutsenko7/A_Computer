@@ -3,7 +3,7 @@
 KiCad 10 project for the second revision of the L I/O board (revision 1 = `../Extra_PCB_CycloneIV/`, as built).
 The board sits beside the QMTECH Cyclone IV core board and is wired to its U8 through J1, exactly as revision 1
 (same J1 pinout, same pair-swapped wiring), so the FPGA images do not change. The ESP32 firmware is
-`LSpectrum/esp32_v2` (control UART on other pins, PSRAM build).
+`ESP32/v2` (control UART on other pins, PSRAM build).
 
 J1 also fits the **QMTECH Cyclone 10 LP 10CL025 core board** (10CL025YU256, schematic V1 2023-11-09). The board is the
 same size (84.1 x 67.1 mm), and its U8 sits at the same place and the same way round: pin 1 at the left end of the outer
@@ -110,8 +110,8 @@ ESP32), audio line-out jack (J3), four M3 holes.
   I2S BCLK 26, LRCK 25, DATA 22; control UART RX2 27 <- BT_TX, TX2 21 -> BT_RX (the DevKit of revision 1: 16 / 17);
   SD SCK 18, MISO 19, MOSI 23, CS 5. Footprint `ESP32-WROVER-E` (tools/fp_wrover.py) from the datasheet v2.4
   land pattern: 19 pads per side, pitch 1.27, pads 1.5 x 0.9 at x +-8.75, pin 1 7.44 mm below the antenna end,
-  3.7 mm GND pad; antenna keep-out zone (7.44 mm, no copper on either layer) in the footprint. Firmware: `LSpectrum/esp32_v2`
-  (UART2 on 27 / 21), built with PSRAM enabled; the revision 1 DevKit takes `LSpectrum/esp32_v1` (16 / 17).
+  3.7 mm GND pad; antenna keep-out zone (7.44 mm, no copper on either layer) in the footprint. Firmware: `ESP32/v2`
+  (UART2 on 27 / 21), built with PSRAM enabled; the revision 1 DevKit takes `ESP32/v1` (16 / 17).
 - **CH9350L (U4)**, WCH datasheet V2.6: VIN5 from +5V (0.1 uF), VDD33 4.7 uF (internal regulator), RST to GND, SEL / S0 /
   S1 / BAUD0 / BAUD1 / xOSC open (internal pull-ups: keyboard / mouse side, state 0, 115200 baud) = the frames
   `zx_keyboard.v` already decodes. TXD -> KB_IN, RXD <- KB_OUT (the FPGA reads KB_OUT AND KB_IN). Port 2 (HP/HM) is

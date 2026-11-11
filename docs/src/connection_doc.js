@@ -132,7 +132,7 @@ C.push(table([2200, 7160], ["Connector", "Use"], [
 ]));
 
 C.push(h1("5. ESP32 system controller and microSD card"));
-C.push(p("A 30-pin ESP32-WROOM-32 DevKit (CP2102, USB-C) with the sketch LSpectrum/esp32_v2/esp32_v2.ino, plugged into the I/O board. It owns the microSD card, runs the tape loader and the Bluetooth audio, and talks to the FPGA over an SPI link with an interrupt line, an I2S sound input and a UART. The ESP32 drives the link and I2S clocks. ESP32 pins are given by their DOIT 30-pin board labels."));
+C.push(p("A 30-pin ESP32-WROOM-32 DevKit (CP2102, USB-C) with the sketch ESP32/v2/v2.ino, plugged into the I/O board. It owns the microSD card, runs the tape loader and the Bluetooth audio, and talks to the FPGA over an SPI link with an interrupt line, an I2S sound input and a UART. The ESP32 drives the link and I2S clocks. ESP32 pins are given by their DOIT 30-pin board labels."));
 const ESPW = [1500, 1500, 1300, 1000, 1000, 3060];
 C.push(table(ESPW, ["ESP32 board pin", "Signal", "Dir", "J1 / U8", "FPGA pin", "Notes"], [
   ["D35", "ESP_MISO", "FPGA → ESP32", "10 / 9", "AA14", "link data to the ESP32; D35 is input-only"],
@@ -169,7 +169,21 @@ C.push(table([2600, 6760], ["What", "From"], [
   ["microSD card", "3.3 V from U1 on the I/O board"],
 ]));
 
-C.push(h1("7. Before switching on"));
+C.push(h1("7. The Cyclone 10 LP core board (10CL025)"));
+C.push(p("QMTECH's 10CL025YU256 core board has the same size and the same two headers at the same places; the I/O board is wired to its U8 in the same way, each pin pair swapped. The power pins are the same (1/2 and 61/62 ground, 3/4 3.3 V, 63/64 VIN); pins 5/6 are ground on this board. Every signal keeps its J1 and U8 pin; only the FPGA ball behind the pin differs (full table: `docs/BOARD_PINOUT.md`). **Not tried on hardware yet (11 November 2026).**"));
+C.push(table([2400, 6960], ["On-board", "Pin / use"], [
+  ["50 MHz oscillator", "E2"],
+  ["KEY0 (SW1)", "F3: reset of everything"],
+  ["KEY1", "no button on the board: header U7 pin 7 (ball G1), weak pull-up; a button to ground may be wired there"],
+  ["nCONFIG button (SW3)", "reloads the flash: back to the machine menu"],
+  ["LED D1", "N9"],
+  ["SDRAM, configuration flash", "on the board, nothing to wire"],
+]));
+C.push(gap());
+C.push(b("U8 pins 39 to 44 are configuration pins of the FPGA as well (DEV_OE, DEV_CLRN, INIT_DONE, CRC_ERROR, nCEO, CLKUSR). The I/O board has no signal there: leave them unconnected."));
+C.push(b("The flash must hold the image built for this board (`AMenu/10cl025/output_files/L.jic`); the EP4CE15 image does not configure a 10CL025."));
+
+C.push(h1("8. Before switching on"));
 C.push(n("Meter check of the header power pins (section 2) after any change in the wiring."));
 C.push(n("Continuity check of the swapped wiring: J1.1 to U8.2 and J1.2 to U8.1 (ground), J1.63 to U8.64 and J1.64 to U8.63 (5 V), and no short between 5 V and ground."));
 C.push(n("The configuration flash holds the LSpectrum image built for this I/O board."));

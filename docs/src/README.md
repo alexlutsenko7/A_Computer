@@ -4,9 +4,9 @@ Needs Node.js with the `docx` npm package (`npm install docx` in a scratch folde
 Paper: US Letter, 1-inch margins.
 
     node keys_doc.js ../LSpectrum_Keys.docx
-    python3 architecture_diagram.py ../../LSpectrum/rtl/osd_font.hex arch.png   # block diagram, Spectrum font
+    python3 architecture_diagram.py ../../LSpectrum/ep4_ce15/rtl/osd_font.hex arch.png   # block diagram, Spectrum font
     node architecture_doc.js ../LSpectrum_Architecture.docx arch.png
-    python3 connection_diagram.py ../../LSpectrum/rtl/osd_font.hex conn.png    # wiring overview
+    python3 connection_diagram.py ../../LSpectrum/ep4_ce15/rtl/osd_font.hex conn.png    # wiring overview
     node connection_doc.js ../LSpectrum_Connection.docx conn.png
     node l64_keys_doc.js ../L64_Keys.docx                                # machine menu + L64 keys and usage
     node ltari_keys_doc.js ../LTari_Keys.docx                              # LTari keys and usage

@@ -1,6 +1,6 @@
-// vga_pll -- 50 MHz in; c0 = 25.000 MHz (640x480@60 pixel clock, 50 * 1 / 2)
-//                      c1 = 27.000 MHz (720x576@50 pixel clock, 50 * 27 / 50)
-// Both from one VCO (675 MHz = 27 x 25).
+/* vga_pll -- 50 MHz in; c0 = 25.000 MHz (640x480@60 pixel clock, 50 * 1 / 2) */
+/* c1 = 27.000 MHz (720x576@50 pixel clock, 50 * 27 / 50) */
+/* Both from one VCO (675 MHz = 27 x 25). */
 `default_nettype none
 
 module vga_pll (
@@ -10,10 +10,12 @@ module vga_pll (
     output wire locked
 );
 
+/* the five outputs of the PLL; two are used */
 wire [4:0] clk_bus;
 assign c0 = clk_bus[0];
 assign c1 = clk_bus[1];
 
+/* the PLL: 50 MHz x 1 / 2 = 25.000 MHz and x 27 / 50 = 27.000 MHz */
 altpll altpll_component (
     .areset (1'b0),
     .inclk  ({1'b0, inclk0}),
