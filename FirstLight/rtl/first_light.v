@@ -362,7 +362,7 @@ always @(posedge clk or negedge rst_n)
     end
     else
     begin
-/* the same as the output: nothing to count */
+/* the input through two flip-flops; while it equals the output there is nothing to count */
         sync <= {sync[0], in};
         if (sync[1] == out)
         begin

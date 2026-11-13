@@ -1211,3 +1211,26 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   After the move: host tests PASS in both, both firmwares and both test sketches compile (v1 1,173,163 bytes, v2
   1,188,771: 32 bytes less than before, the update screen names the file `vN.ino.bin` now). The v1 firmware on the
   board is the build from before the move (same code but for that text).
+
+## 2026-11-11 (evening): first run on the bare 10CL025 board, through JTAG
+
+- No I/O board for the second core board yet, so the PC stood in for it: `tests/jtag_rig/` (module `jtag_test.v` with
+  In-System Sources and Probes, added to the tops in a scratch copy `tmp/jtagtest/work` by `patch.py`; the product
+  images never contain it). Source bits press a menu key (key code into the keyboard word) or KEY1 of a machine;
+  probes read an ID, status bits, the video timing (pixels per line, lines per frame, 50 MHz clocks per frame and
+  per 64 lines) and the picture (400 samples of a chosen line and colour bit per read).
+- Test image `L_test.jic` (rig in all five images, C64 ROMs from roms_local at 0x580000) programmed and verified
+  (2 min 20 s; the W25Q64 has silicon ID 0x16, as the EPCS64). Results, all from the PC:
+  menu 4D4E0002, 800 x 525, 60.020 Hz, 25.208 MHz, picture read; key 1 -> LSpectrum 5A580001 from 0x100000, 128K menu
+  on the screen (ROMs read through cyclone10lp_asmiblock); KEY1 -> menu from flash 0, ru_trig bit 0 (request from the
+  logic); key 2 -> L64 43360002, 1056 x 628, 60.019 Hz, 39.803 MHz, BASIC V2 READY.; key 3 -> LTari 800 41540001,
+  Altirra 8K BASIC 1.59 Ready; key 4 -> LTari 130 (model bit set), the same. Pictures: tests/jtag_rig/results/screens.png.
+- Afterwards the product `AMenu/10cl025/output_files/L.jic` was programmed and verified into that board's flash.
+- Not tested (needs the I/O board): the header's pins, VGA on a monitor, keyboard, sound, joysticks, the ESP32 link,
+  the SD update, the 50 Hz modes.
+- Rig bugs found and fixed while using it: a line was only handed over when all 400 samples were taken (so a read had
+  to fit inside the line: two reads per 640-pixel line at step 1); the line count was one too high. The corrected rig
+  (indexed samples, handed over at every line end) was rebuilt with the menu and checked on the board (525 lines, one
+  read per line at step 2). The machine screens were taken with the first version.
+- Book: Chapter 26 section "The first run, without an I/O board" (Figure 26.1, Table 26.5), Chapter 13, Table 7.4.
+- EP4CE15 board the same day: L.jic (1 MB slots) programmed and the final ESP32 firmware uploaded; the user's check: works.

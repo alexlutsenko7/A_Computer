@@ -68,7 +68,7 @@ AMenu, LSpectrum, L64, LTari and DDR_TEST each hold one subfolder per core board
 | `ESP32_test/` | tests of the firmware: `v1/`, `v2/` with the PC tests (`test/`) and their tools (`tools/`); `v1/` also holds the hardware test sketches `ESPLinkTest/` (SPI link) and `Test_wires/` (ESP32 <-> FPGA wiring) |
 | `L64/ep4_ce15/` | **The Commodore 64**: Quartus project, `rtl/` (our bus, 1541, video; Kawari VIC-II, SID, CIA, VIA), `sim/`, `tools/` (ROM image, test disk) |
 | `T65/` | 6502 core (VHDL), from the MiSTer C64 core, unchanged (`T65/SOURCE.md`) |
-| `tests/` | FPGA test projects: `Test_wires/fpga/` (ESP32 <-> FPGA wiring, FPGA side; the sketch is `ESP32_test/v1/Test_wires/`), `t80_fmax/` |
+| `tests/` | FPGA test projects: `Test_wires/fpga/` (ESP32 <-> FPGA wiring, FPGA side; the sketch is `ESP32_test/v1/Test_wires/`), `t80_fmax/`, `jtag_rig/` (testing a core board without its I/O board: keys, status and the video picture over JTAG) |
 | `T80/` | Z80 core (VHDL), from the MiSTer ZX Spectrum core, unchanged (`T80/SOURCE.md`) |
 | `DDR_TEST/` | stand-alone SDRAM controller + memory test (the controller used by LSpectrum): `ep4_ce15/` for the Cyclone IV EP4CE15 core board, `10cl025/` the same test for the QMTECH Cyclone 10 LP 10CL025 core board |
 | `VGA_TEST/` | stand-alone VGA test (colour bars, both video modes) |

@@ -95,7 +95,7 @@ always @(posedge clk or negedge rst_n)
     if (!rst_n)
     begin
         hcnt <= 10'd0;
-/* the line ends: the next one, or the first */
+/* both counters start at 0 */
         vcnt <= 10'd0;
     end
     else if (line_end)
