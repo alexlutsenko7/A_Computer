@@ -15,6 +15,7 @@ set_global_assignment -name STRATIXIII_UPDATE_MODE REMOTE
 
 set_global_assignment -name VERILOG_FILE rtl/AMenu.v
 set_global_assignment -name VERILOG_FILE rtl/menu_boot.v
+set_global_assignment -name VERILOG_FILE rtl/menu_names.v
 set_global_assignment -name VERILOG_FILE rtl/menu_video.v
 set_global_assignment -name VERILOG_FILE rtl/menu_pll.v
 set_global_assignment -name VERILOG_FILE ../../LSpectrum/ep4_ce15/rtl/tape_loader.v

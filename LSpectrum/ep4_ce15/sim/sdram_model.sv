@@ -67,6 +67,8 @@ bit          init_done = 0;
 int          init_refs = 0;
 /* the read being answered */
 int          rd_gen = 0;
+/* the read whose data is on the pins */
+int          drv_gen = 0;
 
 /* an error; the first 20 are shown */
 function automatic void err(string s);
@@ -86,28 +88,25 @@ function automatic void chk(bit ok, string s);
     end
 endfunction
 
-/* a read's data on the pins after the CAS latency, held for tOH */
+/* a read's data on the pins after the CAS latency, held for tOH. Reads may follow each other */
+/* clock by clock (a run of READ commands): each read's data stays until its hold time is over, */
+/* and only the last one releases the pins. */
 task automatic drive_read(input int gen, input logic [15:0] d);
     #((cl - 1) * T_CK + T_OH);
-/* low-Z, not yet valid */
-    if (gen == rd_gen)
-    begin
-        dq_drv = 'x;
-    end
+/* low-Z, not yet valid (the read before, if any, ends its hold time at this moment) */
+    dq_drv = 'x;
     #(T_AC - T_OH);
 /* valid */
-    if (gen == rd_gen)
-    begin
-        dq_drv = d;
-    end
+    dq_drv = d;
+    drv_gen = gen;
     #(T_CK + T_OH - T_AC);
-/* hold time over */
-    if (gen == rd_gen)
+/* hold time over, unless a later read's data is on the pins already */
+    if (gen == drv_gen)
     begin
         dq_drv = 'x;
     end
     #(T_HZ - T_OH);
-/* high impedance after tHZ */
+/* high impedance after tHZ, if no read followed */
     if (gen == rd_gen)
     begin
         dq_drv = 'z;

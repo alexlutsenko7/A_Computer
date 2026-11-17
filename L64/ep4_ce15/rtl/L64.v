@@ -17,7 +17,7 @@
 /* KEY1 (Y13)    back to the machine menu (reconfigures to the factory image) */
 /* keyboard      c64_keyboard.v (Esc = RUN/STOP, Page Up = RESTORE, Alt+F1..F8 = C64 F1..F8) */
 /* F8            video 60 Hz (power-up) / 50 Hz; the C64 runs on undisturbed */
-/* LED           fast blink = no C64 ROM image in flash (0x580000) */
+/* LED           fast blink = no C64 ROM image in flash (the machine's ROM area) */
 `default_nettype none
 
 module L64 #(

@@ -2,11 +2,11 @@
 /* the Extra_PCB_CycloneIV I/O board (same pins as LSpectrum / L64) */
 /* */
 /* Application image of the machine menu (AMenu/, docs/PLAN.md), built twice from these */
-/* sources: revision LTari800 (MODEL130 = 0, flash 0x300000) is the LTari 800 (800XL, */
-/* 64 KB), revision LTari (MODEL130 = 1, flash 0x400000) the LTari 130 (130XE, 128 KB). */
+/* sources: revision LTari800 (MODEL130 = 0) is the LTari 800 (800XL, 64 KB), revision */
+/* LTari (MODEL130 = 1) the LTari 130 (130XE, 128 KB). */
 /* (The remote update block cannot tell an application image its own start address: the */
 /* current state reads back the same value for both.) ROMs (AltirraOS + Altirra BASIC, */
-/* LTari/ep4_ce15/roms) at 0x540000. */
+/* LTari/ep4_ce15/roms) in the machine's ROM area (tag A5 5A 42 BD, the same for both models). */
 /* */
 /* Clocks: */
 /* atari_pll  clk    28.373 MHz  the whole machine (16 clk per machine cycle) */
@@ -24,7 +24,7 @@
 /* keyboard      atari_keyboard.v (Alt+F2/F3/F4 START/SELECT/OPTION, Alt+F5 Reset, Pause Break) */
 /* F8            video 60 Hz (power-up) / 50 Hz; the Atari runs on undisturbed */
 /* joysticks     DB9-1 = stick 0, DB9-2 = stick 1 (ESP32 F4 menu mode 1: swapped) */
-/* LED           fast blink = no ROM image in flash (0x540000) */
+/* LED           fast blink = no ROM image in flash (the machine's ROM area) */
 `default_nettype none
 
 module LTari #(

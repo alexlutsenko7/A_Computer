@@ -58,6 +58,9 @@
 #define MCTL IO(0x48)
 /* L64 1541: clear dirty sector bits */
 #define MCLR IO(0x4C)
+/* the machine menu: MCTL reads the core board in its low byte (1 = EP4CE15, 2 = 10CL025); RELOAD = 1 */
+/* makes it read the machines' names from the flash again */
+#define MENU_BOARD_MASK 0xFFu
 /* UART, written: send, take a byte, clear */
 #define UART_SEND 0x100u
 #define UART_POP 0x200u
@@ -154,11 +157,17 @@ struct HwReg
 };
 
 /* the machine on the link (esp_hw.cpp probe): c64 = 1: L64 (C64); atari = 1: LTari (Atari 800XL / */
-/* 130XE); menu = 1: the machine menu (AMenu), only the flash update / "no machines" screen; */
+/* 130XE); nes = 1: LNES (NES); md = 1: LMega (Mega Drive); menu = 1: the machine menu (AMenu), only the flash update / "no machines" screen; */
 /* all 0: LSpectrum (ZX Spectrum 128K) */
 extern int32_t g_i32_machine_c64;
 extern int32_t g_i32_machine_atari;
+/* the cartridge machines */
+extern int32_t g_i32_machine_nes;
+extern int32_t g_i32_machine_md;
 extern int32_t g_i32_machine_menu;
+/* the machine menu with three machine positions of 2 MB (core ID 4D4E_0003): machines can be */
+/* installed from the card; an older menu must be updated first (LUPDATE.BIN) */
+extern int32_t g_i32_menu_positions;
 /* one line to the ESP32's USB serial port (diagnostics) */
 void log_line(const char *pc_text);
 /* bytes in the PSRAM (WROVER module), 0 if there is none */

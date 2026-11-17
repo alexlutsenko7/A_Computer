@@ -6,6 +6,11 @@
 /* flash (docs/PLAN.md "machine menu"). If that image is missing or damaged the */
 /* device comes back here, and the menu shows the error under the machine. */
 /* */
+/* The flash holds three machines, 2 MB each (bitstream, then the ROM area); which machine */
+/* sits in a position is not fixed: the ESP32 installs machines from the SD card (F12). The */
+/* menu reads each position's name from its info sector (menu_names) and shows "(empty)", */
+/* which cannot be started, where no machine is installed. */
+/* */
 /* Keys: Up / Down (cursor and keypad 8 / 2), Enter / keypad Enter = start, */
 /* 1 .. N (also keypad) = start that machine; joysticks: up / down / fire. */
 /* After a machine returned, the cursor is on that machine. */
@@ -15,18 +20,22 @@
 /* LED: on = menu, blinking = the last machine could not start; the error row shows the */
 /* reconfiguration reason in hex (02 watchdog, 04 nSTATUS / no image, 08 CRC, 10 nCONFIG). */
 /* ESP32 link (as the machines: tape_loader + esp_link at mclk = 75 MHz, core ID 4D4E_0002 "MN", */
-/* link version 2 = flash stream frames): the ESP32 draws on an OSD screen (shown instead of the */
+/* link version 2 = flash stream frames; 4D4E_0003: the three 2 MB positions, the board in MSTAT: */
+/* 1 = EP4CE15, 2 = 10CL025): the ESP32 draws on an OSD screen (shown instead of the */
 /* menu while OSD is on; the menu takes no input meanwhile) and reads / writes the configuration */
 /* flash through the FLASH register, DCLK 18.75 MHz (FL_HALF 2), mostly with FLS frames (1 us per byte): */
-/* flash update from the SD card (LUPDATE.BIN), "no machines installed" (ESP32/v2/src/update.cpp). */
+/* flash update from the SD card (LUPDATE.BIN), installing machines from the card (F12, */
+/* ESP32/vN/src/update.cpp; register RELOAD makes the menu read the names again). */
 /* F3 opens the ESP32's Bluetooth menu (loader keys + the UART to its Bluetooth part, BT_TX / BT_RX). */
 /* All other I/O board pins stay inputs (weak pull-ups): the SDRAM is deselected (CS_N high). */
 `default_nettype none
 
 module AMenu #(
-    parameter integer N_MACHINES = 4,
-/* machine i at [24*i +: 24] (1 MB slots) */
-    parameter [95:0]  MACHINE_ADDR = {24'h400000, 24'h300000, 24'h200000, 24'h100000},
+    parameter integer N_MACHINES = 3,
+/* the bitstream of position i at [24*i +: 24] (2 MB per machine) */
+    parameter [71:0]  MACHINE_ADDR = {24'h500000, 24'h300000, 24'h100000},
+/* the ROM area of position i (its first sector: tag and name) */
+    parameter [71:0]  ROM_AREAS    = {24'h600000, 24'h400000, 24'h200000},
 /* Spleen 8x16 (font/, tools/mk_menufont.py) */
     parameter         FONT_HEX = "rtl/menu_font.hex",
     parameter         TEXT_HEX = "rtl/menu_text.hex"
@@ -81,7 +90,15 @@ localparam [7:0] KEY_KP_ENTER = 8'h58;
 localparam [7:0] KEY_DIGIT_BASE = 8'h1D;
 /* USB key code of keypad 1, minus 1 (keypad n = base + n) */
 localparam [7:0] KEY_KP_BASE = 8'h58;
+/* the core board, as the ESP32 reads it in MSTAT (a machine file must be made for it) */
+`ifdef CYCLONE10LP
+localparam [31:0] BOARD_ID = 32'd2;
+`else
+/* the EP4CE15 board */
+localparam [31:0] BOARD_ID = 32'd1;
+`endif
 
+/* no sound */
 assign AUDIO_AY   = 1'b0;
 assign AUDIO_BEEP = 1'b0;
 
@@ -244,7 +261,7 @@ endfunction
 
 /* The previous boot address reads back as written or shifted left by 2 (on hardware: shifted, */
 /* 0x180000 -> 0x600000). With 1 MB slots a shifted address can equal another machine's written one */
-/* (0x100000 << 2 = 0x400000): the shifted match wins (checked last). */
+/* (0x100000 << 2 = 0x400000, with the earlier 1 MB slots): the shifted match wins (checked last). */
 function prev_wr(input [2:0] m);
     prev_wr = ru_prev == {2'b00, maddr(m)};
 endfunction
@@ -285,6 +302,18 @@ wire       l_osd_on;
 reg  [1:0] osd_ls;
 always @(posedge CLOCK_50) osd_ls <= {osd_ls[0], l_osd_on};
 wire osd_lock = osd_ls[1];
+
+/* menu_names below: a machine is installed in position i (static once the names are read) */
+wire [N_MACHINES-1:0] nm_valid;
+reg  [N_MACHINES-1:0] val_s1, val_s;
+always @(posedge CLOCK_50)
+begin
+/* two stages */
+    val_s1 <= nm_valid;
+    val_s  <= val_s1;
+end
+/* the position Enter or a digit asks for */
+wire [2:0] want = dpress ? digit[2:0] - 3'd1 : sel;
 
 /* the menu's state */
 integer k;
@@ -354,9 +383,9 @@ always @(posedge CLOCK_50 or negedge rst_n)
                 sel <= sel + 3'd1;
                 err <= 1'b0;
             end
-            else if (press[2] || dpress)
+            else if ((press[2] || dpress) && val_s[want])
             begin
-/* Enter or a digit: that machine */
+/* Enter or a digit: that machine, if one is installed there */
                 if (dpress)
                 begin
                     sel <= digit - 4'd1;
@@ -395,7 +424,9 @@ reg        snap_ack;
 /* no snapshot port: every command is done at once */
 always @(posedge mclk) snap_ack <= snap_req;
 
-tape_loader #(.BAUD_DIV(651), .CORE_ID(32'h4D4E_0002), .FL_HALF(2), .FLS(1)) u_tl (
+wire       nm_reload;
+
+tape_loader #(.BAUD_DIV(651), .CORE_ID(32'h4D4E_0003), .FL_HALF(2), .FLS(1)) u_tl (
     .clk         (mclk),
     .rst_n       (mrst_n),
     .keys        (lkeys),
@@ -426,9 +457,9 @@ tape_loader #(.BAUD_DIV(651), .CORE_ID(32'h4D4E_0002), .FL_HALF(2), .FLS(1)) u_t
     .fl_dclk     (fl_dclk),
     .fl_mosi     (fl_mosi),
     .fl_miso     (fl_miso),
-    .reload      (),
+    .reload      (nm_reload),
     .mctl        (),
-    .mstat       (32'd0),
+    .mstat       (BOARD_ID),
     .mclr        (),
     .mclr_we     (),
     .snap_freeze (),
@@ -441,10 +472,33 @@ tape_loader #(.BAUD_DIV(651), .CORE_ID(32'h4D4E_0002), .FL_HALF(2), .FLS(1)) u_t
     .snap_rdata  (32'd0)
 );
 
+/* the machines' names, read from the flash whenever the ESP32 does not have its pins */
+wire       nm_dclk, nm_ncs, nm_mosi;
+wire       nm_we;
+wire [6:0] nm_addr;
+/* the name RAM's write port */
+wire [7:0] nm_data;
+
+menu_names #(.N_AREAS(N_MACHINES), .ROM_AREAS(ROM_AREAS), .DIV(4)) u_names (
+    .clk     (mclk),
+    .rst_n   (mrst_n),
+    .restart (nm_reload),
+    .hold    (fl_en),
+    .f_dclk  (nm_dclk),
+    .f_ncs   (nm_ncs),
+    .f_mosi  (nm_mosi),
+    .f_miso  (fl_miso),
+    .we      (nm_we),
+    .waddr   (nm_addr),
+    .wdata   (nm_data),
+    .valid   (nm_valid),
+    .done    ()
+);
+
 flash_if u_flash (
-    .dclk (fl_en ? fl_dclk : 1'b0),
-    .ncs  (fl_en ? fl_ncs  : 1'b1),
-    .mosi (fl_mosi),
+    .dclk (fl_en ? fl_dclk : nm_dclk),
+    .ncs  (fl_en ? fl_ncs  : nm_ncs),
+    .mosi (fl_en ? fl_mosi : nm_mosi),
     .miso (fl_miso)
 );
 
@@ -466,6 +520,10 @@ menu_video #(.FONT_HEX(FONT_HEX), .TEXT_HEX(TEXT_HEX)) u_video (
     .osd_we    (osd_we),
     .osd_waddr (osd_addr),
     .osd_wdata (osd_data),
+    .name_wclk  (mclk),
+    .name_we    (nm_we),
+    .name_waddr (nm_addr),
+    .name_wdata (nm_data),
     .vga_r  (vr),
     .vga_g  (vg),
     .vga_b  (vb),

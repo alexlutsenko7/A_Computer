@@ -3,7 +3,7 @@
 /* /ROMS/C64/ (file names starting KERNAL, BASIC, CHAR and, for the 1541 drive, DOS1541 or */
 /* 1541, e.g. VICE's kernal-901227-03.bin, basic-901226-01.bin, chargen-901225-01.bin, */
 /* dos1541-325302-01+901229-05.bin; 8 / 8 / 4 / 16 KB). They are written into the */
-/* configuration flash at 0x580000 through the FPGA's flash pass-through (tape loader */
+/* configuration flash (the ROM area of the position L64 is installed in) through the FPGA's flash pass-through (tape loader */
 /* register FLASH, SPI byte engine): 48 KB image = 4 KB header (F3 "L64 ROMS" + 4 spaces, byte 13 */
 /* = 1 with a 1541 ROM), CHAR, BASIC, KERNAL, 8 KB FF, 1541 ROM (16 KB, or FF) */
 /* (L64/ep4_ce15/tools/mk_c64rom.py makes the same image). After the write is verified, */
@@ -41,9 +41,10 @@
 /* this module's header, the Spectrum recorder's speed switch */
 #include "c64.h"
 #include "save.h"
-/* screenshots, the flash */
+/* screenshots, the flash, the machines' positions in it */
 #include "shot.h"
 #include "flash.h"
+#include "update.h"
 
 /* snapshot port commands, and the command's place in the register */
 #define C_MRD 1
@@ -52,8 +53,7 @@
 /* control, and where the command is */
 #define C_CTL 4
 #define CMD_SHIFT 28
-/* the ROM image in the flash: where, how long; the waits allowed for an erase and a page */
-#define ROM_BASE 0x580000u
+/* the ROM image in the flash: how long (where: g_ui32_rom_base); the waits allowed for an erase and a page */
 #define ROM_LEN 49152u
 /* the waits */
 #define ERASE_MS 2000u
@@ -435,6 +435,9 @@ static uint32_t g_ui32_disk_loaded;
 static uint32_t g_ui32_disk_ctl;
 /* where the restore program is being written */
 static uint32_t g_ui32_stub_pc;
+/* the ROM image's flash address: behind the info sector of the position L64 is installed in */
+/* (0: not looked for yet, or L64 is in no position) */
+static uint32_t g_ui32_rom_base;
 
 /* ROM image in flash: C64_ROM_NONE / C64_ROM_PRESENT / C64_ROM_WITH_1541 */
 int32_t c64_rom_present(void)
@@ -453,6 +456,8 @@ int32_t c64_rom_present(void)
 /* the result */
     bool b_old_rev;
     int32_t i32_result;
+/* the position L64 is installed in */
+    int32_t i32_pos;
 
 /* start values */
     ui8_char = 0;
@@ -467,8 +472,16 @@ int32_t c64_rom_present(void)
 /* no image until one of them holds */
     b_old_rev = true;
     i32_result = C64_ROM_NONE;
+/* L64's ROM area: the one of the position whose info sector has L64's tag */
+    i32_pos = mch_find(MCH_BYTE_C64);
+    g_ui32_rom_base = 0;
+    u_memset(aui8_hdr, 0, sizeof aui8_hdr);
 /* the header from the flash; the pass-through off */
-    fl_read(ROM_BASE, aui8_hdr, sizeof aui8_hdr);
+    if (i32_pos != MCH_NONE)
+    {
+        g_ui32_rom_base = mch_rom_area(i32_pos) + MCH_ROM_OFFSET;
+        fl_read(g_ui32_rom_base, aui8_hdr, sizeof aui8_hdr);
+    }
     FLASH = 0;
 /* character by character */
     for (i32_index = 0; i32_index < IMG_SIG_LEN; i32_index++)
@@ -721,7 +734,7 @@ static int32_t write_page(uint32_t ui32_off)
     {
 /* write enable, then the page program command */
         fl_wren();
-        fl_addr(FL_CMD_PAGE_PROGRAM, ROM_BASE + ui32_off);
+        fl_addr(FL_CMD_PAGE_PROGRAM, g_ui32_rom_base + ui32_off);
 /* the page's bytes */
         for (ui32_index = 0; ui32_index < FL_PAGE; ui32_index++)
         {
@@ -760,7 +773,7 @@ static int32_t check_pages(uint32_t ui32_first)
         else
         {
 /* read the page back, up to the first byte that differs */
-            fl_addr(FL_CMD_READ, ROM_BASE + ui32_off);
+            fl_addr(FL_CMD_READ, g_ui32_rom_base + ui32_off);
             ui32_index = 0;
 /* compare */
             while ((ui32_index < FL_PAGE) && (i32_result == C64_OK))
@@ -873,6 +886,17 @@ int32_t c64_rom_install(void (*pf_progress)(const char *pc_text))
 /* start values */
     ui32_off = 0;
     i32_result = rom_find();
+/* without a position that holds L64 (it was loaded over JTAG) there is no place for the ROMs */
+    if ((i32_result == C64_OK) && (g_ui32_rom_base == 0))
+    {
+        if (c64_rom_present() == C64_ROM_NONE)
+        {
+            if (g_ui32_rom_base == 0)
+            {
+                i32_result = C64_EFLASH;
+            }
+        }
+    }
     if (i32_result == C64_OK)
     {
 /* The header page (offset 0, "L64 ROMS") is written last and only after the ROM data */
@@ -883,7 +907,7 @@ int32_t c64_rom_install(void (*pf_progress)(const char *pc_text))
         {
 /* one 4 KB block */
             fl_wren();
-            fl_addr(FL_CMD_SECTOR_ERASE, ROM_BASE + ui32_off);
+            fl_addr(FL_CMD_SECTOR_ERASE, g_ui32_rom_base + ui32_off);
             fl_end();
 /* until it is erased */
             if (fl_wait(ERASE_MS) != FL_OK)

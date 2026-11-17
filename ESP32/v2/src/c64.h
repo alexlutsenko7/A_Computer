@@ -23,7 +23,7 @@
 /* yes, for the functions that answer a question */
 #define C64_YES 1
 
-/* ROM image in flash (0x580000, rtl/c64_system.v): C64_ROM_NONE / C64_ROM_PRESENT / C64_ROM_WITH_1541 */
+/* ROM image in flash (L64's ROM area, rtl/c64_system.v): C64_ROM_NONE / C64_ROM_PRESENT / C64_ROM_WITH_1541 */
 int32_t c64_rom_present(void);
 /* C64_YES = /ROMS/C64/ on the card has all ROMs, the 1541 one too */
 int32_t c64_rom_card_1541(void);

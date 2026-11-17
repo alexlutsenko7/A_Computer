@@ -215,7 +215,7 @@ c64_system #(.FLASH_DIV(2), .KBD_WAIT_MS(1), .FONT_HEX("../../../AMenu/ep4_ce15/
 );
 
 /* the flash with the ROM image */
-flash_model #(.BASE(24'h580000), .LEN(49152), .REVERSE(1), .FILE("c64roms.mem")) u_flash (
+flash_model #(.AREA(24'h400000), .TAG(32'hA55A_24DB), .BASE(24'h401000), .LEN(49152), .REVERSE(1), .FILE("c64roms.mem")) u_flash (
     .dclk(f_dclk), .ncs(f_ncs), .mosi(f_mosi), .miso(f_miso));
 
 /* pins as seen by the SDRAM (transport delays, as tb_lspectrum) */

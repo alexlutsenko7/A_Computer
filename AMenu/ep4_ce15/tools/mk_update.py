@@ -1,31 +1,32 @@
 #!/usr/bin/env python3
-"""mk_update.py -- LUPDATE.BIN, the flash update the ESP32 installs from the SD card
-(ESP32/v2/src/update.cpp), and the loader .jic for boards shipped without machines.
+"""mk_update.py -- LUPDATE.BIN, the update of the machine menu that the ESP32 installs from the SD card
+(ESP32/v1/src/update.cpp), and the loader .jic for boards shipped without machines.
 
-  python3 tools/mk_update.py [--cof L.cof] [--out output_files/LUPDATE.BIN] [--label TEXT]
-      builds output_files/L_raw.pof and .rpd from the .cof (the same images and ROMs as L.jic)
-      with quartus_cpf, then LUPDATE.BIN from the .rpd
-  python3 tools/mk_update.py --rpd FILE.rpd --out LUPDATE.BIN [--label TEXT]
-      only the last step (tests)
+  python3 tools/mk_update.py [--out output_files/LUPDATE.BIN] [--label TEXT]
+      LUPDATE.BIN from output_files/L_flash.bin (tools/mk_flash.py: the flash as SPI reads it): the menu
+      alone. The machines are not in it: each is a machine file that the user installs from the card's
+      MACHINES folder (output_files/machines/, mk_flash.py)
+  python3 tools/mk_update.py --whole --out FILE [--flash L_flash.bin]
+      the whole flash image with a skipped range, as the update file was before the machine files: the
+      firmware still takes it, and ESP32_test/v1/test/update_test.cpp runs its scenarios with it
   python3 tools/mk_update.py --loader [--out output_files/L_loader.jic]
       the loader .jic: the machine menu at flash 0, the rest of the flash 00 to 8 MB. On hardware the
       Programmer left old machines in place both with FF data there and with its Erase option (it
       appears to skip sectors that are all FF); programming 00 clears every bit whether the sector is
-      erased first or not. The board shows "No machines installed" until LUPDATE.BIN is on the card
+      erased first or not. The board shows "No machines installed" until machines are installed from the card
 
-File: 256-byte header ("LUPDATE1", image length, CRC-32 of the image, skip range = the C64 ROM area
-0x580000-0x5FFFFF that the ESP32 installs itself, menu end 0x100000, a 64-byte label, CRC-32 of the
-header), then the flash image from address 0 as the flash returns it over SPI, cut after its last used
-4 KB sector. The .rpd holds every byte bit-reversed (LSB first): seen on hardware 2026-10-30, the ESP32 reads
-56 EF EF EF at an image's start where the .rpd has 6A F7 F7 F7 (sync byte 6A), so the bits are reversed here.
-Run from AMenu/ep4_ce15/.
+File: 256-byte header ("LUPDATE1", image length, CRC-32 of the image, skip range (none; --whole: 0x580000-
+0x5FFFFF), menu end = where the factory image's part ends (the image length; --whole: 0x100000), a 64-byte
+label, CRC-32 of the header), then the flash image from address 0 as the flash returns it over SPI, cut after
+its last used 4 KB sector.
+Run from AMenu/ep4_ce15/ or AMenu/10cl025/ (python3 ../ep4_ce15/tools/mk_update.py).
 """
 import argparse, datetime, os, re, struct, subprocess, sys, zlib
 
 CPF = os.environ.get('QUARTUS_CPF', '/mnt/c/Altera/quartus/bin64/quartus_cpf.exe')
 SECTOR = 4096
-SKIP = (0x580000, 0x600000)
-MENU_END = 0x100000            # the factory slot (1 MB slots: docs/PLAN.md)
+WHOLE_SKIP = (0x580000, 0x600000)
+MENU_END = 0x100000            # the factory image's megabyte (docs/PLAN.md)
 
 
 def cpf(*args):
@@ -34,38 +35,20 @@ def cpf(*args):
         sys.exit('quartus_cpf failed:\n' + r.stdout[-2000:])
 
 
-def build_rpd(cof):
-    """L.cof -> a .pof (no flash loader) -> .rpd; returns the .rpd path"""
-    s = open(cof).read()
-    s = re.sub(r'<output_filename>[^<]*</output_filename>', '<output_filename>output_files/L_raw.pof</output_filename>', s)
-    s = re.sub(r'\s*<flash_loader_device>[^<]*</flash_loader_device>', '', s)
-    tmp = 'L_raw.cof'
-    open(tmp, 'w').write(s)
-    try:
-        cpf('-c', tmp)
-        cpf('-c', 'output_files/L_raw.pof', 'output_files/L_raw.rpd')
-    finally:
-        os.remove(tmp)
-        for f in ('output_files/L_raw.map',):
-            if os.path.exists(f):
-                os.remove(f)
-    return 'output_files/L_raw.rpd'
-
-
-REV = bytes(int('{:08b}'.format(x)[::-1], 2) for x in range(256))
-
-
-def make_update(rpd, out, label):
-    img = open(rpd, 'rb').read().translate(REV)       # .rpd (LSB first) -> the bytes as the flash returns them
+def make_update(flash, out, label, whole):
+    img = open(flash, 'rb').read()                     # the bytes as the flash returns them
     if img[0x20] != 0x56:                              # the menu image's sync byte 6A, as read over SPI
-        sys.exit('%s: no configuration image at 0x20 (0x%02X, expected 0x56)' % (rpd, img[0x20]))
+        sys.exit('%s: no configuration image at 0x20 (0x%02X, expected 0x56)' % (flash, img[0x20]))
+    if not whole:
+        img = img[:MENU_END]
     end = len(img)
     while end > 0 and img[end - 1] == 0xFF:
         end -= 1
     end = (end + SECTOR - 1) // SECTOR * SECTOR
     img = img[:end]
+    skip, menu_end = (WHOLE_SKIP, MENU_END) if whole else ((0, 0), len(img))
     lab = label.encode('ascii', 'replace')[:64].ljust(64, b'\0')
-    hdr = b'LUPDATE1' + struct.pack('<IIIII', len(img), zlib.crc32(img), SKIP[0], SKIP[1], MENU_END) + lab
+    hdr = b'LUPDATE1' + struct.pack('<IIIII', len(img), zlib.crc32(img), skip[0], skip[1], menu_end) + lab
     hdr = hdr.ljust(252, b'\0')
     hdr += struct.pack('<I', zlib.crc32(hdr))
     with open(out, 'wb') as f:
@@ -112,20 +95,16 @@ def make_loader(out):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--cof', default='L.cof')
-    ap.add_argument('--rpd')
+    ap.add_argument('--flash', default='output_files/L_flash.bin')
     ap.add_argument('--out')
     ap.add_argument('--label', default='L ' + datetime.date.today().isoformat())
+    ap.add_argument('--whole', action='store_true')
     ap.add_argument('--loader', action='store_true')
     a = ap.parse_args()
     if a.loader:
         make_loader(a.out or 'output_files/L_loader.jic')
         return
-    rpd = a.rpd or build_rpd(a.cof)
-    make_update(rpd, a.out or 'output_files/LUPDATE.BIN', a.label)
-    if not a.rpd:
-        for f in ('output_files/L_raw.pof', 'output_files/L_raw.rpd'):
-            os.remove(f)
+    make_update(a.flash, a.out or 'output_files/LUPDATE.BIN', a.label, a.whole)
 
 
 main()

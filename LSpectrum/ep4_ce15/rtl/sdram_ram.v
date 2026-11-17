@@ -2,6 +2,8 @@
 /* */
 /* SDRAM: 4 banks x 8192 rows x 512 columns x 16 bit (32 MB). */
 /* ADDR_BITS = 18 -> 256 KB window (ZX: 128 KB RAM pages + ROMs), max 25. */
+/* (More than 22 bits = more than 10 row bits: first used by LMega, 2026-11-17; the single-bank */
+/* precharge then has to force address pin 10 low.) */
 /* Clock: CLK_MHZ (100..133 MHz with CL2 on -6 parts; used at 112 MHz), CAS latency 2. */
 /* SDRAM clock must be the inverted controller clock (DDIO-forwarded in the top level). */
 /* */
@@ -75,6 +77,8 @@ module sdram_ram #(
 localparam integer BANKS = 4;
 /* address pins of the SDRAM */
 localparam integer SD_ADDR_BITS = 13;
+/* address pin that makes a precharge command close all banks */
+localparam integer PRE_ALL_PIN = 10;
 /* refresh count before the eighth (last) auto refresh of the power-up sequence */
 localparam [3:0] LAST_INIT_REFRESH = 4'd7;
 
@@ -426,6 +430,11 @@ begin
 /* the bank is closed */
                                 row_open[c_bank] <= 1'b0;
                                 pre_age[c_bank]  <= 4'd1;
+/* this bank only: address pin 10 must be low, and it carries row bit 10 when there are that many */
+                                if (ROW_BITS > PRE_ALL_PIN)
+                                begin
+                                    sd_a[PRE_ALL_PIN] <= 1'b0;
+                                end
                             end
                         end
                         else if (rp_ok[c_bank] && act_age[c_bank] >= T_RC && act_any_age >= T_RRD)

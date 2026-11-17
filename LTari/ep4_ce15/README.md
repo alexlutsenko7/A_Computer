@@ -39,13 +39,16 @@ AltirraOS and Altirra BASIC by Avery Lee, which are free to distribute (`roms/RE
 - **Not done:** other cartridge types, D2:-D4:, tape (.cas, dropped), turbo (dropped), paddles / light pen,
   high-speed SIO, the GTIA mid-line write delays, NTSC.
 
-## Flash layout (one `.jic`: `../../AMenu/ep4_ce15/L.cof`)
+## In the flash (`../../AMenu/ep4_ce15/README.md`)
 
-| Address | Contents |
-|---|---|
-| 0x300000 | LTari 800 image (revision `LTari800`, **800XL**, 64 KB) |
-| 0x400000 | LTari 130 image (revision `LTari`, **130XE**, 128 KB) |
-| 0x540000 | ROM image, 28 KB (`roms/atarirom.hex`, from `tools/mk_atarirom.py`) |
+| Machine | Image | Where |
+|---|---|---|
+| LTari 800 | revision `LTari800`, **800XL**, 64 KB | in `L.jic` (position 3), and a machine file |
+| LTari 130 | revision `LTari`, **130XE**, 128 KB | a machine file, installed from the SD card's `MACHINES` folder (F12 in the menu) |
+
+Each is installed into one of the flash's three positions with its ROM image (28 KB, `roms/atarirom.hex`, from
+`tools/mk_atarirom.py`) behind the position's info sector. Both models carry the same tag (A5 5A 42 BD) and the same
+ROMs, so either one finds a ROM area that the other installed.
 
 Both images come from the same sources; the revision sets the top-level parameter `MODEL130` (`set_parameter` at the
 end of `LTari.qsf` / `LTari800.qsf`, otherwise identical: keep them in step). An application image cannot learn

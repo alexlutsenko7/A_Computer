@@ -1,14 +1,17 @@
 /* flash_model -- W25Q64 READ (0x03) behaviour for the testbench */
 /* */
-/* Holds the ROM image (FILE, default roms.mem: the 48 KB ZX ROMs) at BASE. REVERSE = 1 stores every byte */
-/* bit-reversed, as found in the .jic (the loader must detect and undo it). */
+/* Holds one machine's ROM area at AREA: its 4-byte tag (TAG) at the start and the ROM image (FILE, */
+/* default roms.mem: the 48 KB ZX ROMs) at BASE = AREA + 0x1000. REVERSE = 1 stores every byte of the */
+/* image bit-reversed, as a .jic made from a plain .hex has it (the loader must detect and undo it). */
 /* SPI mode 0: command/address sampled on rising DCLK, data shifted out on */
 /* falling DCLK, MSB first. */
 `timescale 1ns/1ps
 
 /* the model: image base, length, bit order and file */
 module flash_model #(
-    parameter [23:0] BASE    = 24'h500000,
+    parameter [23:0] AREA    = 24'h200000,
+    parameter [31:0] TAG     = 32'hA55A_18E7,
+    parameter [23:0] BASE    = 24'h201000,
     parameter integer LEN    = 49152,
     parameter        REVERSE = 1,
     parameter        FILE    = "roms.mem"
@@ -29,6 +32,9 @@ localparam [7:0] CMD_READ = 8'h03;
 localparam integer T_OUT = 7;
 /* bits of a byte */
 localparam integer BYTE_BITS = 8;
+/* bytes of the tag, and its third byte's number */
+localparam integer TAG_BYTES = 4;
+localparam [1:0] TAG_THIRD = 2'd2;
 
 reg [7:0]  img [0:LEN-1];
 /* the command and address shifted in; bit counters */
@@ -46,10 +52,18 @@ end
 /* the byte at a flash address (FF outside the image), bit-reversed as in a .jic */
 function [7:0] byte_at(input [23:0] a);
     reg [7:0] b;
+    reg [1:0] n;
     begin
+/* the image's byte, or FF outside it */
         b = (a >= BASE && a < BASE + LEN) ? img[a - BASE] : 8'hFF;
 /* the result */
         byte_at = REVERSE ? {b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]} : b;
+/* the tag (its bytes are the same in both bit orders) */
+        if (a >= AREA && a < AREA + TAG_BYTES)
+        begin
+            n = a - AREA;
+            byte_at = n == 2'd0 ? TAG[31:24] : n == 2'd1 ? TAG[23:16] : n == TAG_THIRD ? TAG[15:8] : TAG[7:0];
+        end
     end
 endfunction
 

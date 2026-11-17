@@ -20,9 +20,12 @@ listed below; their licence texts and copyright headers are kept in the files.
 
 | Part | Used in | Licence | Changed here? |
 |---|---|---|---|
-| **T80** Z80 CPU | LSpectrum | BSD-style | no |
+| **T80** Z80 CPU | LSpectrum, LMega (sound processor) | BSD-style | no |
 | **JT49** AY-3-8910 / 8912 | LSpectrum | **GPL-3 or later** | no |
-| **T65** 6502 CPU | L64 (6510, 1541 CPU), LTari (6502C) | BSD-style | no |
+| **T65** 6502 CPU | L64 (6510, 1541 CPU), LTari (6502C), LNES (2A03's processor) | BSD-style | no |
+| **fx68k** 68000 CPU | LMega | **GPL-3** | no |
+| **jt12** YM2612, **jt89** SN76489 | LMega (sound) | **GPL-3** | no |
+| **Mega Drive VDP** (MiSTer Genesis core) | LMega (video chip) | BSD-style | no |
 | **VIC-II Kawari** | L64 (video chip) | **GPL-3** | small, marked `// L64:` |
 | **SID** 6581 / 8580 | L64 (sound) | CERN-OHL-S v2 (`sid_dac`, `sid_filter`) + GPL-2 or later (rest) | no |
 | **CIA** 6526 (`mos6526.v`) | L64 (2 CIAs) | GPL-2 or later (MiSTer C64 core) | small, marked `// L64:` |
@@ -37,8 +40,9 @@ listed below; their licence texts and copyright headers are kept in the files.
 | Retroleum DiagROM | LSpectrum (F1) | not known | **not included** (section 3) |
 | KiCad library footprints | I/O board (`Extra_PCB_CycloneIV.pretty/`: D-Sub 15 HD, pin headers) | CC-BY-SA 4.0 + KiCad library exception (the board design and its Gerbers are not bound) | adapted (CONNFLY DS1038 pins, rows swapped, keyboard module) |
 
-**What GPL / CERN-OHL-S mean for the bitstreams:** the L64 image contains GPL-3 and CERN-OHL-S parts and the
-LSpectrum image contains JT49 (GPL-3). Whoever passes on those `.sof` files or `L.jic` must make the complete
+**What GPL / CERN-OHL-S mean for the bitstreams:** the L64 image contains GPL-3 and CERN-OHL-S parts, the
+LSpectrum image contains JT49 (GPL-3) and the LMega image contains fx68k, jt12 and jt89 (GPL-3). LNES contains no GPL part.
+LMega's bus logic (`md_system.sv`) follows the MiSTer Genesis core's system module and repeats its BSD-style notice. Whoever passes on those `.sof` files or `L.jic` must make the complete
 corresponding source available, which this repository is. The MIT files stay MIT; the combined images are
 distributed under the terms of the strongest licence they contain.
 
@@ -167,28 +171,32 @@ git-ignored or local folders.
 
 | Place | Holds | How |
 |---|---|---|
-| Configuration flash on the core board (8 MB) | menu, the three machines, Spectrum and Atari ROMs; later the C64 ROMs | `AMenu/ep4_ce15/output_files/L.jic` over JTAG (USB-Blaster); C64 ROMs written by the ESP32 |
-| ESP32 on the I/O board | SD card loader, on-screen menus, ROM installer, Bluetooth audio | Arduino sketch `ESP32/v2`, uploaded over USB |
-| microSD card | games, disks, snapshots, your C64 ROM files | copied on a PC |
+| Configuration flash on the core board (8 MB) | the menu and three machines, each with its ROMs | `AMenu/ep4_ce15/output_files/L.jic` over JTAG (USB-Blaster); any machine replaced from the SD card; C64 ROMs written by the ESP32 |
+| ESP32 on the I/O board | SD card loader, on-screen menus, machine and ROM installer, Bluetooth audio | Arduino sketch `ESP32/v2` (I/O board revision 1: `ESP32/v1`), uploaded over USB |
+| microSD card | games, disks, snapshots, your C64 ROM files, the machine files | copied on a PC |
 
-Flash layout (`AMenu/ep4_ce15/L.cof`):
+Flash layout (`AMenu/ep4_ce15/L.cof`, written by `tools/mk_flash.py`):
 
 | Address | Contents |
 |---|---|
 | 0x000000 | AMenu, the machine menu (factory image, loaded at power-up) |
-| 0x100000 | LSpectrum |
-| 0x200000 | L64 |
-| 0x300000 | LTari 800 (revision `LTari800`, 800XL, 64 KB) |
-| 0x400000 | LTari 130 (revision `LTari`, 130XE, 128 KB) |
-| 0x500000 | Spectrum ROMs, 48 KB (`LSpectrum/ep4_ce15/roms48k.hex`) |
-| 0x540000 | Atari ROMs, 28 KB (`LTari/ep4_ce15/roms/atarirom.hex`) |
-| 0x580000 | C64 ROMs, 48 KB — **not in the .jic**, written by the ESP32 from the SD card |
+| 0x100000 | position 1: the machine's bitstream |
+| 0x200000 | position 1: its ROM area (a 4 KB info sector with the machine's tag and name, then the ROM image) |
+| 0x300000 | position 2: bitstream |
+| 0x400000 | position 2: ROM area |
+| 0x500000 | position 3: bitstream |
+| 0x600000 | position 3: ROM area |
+| 0x700000 | not used |
 
-Each machine has a 1 MB slot (room for larger FPGAs' images).
+The flash holds three machines of 2 MB each. Which machine is in a position is not fixed: `L.jic` puts LSpectrum, L64
+and LTari 800 there, and every machine (LTari 130 too) is a **machine file** that the menu installs from the SD card
+into a position you choose (4.6). A machine finds its ROM area by its tag, wherever it is installed. L64's ROM area
+holds no ROMs in the `.jic`: the ESP32 writes your C64 ROMs there.
 
-Ready-made files: every `output_files/*.sof`, `AMenu/ep4_ce15/output_files/L.jic`, the SD card update
-`AMenu/ep4_ce15/output_files/LUPDATE.BIN` and the loader `AMenu/ep4_ce15/output_files/L_loader.jic` are in the repository, so you can
-program or update a board without building (go to 4.3 or 4.6).
+Ready-made files: every `output_files/*.sof`, `AMenu/ep4_ce15/output_files/L.jic`, the machine files
+`AMenu/ep4_ce15/output_files/machines/*.LMC`, the menu update `AMenu/ep4_ce15/output_files/LUPDATE.BIN` and the loader
+`AMenu/ep4_ce15/output_files/L_loader.jic` are in the repository, so you can program or update a board without building
+(go to 4.3 or 4.6).
 
 ### 4.1 Tools
 
@@ -225,14 +233,16 @@ program or update a board without building (go to 4.3 or 4.6).
    ```
 
    Without the DiagROM argument it writes the published version (48K BASIC in the F1 slot).
-3. Assemble the one flash image:
+3. Assemble the flash image and the machine files:
 
    ```
-   cd AMenu/ep4_ce15 && quartus_cpf -c L.cof
+   cd AMenu/ep4_ce15 && python3 tools/mk_flash.py
    ```
 
-   (GUI: *File > Convert Programming Files > Open Conversion Setup Data* `L.cof` > *Generate*.) The result is
-   `AMenu/ep4_ce15/output_files/L.jic`; `L.map` lists the addresses.
+   It writes `L.cof`, runs `quartus_cpf` on it (`output_files/L.jic`; `L.map` lists the addresses) and writes one
+   machine file per machine into `output_files/machines/`. It also checks that the flash contents it composed are
+   byte for byte what Quartus put into the `.jic`. (`L.cof` alone can still be converted in the GUI: *File > Convert
+   Programming Files > Open Conversion Setup Data*.)
 
 ### 4.3 Programming the board
 
@@ -244,8 +254,8 @@ program or update a board without building (go to 4.3 or 4.6).
    quartus_pgm -c USB-Blaster -m JTAG -o "ipv;AMenu/ep4_ce15/output_files/L.jic"
    ```
 
-3. Switch the board off and on: the machine menu appears. (Programming the `.jic` also erases the C64 ROMs in the
-   flash; the ESP32 installs them again from the card at the next L64 start.)
+3. Switch the board off and on: the machine menu appears with LSpectrum, L64 and LTari 800. (Programming the `.jic`
+   also erases the C64 ROMs in the flash; the ESP32 installs them again from the card at the next L64 start.)
 
 ### 4.4 The ESP32 firmware
 
@@ -267,34 +277,49 @@ The sketch is for I/O board revision 2; a revision 1 board (`Extra_PCB_CycloneIV
 
 1. Format a microSD card **FAT32** (or FAT16). exFAT is not supported (most cards above 32 GB need reformatting).
 2. For L64, make the folder **`/ROMS/C64/`** and copy the four Commodore ROM files of section 3 into it.
+   For installing machines, make the folder **`/MACHINES/`** and copy the machine files of your core board into it
+   (`AMenu/ep4_ce15/output_files/machines/*.LMC`; for the 10CL025 board the ones of `AMenu/10cl025/`).
 3. Put games anywhere, in folders (up to 320 entries per folder): Spectrum `.tap .tzx .z80`; C64
    `.d64 .prg .t64 .tap .a64`; Atari `.atr .xex .com .car .a8s`.
 
 On the first L64 start the ESP32 shows "No ROMs in the flash yet", reads the four files, writes them into the flash,
 verifies them and restarts the C64 — a few seconds. From then on L64 starts without the card.
 
-### 4.6 Updating from the SD card (LUPDATE.BIN)
+### 4.6 Installing and updating from the SD card
 
-A board that has the machine menu (any `L.jic` or `L_loader.jic` from 30 October 2026 on) updates itself from the
-card; no USB-Blaster is needed:
+A board that has the machine menu installs machines and updates itself from the card; no USB-Blaster is needed.
+
+**Installing a machine (the `MACHINES` folder).** The flash holds three machines; any of them can be replaced:
+
+1. Copy the machine files of your core board into the card's `MACHINES` folder (4.5).
+2. In the machine menu press **F12**. Choose the machine, then the position (1 to 3) it replaces.
+3. The ESP32 checks the whole file (CRC-32), then writes the bitstream and the ROMs into that position, each 4 KB
+   sector read back: about 15 seconds; **do not switch off**. The menu then shows the new machine.
+
+Only that position is written; the menu and the other two machines are not touched. If the power fails during the
+write, the position shows "(empty)" and the machine is simply installed again. A damaged file, or a file made for
+the other core board, is refused before anything is written. L64's file carries no ROMs: your C64 ROMs are written
+by the ESP32 at the first L64 start (4.5) and stay when L64 is installed over itself.
+
+**Updating the menu (`LUPDATE.BIN`).**
 
 1. Copy `LUPDATE.BIN` to the **root folder** of the SD card and put the card in.
 2. Switch the board on. While the machine menu is shown, the ESP32 finds the file, checks it (CRC-32 over the whole
-   image) and writes the flash: only the 4 KB sectors that differ, the machines first and the menu last, each sector
-   read back. The screen shows the progress; **do not switch off** (a few seconds for a small change, about 3-4
-   minutes for a full install).
-3. When everything checked out, the ESP32 deletes `LUPDATE.BIN`. If the menu itself changed, the screen asks to
-   switch the board off and on; otherwise the menu comes back and the new machines start at once.
+   image) and writes the sectors that differ, each read back. **Do not switch off.**
+3. When everything checked out, the ESP32 deletes `LUPDATE.BIN` and the screen asks to switch the board off and on.
 
-The C64 ROMs the ESP32 installed (flash 0x580000-0x5FFFFF) are never touched. A damaged file is rejected before
-anything is written. If the power fails during the update, the file is still on the card and the update simply
-runs again at the next start; only a power failure while the menu's own sectors are written (rare: only when the
-menu changed) can leave a board that needs the USB-Blaster again.
+`LUPDATE.BIN` holds the menu alone. If the power fails while the menu's own sectors are written, the board needs
+the USB-Blaster again (4.3); a machine install has no such risk.
 
-Making the file (from `AMenu/ep4_ce15/`, after building the images, the same contents as `L.jic`):
+**A board with the earlier layout** (four machines in 1 MB slots, `L.jic` before 16 November 2026): put the new
+`LESP32.BIN`, `LUPDATE.BIN` and the `MACHINES` folder on the card. The ESP32 firmware is updated first, then the
+menu; after switching off and on the menu shows three empty positions: install the machines with F12.
+
+Making the files (from `AMenu/ep4_ce15/`, after building the images):
 
 ```
-python3 tools/mk_update.py --label "L 2026-10-30"     # -> output_files/LUPDATE.BIN
+python3 tools/mk_flash.py  --label "L 2026-11-16"     # -> output_files/L.jic, output_files/machines/*.LMC
+python3 tools/mk_update.py --label "L 2026-11-16"     # -> output_files/LUPDATE.BIN
 ```
 
 ### 4.7 Boards shipped with the loader
@@ -303,9 +328,9 @@ python3 tools/mk_update.py --label "L 2026-10-30"     # -> output_files/LUPDATE.
 blank data up to the end of the 8 MB flash: no machines, no ROMs. Program it as in 4.3. The blank part matters: the
 Programmer erases only where a `.jic` has data (its Erase option did not clear old machines on hardware), so this
 file wipes a used board completely, C64 ROMs included. Then install the ESP32 firmware (4.4); the board then shows **"No machines installed"**
-until the user copies `LUPDATE.BIN` from this repository to the SD card (4.6). So a board can be passed on without
-any ROM in it: the user gets the machines and the Spectrum / Atari ROMs from the public release, and supplies the
-C64 ROMs as in 4.5.
+until the user copies the machine files from this repository to the SD card's `MACHINES` folder and installs them
+with F12 (4.6). So a board can be passed on without any ROM in it: the user gets the machines and the Spectrum /
+Atari ROMs from the public release, and supplies the C64 ROMs as in 4.5.
 
 ### 4.8 Hardware
 
@@ -333,10 +358,10 @@ in `docs/LSpectrum_Keys.docx`, `docs/L64_Keys.docx` and `docs/LTari_Keys.docx`.
 
 ## Appendix A: notices for the bitstreams
 
-The LSpectrum, L64 and LTari bitstreams (`.sof`, `L.jic`) contain T80 or T65, and all images the Spleen font. Their
+The LSpectrum, L64, LTari, LNES and LMega bitstreams (`.sof`, `L.jic`, the machine files) contain T80 or T65 (LMega also the Mega Drive video processor), and all images the Spleen font. Their
 licences require these notices in the documentation of a synthesised / binary distribution. They are reproduced verbatim from the source headers.
 
-### T80 (in LSpectrum), `T80/T80.vhd`
+### T80 (in LSpectrum and LMega), `T80/T80.vhd`
 
 ```
 T80(c) core. Copyright (c) 2018 Sorgelig
@@ -372,7 +397,44 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### T65 (in L64 and LTari), `T65/T65.vhd`
+### The Mega Drive video processor (in LMega), `LMega/10cl025/rtl/genesis/vdp.vhd`
+
+```
+Copyright (c) 2010 Gregory Estrade (greg@torlus.com)
+Copyright (c) 2018 Till Harbaum
+Copyright (c) 2018-2019 Alexey Melnikov
+Copyright (c) 2018-2019 György Szombathelyi
+
+All rights reserved
+
+Redistribution and use in source and synthezised forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+
+Redistributions in synthesized form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+Neither the name of the author nor the names of other contributors may
+be used to endorse or promote products derived from this software without
+specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+```
+
+### T65 (in L64, LTari and LNES), `T65/T65.vhd`
 
 ```
 65xx compatible microprocessor core

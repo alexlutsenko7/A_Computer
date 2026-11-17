@@ -3,18 +3,23 @@
 	<eprom_name>EPCS64</eprom_name>
 	<flash_loader_device>10CL025Y</flash_loader_device>
 	<output_filename>output_files/L.jic</output_filename>
-	<n_pages>5</n_pages>
+	<n_pages>4</n_pages>
 	<width>1</width>
 	<mode>7</mode>
 	<hex_block>
-		<hex_filename>../../LSpectrum/ep4_ce15/roms48k.hex</hex_filename>
+		<hex_filename>output_files/L_pos1_rom.hex</hex_filename>
 		<hex_addressing>relative</hex_addressing>
-		<hex_offset>5242880</hex_offset>
+		<hex_offset>2097152</hex_offset>
 	</hex_block>
 	<hex_block>
-		<hex_filename>../../LTari/ep4_ce15/roms/atarirom.hex</hex_filename>
+		<hex_filename>output_files/L_pos2_rom.hex</hex_filename>
 		<hex_addressing>relative</hex_addressing>
-		<hex_offset>5505024</hex_offset>
+		<hex_offset>4194304</hex_offset>
+	</hex_block>
+	<hex_block>
+		<hex_filename>output_files/L_pos3_rom.hex</hex_filename>
+		<hex_addressing>relative</hex_addressing>
+		<hex_offset>6291456</hex_offset>
 	</hex_block>
 	<sof_data>
 		<user_name>Page_0</user_name>
@@ -32,7 +37,7 @@
 		</bit0>
 	</sof_data>
 	<sof_data>
-		<start_address>00200000</start_address>
+		<start_address>00300000</start_address>
 		<user_name>Page_2</user_name>
 		<page_flags>0</page_flags>
 		<bit0>
@@ -40,19 +45,11 @@
 		</bit0>
 	</sof_data>
 	<sof_data>
-		<start_address>00300000</start_address>
+		<start_address>00500000</start_address>
 		<user_name>Page_3</user_name>
 		<page_flags>0</page_flags>
 		<bit0>
 			<sof_filename>../../LTari/10cl025/output_files/LTari800.sof</sof_filename>
-		</bit0>
-	</sof_data>
-	<sof_data>
-		<start_address>00400000</start_address>
-		<user_name>Page_4</user_name>
-		<page_flags>0</page_flags>
-		<bit0>
-			<sof_filename>../../LTari/10cl025/output_files/LTari.sof</sof_filename>
 		</bit0>
 	</sof_data>
 	<version>10</version>

@@ -171,7 +171,7 @@ justified 2-clock multicycle in the SDC.
 
 Link frames (`rtl/esp_link.v`): `01 WR r d3..d0`, `02 RD r x -> d3..d0`, `03 OSD a1 a0 b...`, `04 FIFO (d3..d0)...`,
 `05 MWR a2 a1 a0 b...` and `06 MRD a2 a1 a0 x -> b...` (Spectrum memory through the snapshot port, while frozen),
-`07 STAT x -> {error, 0}`, and only in the machine menu (esp_link parameter FLS, core ID 4D4E_0002) `08 FLS b... ->
+`07 STAT x -> {error, 0}`, and only in the machine menu (esp_link parameter FLS, core ID 4D4E_0002 and later) `08 FLS b... ->
 -, -, r...` (each byte goes out on the configuration flash; its answer comes back two bytes later: the flash update). The ESP32 collects pulse commands, OSD text and memory writes into one frame each and
 reads memory 256 bytes at a time; every other register access is one frame.
 

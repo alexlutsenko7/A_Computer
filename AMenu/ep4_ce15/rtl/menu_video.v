@@ -9,6 +9,8 @@
 /* The text is a ROM (TEXT_HEX, tools/menu_text.py): rows ENTRY_ROW, */
 /* ENTRY_ROW + 2, ... are the machines; the row of the selected one is shown */
 /* inverse. Row ERR_ROW is only shown while err = 1. */
+/* The machines' names are not in the ROM: columns NAME_COL.. of the machine rows come from */
+/* a small RAM (address {position, column}) that menu_names fills from the flash. */
 /* While osd_on = 1 the screen shows the ESP32's OSD text instead (written over the */
 /* link: flash update, "no machines installed"), white on blue, bit 7 = inverse. */
 /* */
@@ -21,7 +23,7 @@ module menu_video #(
     parameter         FONT_HEX  = "font.hex",
     parameter         TEXT_HEX  = "menu_text.hex",
     parameter integer ENTRY_ROW = 6,
-    parameter integer ERR_ROW   = 18
+    parameter integer ERR_ROW   = 14
 )(
 /* 25.208 MHz */
     input  wire       pclk,
@@ -45,6 +47,11 @@ module menu_video #(
     input  wire       osd_we,
     input  wire [9:0] osd_waddr,
     input  wire [7:0] osd_wdata,
+/* the machines' names: write port (menu_names) */
+    input  wire       name_wclk,
+    input  wire       name_we,
+    input  wire [6:0] name_waddr,
+    input  wire [7:0] name_wdata,
     output reg  [3:0] vga_r,
     output reg  [3:0] vga_g,
     output reg  [3:0] vga_b,
@@ -96,6 +103,10 @@ localparam [11:0] RGB_RED = 12'hA00;
 localparam [11:0] RGB_BLUE = 12'h00C;
 /* colour around the text area */
 localparam [11:0] RGB_DARK_BLUE = 12'h004;
+/* the first text column of a machine's name */
+localparam [4:0] NAME_COL = 5'd3;
+/* machine rows: ENTRY_ROW, + 2, + 4 */
+localparam integer NAME_ROWS = 3;
 
 reg [7:0] txt  [0:767];
 /* OSD text (32 x 24 used) */
@@ -108,6 +119,15 @@ begin
 /* the font */
     $readmemh(FONT_HEX, font);
 end
+
+/* the machines' names, 4 rows of 32 characters (a block RAM) */
+reg [7:0] names [0:127];
+always @(posedge name_wclk)
+    if (name_we)
+    begin
+/* one character */
+        names[name_waddr] <= name_wdata;
+    end
 
 /* the ESP32's text */
 always @(posedge osd_wclk)
@@ -161,7 +181,9 @@ wire [4:0] row   = ry[8:4];
 
 /* text and font fetch */
 reg  [7:0] tq, fq, obm_next, obm;
+wire [7:0] ch;
 wire [4:0] col  = la[8:4];
+/* the address digit of this column */
 wire [3:0] anib = col == COL_ADDR5 ? addr[23:20] : col == COL_ADDR4 ? addr[19:16] : col == COL_ADDR3 ? addr[15:12] :
                   col == COL_ADDR2 ? addr[11:8]  : col == COL_HEX_HI ? addr[7:4]   : addr[3:0];
 /* the address row and the mode row show hexadecimal digits */
@@ -177,8 +199,23 @@ begin
     tq <= osd_s[1] ? otxt[{row, col}] :
           (row == ERR_ROW && (col == COL_HEX_HI || col == COL_HEX_LO)) || arow || mrow ? hexc : txt[{row, col}];
 /* the font row */
-    fq <= font[{tq[6:0], ry[3:0]}];
+    fq <= font[{ch[6:0], ry[3:0]}];
 end
+
+/* a cell of a machine's name: the character comes from the name RAM */
+wire [4:0] erow   = row - ENTRY_ROW;
+wire       n_cell = row >= ENTRY_ROW && erow < ROW_STEP * NAME_ROWS && !erow[0] && col >= NAME_COL;
+reg  [7:0] nq;
+/* the cell is a name's */
+reg        n_sel;
+always @(posedge pclk)
+begin
+    nq    <= names[{erow[2:1], col}];
+/* not while the ESP32's screen is shown */
+    n_sel <= n_cell && !osd_s[1];
+end
+/* the character shown: a name's, or the text's */
+assign ch = n_sel ? nq : tq;
 
 /* the character's bitmap, loaded 1 pixel before its cell */
 always @(posedge pclk or negedge prst_n)
@@ -193,7 +230,7 @@ always @(posedge pclk or negedge prst_n)
         if (la[3:0] == PIPE_FONT)
         begin
 /* inverse characters */
-            obm_next <= fq ^ {FONT_BITS{tq[7]}};
+            obm_next <= fq ^ {FONT_BITS{ch[7]}};
         end
         if (la[3:0] == PIPE_LOAD)
         begin

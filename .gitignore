@@ -11,6 +11,11 @@ greybox_tmp/
 !AMenu/*/output_files/L.jic
 !AMenu/*/output_files/L_loader.jic
 !AMenu/*/output_files/LUPDATE.BIN
+!AMenu/*/output_files/machines/
+!AMenu/*/output_files/machines/*.LMC
+# LNES test results, LMega simulation copies
+LNES/*/sim/t_*/
+LMega/*/sim/src_sim/
 work*/
 *.log
 transcript

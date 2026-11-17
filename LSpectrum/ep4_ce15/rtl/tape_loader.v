@@ -10,7 +10,7 @@
 /* Register bus: driven by the ESP32 over the SPI link (rtl/esp_link.v, frames WR/RD/OSD/ */
 /* FIFO/MWR/MRD/STAT); the ESP32 firmware's names are in ESP32/v2/src/hw.h. */
 /* 0x1000_0000  registers: */
-/* 00 ID        R: core ID (CORE_ID: 5A58_0001 = "ZX", 4336_0002 = "C6"; link version 1, L64 2) */
+/* 00 ID        R: core ID (CORE_ID: 5A58_0001 = "ZX", 4336_0003 = "C6"; link version 1, L64 3) */
 /* 04 IRQ       R: [3:0] interrupt causes, [11:8] mask   W: [11:8] mask (see the link section) */
 /* 08 KEYS      R: loader keys */
 /* 0C FIFO      W: push command  R: [9:0] used entries, [16] player idle */

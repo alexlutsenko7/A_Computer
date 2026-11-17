@@ -1,0 +1,55 @@
+# first_light for the QMTECH Cyclone 10 LP core board (10CL025YU256I7G) -- Quartus settings (Chapter 4 of the book)
+# Second revision of the project: the sources and first_light.sdc are the same as for the EP4CE15 board.
+
+set_global_assignment -name FAMILY "Cyclone 10 LP"
+set_global_assignment -name DEVICE 10CL025YU256I7G
+set_global_assignment -name TOP_LEVEL_ENTITY first_light
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
+
+set_global_assignment -name VERILOG_FILE rtl/first_light.v
+set_global_assignment -name VERILOG_FILE rtl/vga_timing.v
+set_global_assignment -name VERILOG_FILE rtl/vga_pll.v
+set_global_assignment -name VERILOG_FILE rtl/vga_clkmux.v
+set_global_assignment -name SDC_FILE first_light.sdc
+
+# Every pin is 3.3 V; pins the design does not use stay inputs with a weak pull-up
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_WEAK_PULLUP "AS INPUT TRI-STATED"
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+
+# Core board (one user key: KEY1 is header U7 pin 7, for a push button to ground)
+set_location_assignment PIN_E2  -to CLOCK_50
+set_location_assignment PIN_F3  -to RESET_N
+set_location_assignment PIN_G1  -to KEY1
+set_location_assignment PIN_N9  -to LEDR
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to KEY1
+
+# I/O board VGA (J1, wired to U8 with each pin pair swapped)
+set_location_assignment PIN_C15 -to VGA_R[3]
+set_location_assignment PIN_A15 -to VGA_R[2]
+set_location_assignment PIN_C16 -to VGA_R[1]
+set_location_assignment PIN_B16 -to VGA_R[0]
+set_location_assignment PIN_A14 -to VGA_G[3]
+set_location_assignment PIN_A13 -to VGA_G[2]
+set_location_assignment PIN_B14 -to VGA_G[1]
+set_location_assignment PIN_B13 -to VGA_G[0]
+set_location_assignment PIN_A12 -to VGA_B[3]
+set_location_assignment PIN_A11 -to VGA_B[2]
+set_location_assignment PIN_B12 -to VGA_B[1]
+set_location_assignment PIN_B11 -to VGA_B[0]
+set_location_assignment PIN_C14 -to VGA_HS
+set_location_assignment PIN_D16 -to VGA_VS
+
+# The output registers sit in the I/O cells, so all VGA pins switch together
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_R[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_G[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_B[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_HS
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_VS
+
+set_global_assignment -name LAST_QUARTUS_VERSION "25.1std.0 Lite Edition"
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

@@ -1234,3 +1234,199 @@ Open (user's decision): how the adapter physically connects to the Cyclone IV bo
   read per line at step 2). The machine screens were taken with the first version.
 - Book: Chapter 26 section "The first run, without an I/O board" (Figure 26.1, Table 26.5), Chapter 13, Table 7.4.
 - EP4CE15 board the same day: L.jic (1 MB slots) programmed and the final ESP32 firmware uploaded; the user's check: works.
+
+## 2026-11-12: FirstLight on the 10CL025; second assembly quote for the I/O board rev 2
+
+- `FirstLight/first_light_10cl025.qsf`: second revision of the book's Chapter 4 project for the 10CL025 board
+  (CLOCK_50 E2, RESET_N F3, KEY1 G1 with weak pull-up, LEDR N9, VGA on U8 as the generated machine .qsf files).
+  Built: 235 LEs, 18 pins, timing met. Not run on hardware.
+- I/O board rev 2: a second assembly quote (7pcb.com). BOM as .xlsx (`Extra_PCB_CycloneIV_R2/tools/bom_xlsx.py`),
+  board data and the substitute parts checked against the footprints: `Extra_PCB_CycloneIV_R2/7pcb/NOTES.md`.
+  The BOM is not changed until the parts are final.
+
+## 2026-11-16: three machine positions of 2 MB, machines installed from the SD card
+
+Decided with the user: the flash holds the menu and **three machines of 2 MB each** (bitstream + ROM area, a fixed
+size so the number of stored machines never depends on which machines they are); any other machine is installed from
+the SD card in place of one of the three. LTari stays two machines (800 / 130, not merged): LTari 130 comes from the
+card. Built for both core boards; the ESP32 side for the I/O board revision 1 (`ESP32/v1`, the revision 2 boards have
+not arrived), the same source changes applied to `ESP32/v2`.
+
+- Layout: menu 0; positions at 0x100000 / 0x300000 / 0x500000 (bitstream), ROM areas at 0x200000 / 0x400000 /
+  0x600000; 0x700000 unused. A ROM area = info sector (4 KB: tag A5 5A <machine byte> <complement>, core ID, board,
+  flags, the 29-character menu line, a label) + the ROM image at + 0x1000. Machine bytes: 18 LSpectrum, 24 L64,
+  42 LTari (both models: same ROMs).
+- A machine cannot read its own boot address (AMenu/ep4_ce15/README.md, remote update notes), so `rom_loader.v` searches: one READ of 4 bytes at each
+  ROM area, the first area with the machine's tag is loaded from (a second READ at + 0x1000); no area: bad_image. The
+  tag bytes are bit palindromes, so the bit order of the stored data does not matter for the search.
+  Test `LSpectrum/ep4_ce15/sim/run_rom_loader_sim.sh`: tag in area 1 / 2 / 3, plain and bit-reversed image, no tag.
+- AMenu: 3 entries; `menu_names.v` reads tag + menu line of each position from the flash into a 128-byte name RAM (an
+  M9K, read beside the text ROM); "(empty)" positions cannot be started. It reads at reset, when the ESP32 releases
+  the flash pins and on register RELOAD. Core ID 4D4E_0003; MSTAT (register MCTL read) = the core board (1 EP4CE15,
+  2 10CL025). F12 line added to the screen; error rows moved to 14-16.
+- L64 core ID 4336_0003 (the ESP32 writes the C64 ROMs into the ROM area of the position that has L64's tag;
+  loaded over JTAG without being installed, L64 has no place for ROMs).
+- `AMenu/ep4_ce15/tools/mk_flash.py` (run in AMenu/ep4_ce15 or AMenu/10cl025): cuts every bitstream out of a scratch
+  .pof, writes the machine files `output_files/machines/<machine>_<board>.LMC` (256-byte header: "LMACHIN1", board,
+  lengths, CRC-32 of image / ROM data / info sector, header CRC; then info sector, ROM data, image as SPI reads
+  them), generates `L.cof` and `L.jic` (LSpectrum, L64, LTari 800) and `L_flash.bin`, and proves that the composed
+  flash equals the .jic's data (so a bitstream does not depend on its address, and three installs from the card
+  give the .jic's flash). Found on the way: the bytes of a .hex block come back over SPI as they are in the .hex
+  (the .jic FILE holds them bit-reversed and the bitstream bytes plain; the flash returns bitstream bytes
+  bit-reversed). The ROM loader's bit-order detection stays.
+- `mk_update.py`: LUPDATE.BIN is the menu alone (500 KB); `--whole` makes the earlier whole-flash file for the tests.
+- ESP32 (`update.cpp`, mch_*): positions, list of the card's `/MACHINES/*.LMC` for this board, check (three CRCs),
+  install = erase the info sector, write image and ROMs where they differ, info sector last; a file without ROMs
+  (L64) keeps the same machine's ROMs and erases another machine's first ROM sector. `main.cpp`: F12 in the menu ->
+  "Which machine?" -> "Replace which one?" -> check -> write -> RELOAD. "No machines installed" is now decided by
+  the tags; an older menu (4D4E_0001 / 0002) gets "This menu is an older version" (LUPDATE.BIN first).
+- Results: EP4CE15 builds timing-clean: AMenu 13,205 LEs, LSpectrum 7,740, L64 14,973 (97 %), LTari 130 6,989,
+  LTari 800 6,981. Host tests PASS (`ESP32_test/v1/test/run_host_test.sh`): the nine flash-update scenarios, the
+  C64 ROM install with L64 in position 2, and the new `machine_test.cpp` (list, three installs = L.jic's flash byte
+  for byte, repeat, the user's ROMs kept / removed, other board and damaged file refused, 60 installs cut off: never
+  a half machine shown, menu-only LUPDATE). One install: about 13 s modelled. Firmware v1 1,176,595 B (89 %).
+- Upgrade of a board with the 1 MB slots: `L.jic` over JTAG, or from the card: LESP32.BIN + LUPDATE.BIN + MACHINES,
+  then F12 three times.
+- On hardware the same day (EP4CE15 board, rev 1 I/O board; `L.jic` over JTAG, firmware v1 over USB): works (user).
+  The 10CL025 board is not programmed yet. Not done: the manuals (9 languages), the .docx documents and the book still describe four
+  machines in 1 MB slots; no board ID in LESP32.BIN / LUPDATE.BIN (as before).
+
+## 2026-11-17: two more machines: LNES (NES, both boards) and LMega (Sega Mega Drive, 10CL025 only)
+
+Asked for by the user ("add Sega Mega Drive and NES machines into the 10CL025 and the NES into the EP4CE15"; the
+joysticks give the directions and their button, every other pad button is a key). The ideas of
+docs/FUTURE_MACHINES.md sections 5-12 were the starting point. Both are machine files for the SD card's
+`MACHINES` folder (F12 in the machine menu); `L.jic` still holds LSpectrum, L64 and LTari 800. Neither has a
+system ROM, so their ROM areas in the flash stay empty: a game is a file that the ESP32 writes into the SDRAM.
+**Nothing of this is on hardware yet.**
+
+### LNES (`LNES/ep4_ce15`, `LNES/10cl025`; README there)
+
+- Own PPU (`nes_ppu.v`), APU (`nes_apu.v`) and mappers 0, 1, 2, 3, 4, 7, 11, 66 (`nes_mapper.v`), written from
+  the NESdev documentation; T65 with decimal mode off. Core ID 4E45_0001, machine byte 0x66.
+- clk 21.449 MHz (4 per PPU dot, 12 per CPU cycle), SDRAM at 4 x = 85.795 MHz. The clock is 0.13 % below the
+  NES's so that the NES frame lasts as long as the VGA frame (25.208 MHz, 800 x 525) within 9 ppm: with the
+  triple frame buffer (`nes_fb.v`, as LTari's) a frame is repeated or dropped about every half hour instead of
+  every 12 s. 640 x 480 @ 60 Hz only.
+- Memory in the SDRAM: 2 KB RAM, 8 KB cartridge RAM at 0x2000, pattern data at 0x100000, program data at
+  0x200000, frame buffers at 0x40000. The two planes of a tile row share one 16-bit word (pattern address bit 3
+  is the byte lane), so the PPU fetches both with one access; the CPU's and the ESP32's addresses into that
+  area are converted the same way inside the FPGA.
+- SDRAM users by priority: CPU cycle, PPU pattern fetch (asked for 5 dots before it is needed), ESP32, RAM
+  clear, frame buffer.
+- Sprite DMA and the sample channel's DMA stop the CPU through T65's RDY at a read cycle, as the real chip.
+- Controllers: DB9 stick = directions + A; keys Z / left Ctrl = B, Tab = Select, Enter = Start (pad 2: F, R, T;
+  A also on X, Space / G). F4: which port is pad 1, and whether the stick's button is A or B.
+- Build: EP4CE15 6,857 LEs (45 %), worst setup +2.11 ns / hold +0.14 ns; 10CL025 6,811 LEs (28 %), +2.58 / +0.11 ns.
+- Simulation (`sim/run_sim.sh`, Questa): the free licence allows ONE session at a time and needs about 2 s per
+  simulated millisecond (`+define+FAST`: a plain memory instead of the SDRAM controller), so only short test
+  programs are practical. A found-and-fixed bug: the pattern memory's address constant put it at 0x080000
+  (inside the third frame buffer) instead of 0x100000; cartridges with pattern ROM showed a black screen.
+  Results: see the table at the end of this entry.
+
+### LMega (`LMega/10cl025` only; README there)
+
+- 17,335 LEs (70 % of the 10CL025; more than the EP4CE15 has), timing met (+1.1 ns at 107.4 MHz, +2.75 ns at
+  53.7 MHz). Core ID 4D44_0001, machine byte 0x3C.
+- Built from open cores, kept as unchanged copies with a SOURCE.md each: fx68k (68000, GPL-3, `FX68K/`),
+  T80 (Z80), jt12 (YM2612, GPL-3, `JT12/`), jt89 (SN76489, GPL-3, `JT89/`), the VDP of the MiSTer Genesis core
+  (BSD-style, `LMega/10cl025/rtl/genesis/`). All from MiSTer-devel/Genesis_MiSTer @adc0c42.
+- Ours: `md_system.sv` (bus logic after the MiSTer core's system.sv, whose notice it carries; controller ports;
+  mono sound mix), `md_mem.v` (ROM 4 MB, 68000 RAM, video RAM and cartridge RAM all in the SDRAM; the VDP's
+  32-bit video RAM read is two word accesses; priority VDP > bus > ESP32 > clear), `md_video.v`, `LMega.v`.
+- Clock: 53.693 MHz exactly as the console (50 x 189 / 176), SDRAM and video output at 2 x = 107.386 MHz.
+- Video without a frame buffer (the user's point: scrolling must be smooth, interlace may be needed): a line
+  doubler; the output counts 800 pixel times in the 3,420 clocks of a line with a fraction counter, so the 320
+  pixels fill exactly 640 monitor pixels although no pixel clock with that ratio exists. The frame rate is the
+  console's own (59.92 Hz). The interlaced double-resolution mode is drawn without a field offset so far.
+- The video timing runs without a cartridge (the VDP has its own reset), so the OSD shows right after the start.
+- Controllers: DB9 stick = directions + B; keys Z / left Ctrl = A, X / Space = C, Enter = Start (pad 2: F, G, T).
+- Region from the cartridge's header (America, else Europe = 50 Hz, else Japan); battery RAM as LNES.
+
+- **A bug in the shared SDRAM controller, found by the model** (`LSpectrum/ep4_ce15/rtl/sdram_ram.v`): the
+  precharge of one bank left address pin 10 as it was, and that pin carries row bit 10. No machine had more than
+  10 row bits (4 MB) before; LMega has 11 (8 MB: RAM and video RAM lie above the 4 MB of ROM), so a precharge for
+  an address there closed ALL banks while the controller went on believing the others open ("READ to closed
+  bank" in the model, 7,263 times in 40 ms). Fixed by forcing the pin low for that command when there are more
+  than 10 row bits (`ROW_BITS > PRE_ALL_PIN`, a constant per machine: the logic of the machines with fewer bits
+  does not change; checked by rebuilding them, see the results below). `DDR_TEST`'s own copy is not changed.
+- Simulation: `sim/run_sim.sh` runs a test cartridge made by `sim/mk_testrom.py` (VDP registers, two colours,
+  one tile, plane A filled with it, a RAM check, then a counter) on md_system + md_mem + the SDRAM model;
+  `sim/run_video_sim.sh` tests `md_video.v` alone against a made-up VDP timing. Questa needs patched copies of
+  two third-party files and a few switches (comments in run_sim.sh).
+
+- **F8, three video modes for a cartridge made for Europe only** (user, 2026-11-17: 60 Hz is the default; "fill
+  the screen memory at 50 fps and read it back at 60 fps", the user accepts the repeated frames): 0 = 60 Hz
+  console (after power-up), 1 = 50 Hz console and 50 Hz on the screen, 2 = 50 Hz console and 60 Hz on the screen
+  through `md_fb.v` (three buffers of 320 x 240 words at 0x500000, a line per SDRAM row; md_video then makes its own
+  640 x 480 frame: 3,412 clocks per line, 525 lines). Other cartridges: always 60 Hz.
+- For mode 2 the SDRAM controller needs **run reads**. They were first added to the shared `sdram_ram.v` as an
+  option (`RUN`, 0 elsewhere), but the rebuilt LSpectrum / LTari images were then no longer bit-identical to the
+  ones on the board, so the shared file went back to its proven state and LMega has its own copy,
+  `LMega/10cl025/rtl/md_sdram.v` (the shared file + run reads):
+  8 READ commands on 8 consecutive clocks (still burst length 1), the words arriving one per clock. Without them
+  the screen's reads would not fit beside the VDP's. The SDRAM model accepts such reads now.
+
+### ESP32 firmware (`ESP32/v1` and `ESP32/v2`, the same changes)
+
+- `cart.cpp` (shared: file into the SDRAM by 256 KB pages, battery RAM as `NAMEhhhh.SAV` beside the game, written
+  1.5 s after the game stopped writing or every 10 s), `nes.cpp` (.nes header, mapper check, cartridge word,
+  screenshot), `md.cpp` (.md / .gen / .bin / .smd, region, battery RAM range).
+- `main.cpp` / `esp_hw.cpp`: the two core IDs, the list of games opens by itself (nothing runs without a
+  cartridge), F4 joystick menus (four modes now), no tape / snapshot / turbo functions on these machines.
+  A file of exactly 4 MB (the largest Mega Drive cartridge) did not fit the list entry's size field: it is kept
+  as one byte less and corrected when it is loaded.
+- Sizes: v1 1,182,147 bytes (90 %), v2 1,197,787 bytes.
+- PC test `ESP32_test/vN/test/cart_test.cpp` (+ `mkcart.py`): made-up cartridges into a model of the memory
+  port: program / picture / ROM data, cartridge words, refused files, battery RAM written to the card image and
+  restored, .smd equal to the plain ROM, the three regions. PASS; the whole v1 host test PASS (the machine
+  install test now expects LNES among the machine files).
+
+### Flash tool, projects
+
+- `AMenu/ep4_ce15/tools/mk_flash.py`: LNES for both boards, LMega for the 10CL025 only (a machine can name its
+  boards). `tools/mk_10cl025_qsf.py`: LNES added; `LMega.qsf` is written by hand.
+- `AMenu/ep4_ce15/output_files`: `L.jic` was made again by the tool run; its machines are the same builds as
+  before, only the label (the date) in the info sectors differs. The files of 2026-11-16 that are on the board
+  are kept in `tmp/nes_fw/before/AMenu_ep4_output_files`.
+
+### Open
+
+- Hardware tests of both machines (the loaders' speed for large files is unknown: a 4 MB cartridge goes through
+  the same byte-wise memory commands as a 64 KB one).
+- LNES: more test programs (sprite hit, NMI timing, MMC3 counter, sound); snapshots; more mappers.
+- LMega: 6-button pads, the interlace field offset, games over 4 MB, serial EEPROM saves; sound is 10 bits on
+  Bluetooth (the shared `bt_i2s` input).
+- A faster simulator (Verilator) would make the public test suites practical; it is not installed.
+- Manuals, the .docx documents, the book and `github/` do not know the two machines yet.
+
+### Final state of 2026-11-17 (builds, tests, machine files, book)
+
+- Final builds from the final sources, all timing-clean: LMega 17,617 LEs (72 % of the 10CL025; setup + 1.115 ns,
+  hold + 0.134 ns), LNES 6,852 LEs on the EP4CE15 (setup + 1.983, hold + 0.140) and 6,853 on the 10CL025
+  (+ 2.582 / + 0.134).
+- The four machines on the board are untouched: LSpectrum, LTari 800, LTari 130 and L64 rebuilt from the working
+  tree give raw bitstreams identical to the hardware-tested ones (the shared `sdram_ram.v` carries only the one-bank
+  precharge fix; LMega's run reads are in its own `md_sdram.v`).
+- Simulation: LMega smoke test PASS with 0 SDRAM errors (RAM mark 600D, counter running, stripes on the picture);
+  `run_video_sim.sh` PASS; `run_fb_sim.sh` (third F8 mode: 50 Hz console on a 60 Hz screen) PASS: 3,412-clock
+  lines, 525 lines, 480 picture lines, right colour 582 of 582 samples, 0 SDRAM errors. LNES through the real SDRAM
+  controller and the frame buffer: nestest's menu on the VGA output (`LNES/ep4_ce15/sim/t_fb/vga.png`), 0 SDRAM errors.
+- Machine files remade with `mk_flash.py` for both boards: `LNES_ep4ce15.LMC`, `LNES_10cl025.LMC`,
+  `LMega_10cl025.LMC` in `AMenu/<board>/output_files/machines/`. `L.jic`, `L_flash.bin`, `LUPDATE.BIN` and the other
+  machines' files were put back from the hardware-tested set of 2026-11-16 (the tool stamps a new date into them;
+  compared byte for byte). A card set for the first hardware test is staged in `tmp/nes_fw/sd_card/<board>/`
+  (the new machine files + `LESP32.BIN` = the new v1 firmware).
+- A job that waits with `pgrep -f quartus_sh.exe` inside an inline shell command matches its own command line and
+  never starts: put such loops into a script file.
+- Book (private): Chapters 28 (NES) and 29 (Mega Drive), consoles in Chapter 1 / 27 / the appendices, and the whole
+  book moved to the current flash design (Chapter 13 rewritten, Figure 13.1 redrawn); 284 pages. Open points in
+  `Book/REVIEW_NOTES.md`.
+- Still not done: nothing of this on hardware; firmware not uploaded; github/, the manuals and the docs/ .docx
+  files know neither the consoles nor (the manuals, .docx) the machine positions.
+- Public repository copy (`github/`, not committed: the user's step): `tools/make_github.py` now copies LNES, LMega,
+  FX68K, JT12, JT89, builds the flash images with `mk_flash.py` from the public ROM image, and fills `INSTALL/` with
+  `MACHINES/` (the machine files of both boards), `MENU_UPDATE/<board>/LUPDATE.BIN` and `ESP32_UPDATE/<v1|v2>/LESP32.BIN`
+  (INSTALL/LUPDATE.BIN in the root is gone). README.md and BUILDING_AND_LICENSES.md name the consoles and the Mega
+  Drive cores' licences (VDP notice in Appendix A). `ESP32/vN/build/esp32.esp32.esp32/*.bin` = the builds of 17 November
+  (the earlier exports are in `tmp/nes_fw/before/esp32_export_vN/`).

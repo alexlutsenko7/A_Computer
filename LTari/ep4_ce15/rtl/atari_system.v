@@ -36,8 +36,8 @@
 
 module atari_system #(
     parameter integer SD_MHZ    = 85,
-/* ROM image in the configuration flash */
-    parameter [23:0]  ROM_FLASH = 24'h540000,
+/* the tag of the machine's ROM area in the configuration flash */
+    parameter [31:0]  ROM_TAG   = 32'hA55A_42BD,
     parameter integer FLASH_DIV = 4
 )(
     input  wire        clk,
@@ -200,7 +200,7 @@ always @(posedge clk_sd or negedge rst_sd_n)
 wire        ld_rst_n = rst_sd_n & (&rld_sr);
 
 /* the ROM loader */
-rom_loader #(.FLASH_ADDR(ROM_FLASH), .SD_BASE(18'h20000), .LEN(28672), .DIV(FLASH_DIV)) u_loader (
+rom_loader #(.TAG(ROM_TAG), .SD_BASE(18'h20000), .LEN(28672), .DIV(FLASH_DIV)) u_loader (
     .clk       (clk_sd),
     .rst_n     (ld_rst_n),
     .f_dclk    (f_dclk),

@@ -41,6 +41,14 @@ yourself): [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md).**
   picture goes through a frame buffer in SDRAM: 800x600 at 60 Hz, or the C64's own 50 Hz (F8). Turbo loading (F6):
   CPU, CIAs and 1541 up to 4x while a motor runs. F2 snapshots (`.a64`). The C64 ROMs are not part of the project:
   the ESP32 installs your own ROM files from the SD card into the flash.
+- **LNES** (`LNES/ep4_ce15/README.md`, both core boards; **new, tested in simulation only**): the Nintendo Entertainment System
+  (NTSC). Own picture processor, sound and cartridge logic (mappers 0, 1, 2, 3, 4, 7, 11, 66) written from the NESdev
+  documentation, T65 as the 2A03's processor. Games (`.nes`) load from the SD card; battery RAM is kept as a `.SAV` file.
+  The joystick gives the directions and one button, the other pad buttons are keys.
+- **LMega** (`LMega/10cl025/README.md`, Cyclone 10 LP 10CL025 board only; **new, tested in simulation only**): the Sega Mega
+  Drive / Genesis from open cores (fx68k, jt12, jt89, the MiSTer Genesis video processor, T80) with our memory, video
+  output (line doubler) and bus. Games (`.md`, `.gen`, `.bin`, `.smd`, up to 4 MB) load from the SD card. F8 steps through
+  the video modes of a game made for 50 Hz.
 - **Machine menu** (`AMenu/ep4_ce15/`): the factory image at flash 0 starts a machine through the Cyclone IV remote update
   block; KEY1 in a machine returns to it.
 - **Fully constrained timing**: every clock and I/O constrained, timing met at all corners.
@@ -67,6 +75,9 @@ AMenu, LSpectrum, L64, LTari and DDR_TEST each hold one subfolder per core board
 | `ESP32/` | **the ESP32 firmware**, the same for all machines and both FPGA boards (loader + Bluetooth): `v1/` for I/O board revision 1 (in use), `v2/` for revision 2; each an Arduino sketch (`v1.ino` / `v2.ino`) with its sources in `src/` |
 | `ESP32_test/` | tests of the firmware: `v1/`, `v2/` with the PC tests (`test/`) and their tools (`tools/`); `v1/` also holds the hardware test sketches `ESPLinkTest/` (SPI link) and `Test_wires/` (ESP32 <-> FPGA wiring) |
 | `L64/ep4_ce15/` | **The Commodore 64**: Quartus project, `rtl/` (our bus, 1541, video; Kawari VIC-II, SID, CIA, VIA), `sim/`, `tools/` (ROM image, test disk) |
+| `LNES/ep4_ce15/` | **The NES**: Quartus project, `rtl/` (own PPU, APU, mappers, frame buffer), `sim/`, `tools/` (sound tables, palette); `LNES/10cl025/` the project for the other board |
+| `LMega/10cl025/` | **The Sega Mega Drive** (10CL025 only): Quartus project, `rtl/` (our bus, memory, video; `rtl/genesis/` the MiSTer video processor, unchanged), `sim/` |
+| `FX68K/`, `JT12/`, `JT89/` | 68000, YM2612 and SN76489 cores, from the MiSTer Genesis core, unchanged (`SOURCE.md` in each) |
 | `T65/` | 6502 core (VHDL), from the MiSTer C64 core, unchanged (`T65/SOURCE.md`) |
 | `tests/` | FPGA test projects: `Test_wires/fpga/` (ESP32 <-> FPGA wiring, FPGA side; the sketch is `ESP32_test/v1/Test_wires/`), `t80_fmax/`, `jtag_rig/` (testing a core board without its I/O board: keys, status and the video picture over JTAG) |
 | `T80/` | Z80 core (VHDL), from the MiSTer ZX Spectrum core, unchanged (`T80/SOURCE.md`) |
@@ -95,9 +106,10 @@ cd ../..
 arduino-cli compile -b esp32:esp32:esp32 -u -p COM10 ESP32/v1    # ESP32 firmware (loader + Bluetooth), I/O board revision 1
 ```
 
-Flash layout (1 MB per image): menu at 0, LSpectrum at 0x100000, L64 at 0x200000, LTari 800 at 0x300000, LTari 130 at
-0x400000, the Spectrum ROMs (`roms48k.hex`) at 0x500000, the Atari ROMs at 0x540000, the C64 ROMs (installed by the
-ESP32) at 0x580000; ROMs are copied into SDRAM at every reset.
+Flash layout: the menu at 0, then three machines of 2 MB each (bitstream at 0x100000 / 0x300000 / 0x500000, the
+machine's ROM area 1 MB above it). `L.jic` holds LSpectrum, L64 and LTari 800; every machine, LTari 130 too, is also a
+machine file that the menu installs from the SD card's `MACHINES` folder into any of the three positions (F12). The C64
+ROMs are written by the ESP32 into L64's ROM area; ROMs are copied into SDRAM at every reset.
 A change in `ESP32/v2/` needs only the ESP32 flashed again; a change in `LSpectrum/ep4_ce15/rtl/` a new compile.
 
 ## Programming
@@ -180,12 +192,14 @@ The project's own files are under the MIT licence (`LICENSE`). Third-party parts
 | `L64/ep4_ce15/rtl/vicii/` (VIC-II Kawari, Randy Rossi) | **GPL-3** |
 | `L64/ep4_ce15/rtl/via/` (VIA 6522, Gideon Zweijtzer) | **GPL-3** |
 | `L64/ep4_ce15/rtl/sid/`, `L64/ep4_ce15/rtl/cia/` (MiSTer C64 core) | CERN-OHL-S v2 (`sid_dac.sv`, `sid_filter.sv`) and GPL (the MiSTer C64 core) |
+| `FX68K/` (68000, Jorge Cwik), `JT12/`, `JT89/` (YM2612, SN76489, Jose Tejada) | **GPL-3** |
+| `LMega/10cl025/rtl/genesis/` (Mega Drive video processor: Gregory Estrade, Till Harbaum, Alexey Melnikov, György Szombathelyi) | BSD-style, see the file headers and `SOURCE.md` |
 | `ESP32/v2/` uses ESP32-A2DP (Phil Schatzmann) | Apache-2.0 (library, not included) |
 | ROM images in `LSpectrum/ep4_ce15/roms48k.hex` and `LSpectrum/ep4_ce15/sim/roms.mem` | ZX Spectrum 128 ROMs (c) Amstrad, distributed for emulator use with permission, copyright messages unchanged. Retroleum's DiagROM is not included (its licence is not known): the published image has a copy of the 48K BASIC ROM in that slot; `LSpectrum/ep4_ce15/tools/mk_roms48k.py` builds the image with your own copy |
 | `LTari/ep4_ce15/roms/` (AltirraOS, Altirra BASIC, Avery Lee) | permissive notice: copying and distribution permitted, notice preserved |
 | Commodore 64 / 1541 ROMs | **not included**: copyrighted; bring your own (`L64/ep4_ce15/README.md`) |
 | `Extra_PCB_CycloneIV/Extra_PCB_CycloneIV.pretty/` and `Extra_PCB_CycloneIV_R2/Extra_PCB_CycloneIV_R2.pretty/`: footprints adapted from the KiCad libraries (D-Sub 15 HD, pin headers); revision 2's ESP32-WROVER-E footprint is own work from Espressif's land pattern | CC-BY-SA 4.0 with the KiCad library exception (designs made with them, the board files and Gerbers included, are not bound by it); the rest of the boards is MIT |
 
-Because of the GPL-3 parts, the LSpectrum and L64 bitstreams (and `L.jic`) are GPL-3 works. Details, the
+Because of the GPL-3 parts, the LSpectrum, L64 and LMega bitstreams (and `L.jic`, and their machine files) are GPL-3 works. Details, the
 notices the BSD-style cores require, and what was changed in external code: [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md);
 how much of each part is used: `docs/L_Third_Party.docx`.

@@ -13,7 +13,8 @@ Run from the project root after changing an ep4_ce15 .qsf:   python3 tools/mk_10
 import os, re, sys
 
 ROOT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else '.')
-PROJECTS = [('AMenu', 'AMenu'), ('LSpectrum', 'LSpectrum'), ('L64', 'L64'), ('LTari', 'LTari'), ('LTari', 'LTari800')]
+PROJECTS = [('AMenu', 'AMenu'), ('LSpectrum', 'LSpectrum'), ('L64', 'L64'), ('LTari', 'LTari'), ('LTari', 'LTari800'),
+            ('LNES', 'LNES')]
 DEVICE = '10CL025YU256I7G'
 
 # header U8, pin -> ball (docs/BOARD_PINOUT.md; 10CL025: schematic V1 2023-11-09, sheet 2)

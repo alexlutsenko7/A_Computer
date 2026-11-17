@@ -60,6 +60,9 @@
 #include "shot.h"
 /* LTari, the restart */
 #include "atari.h"
+/* the cartridge machines */
+#include "nes.h"
+#include "md.h"
 #include "reset.h"
 
 /* entries per folder, in the PSRAM (40 bytes each: 160 KB); without PSRAM: internal RAM (12.8 KB) */
@@ -77,6 +80,8 @@
 /* files larger than this are no file type we load (and do not fit the entry's size field) */
 #define FILE_SIZE_BITS 22
 #define FILE_SIZE_LIMIT (1u << FILE_SIZE_BITS)
+/* a file of exactly that size is kept as one byte less (LMega: a 4 MB cartridge) */
+#define FILE_SIZE_KEPT (FILE_SIZE_LIMIT - 1u)
 /* one bit per flag of a list entry */
 #define FLAG_BIT 1
 /* messages over the list: no card (two rows), empty folder, cut list */
@@ -183,15 +188,17 @@
 #define HUNDRED 100
 #define TEN 10
 /* the joystick menu */
-#define JOY_MODES 3
+#define JOY_MODES 4
+/* modes of a machine with three, with two */
+#define JOY_MODES_3 3
 #define JOY_MODES_ATARI 2
 #define JOY_PORTS 2
 /* its rows */
 #define JOY_ROW_MODES 2
-#define JOY_ROW_GAP 5
+#define JOY_ROW_GAP 6
 /* the two ports */
-#define JOY_ROW_PORT1 6
-#define JOY_ROW_PORT2 7
+#define JOY_ROW_PORT1 7
+#define JOY_ROW_PORT2 8
 /* the "how to load" question of LTari */
 #define BASIC_ROW 10
 #define BASIC_NONE (-2)
@@ -244,7 +251,18 @@
 /* checking for a file, idling, the last slot */
 #define UPD_CHECK_MS 2000u
 #define UPD_IDLE_MS 20u
-#define UPD_SLOTS_LAST 4
+#define UPD_SLOTS_LAST 3
+/* installing a machine (F12 in the machine menu): the question's row, the first entry's row, the help row */
+#define INS_ROW_ASK 2
+#define INS_ROW_FIRST 4
+#define INS_ROW_HELP 22
+/* a list line: "n " and the machine's menu line, terminated */
+#define INS_LINE_BUF 32
+#define INS_LINE_TEXT 2
+/* the picker's answer when it was left without a choice */
+#define INS_CANCEL (-1)
+/* a message stays this long */
+#define INS_MSG_MS 4000u
 /* hexadecimal output */
 #define HEX_HIGH_SHIFT 4
 #define HEX_DIGIT_MASK 15
@@ -283,29 +301,58 @@ enum
     P_ERR
 };
 
-/* names of the joystick modes for the three machines */
-static const char *const g_apc_joy_name_zx[JOY_MODES] = { "Kempston", "Kempston + Cursor", "Interface 2" };
-static const char *const g_apc_joy_name_c64[JOY_MODES] = { "DB9-1 = port 2", "DB9-1 = port 1", "Both = port 2" };
-static const char *const g_apc_joy_name_at[JOY_MODES] = { "DB9-1 = stick 0", "DB9-1 = stick 1", "" };
+/* names of the joystick modes for the machines */
+static const char *const g_apc_joy_name_zx[JOY_MODES] = { "Kempston", "Kempston + Cursor", "Interface 2", "" };
+static const char *const g_apc_joy_name_c64[JOY_MODES] = { "DB9-1 = port 2", "DB9-1 = port 1", "Both = port 2", "" };
+static const char *const g_apc_joy_name_at[JOY_MODES] = { "DB9-1 = stick 0", "DB9-1 = stick 1", "", "" };
+/* LNES: which joystick is controller 1, and which button the joystick's button is */
+static const char *const g_apc_joy_name_nes[JOY_MODES] =
+{
+    "DB9-1 = pad 1, button = A", "DB9-1 = pad 2, button = A", "DB9-1 = pad 1, button = B", "DB9-1 = pad 2, button = B"
+};
+/* LMega: which joystick is pad 1 (the joystick's button is B) */
+static const char *const g_apc_joy_name_md[JOY_MODES] =
+{
+    "DB9-1 = pad 1", "DB9-1 = pad 2", "", ""
+};
 /* what the two ports are in each mode */
 static const char *const g_apc_port_zx[JOY_MODES][JOY_PORTS] =
 {
     { " DB9-1: Kempston", " DB9-2: Kempston (same)" },
     { " DB9-1: Kempston", " DB9-2: Cursor (5 6 7 8, 0)" },
-    { " DB9-1: Sinclair 1 (6-9, 0)", " DB9-2: Sinclair 2 (1-4, 5)" }
+    { " DB9-1: Sinclair 1 (6-9, 0)", " DB9-2: Sinclair 2 (1-4, 5)" },
+    { "", "" }
 };
 /* L64 */
 static const char *const g_apc_port_c64[JOY_MODES][JOY_PORTS] =
 {
     { " DB9-1: control port 2", " DB9-2: control port 1" },
     { " DB9-1: control port 1", " DB9-2: control port 2" },
-    { " DB9-1 and DB9-2: port 2", " (port 1 unused)" }
+    { " DB9-1 and DB9-2: port 2", " (port 1 unused)" },
+    { "", "" }
 };
 /* LTari */
 static const char *const g_apc_port_at[JOY_MODES][JOY_PORTS] =
 {
     { " DB9-1: stick 0 (player 1)", " DB9-2: stick 1" },
     { " DB9-1: stick 1", " DB9-2: stick 0 (player 1)" },
+    { "", "" },
+    { "", "" }
+};
+/* LNES: the other buttons are keys (B, Select, Start) */
+static const char *const g_apc_port_nes[JOY_MODES][JOY_PORTS] =
+{
+    { " DB9-1: pad 1 (B = Z or Ctrl)", " DB9-2: pad 2 (B = F)" },
+    { " DB9-1: pad 2 (B = F)", " DB9-2: pad 1 (B = Z or Ctrl)" },
+    { " DB9-1: pad 1 (A = X or Space)", " DB9-2: pad 2 (A = G)" },
+    { " DB9-1: pad 2 (A = G)", " DB9-2: pad 1 (A = X or Space)" }
+};
+/* LMega: A, C and Start are keys */
+static const char *const g_apc_port_md[JOY_MODES][JOY_PORTS] =
+{
+    { " DB9-1: pad 1 (A=Z C=X St=Enter)", " DB9-2: pad 2 (A=F C=G St=T)" },
+    { " DB9-1: pad 2 (A=F C=G St=T)", " DB9-2: pad 1 (A=Z C=X St=Enter)" },
+    { "", "" },
     { "", "" }
 };
 /* hexadecimal digits */
@@ -500,8 +547,8 @@ static int32_t list_cb(const DIRENT *ps_entry, void *p_ctx)
     ps_new = NULL;
     b_dir = (ps_entry->ui8_attr & ATTR_DIR) != 0;
 /* tapes: not on LTari; TZX only on the Spectrum */
-    b_tap = (g_i32_machine_atari == 0) && has_ext(ps_entry, "TAP");
-    b_tzx = (g_i32_machine_c64 == 0) && (g_i32_machine_atari == 0) && has_ext(ps_entry, "TZX");
+    b_tap = (g_i32_machine_atari == 0) && (g_i32_machine_nes == 0) && (g_i32_machine_md == 0) && has_ext(ps_entry, "TAP");
+    b_tzx = (g_i32_machine_c64 == 0) && (g_i32_machine_atari == 0) && (g_i32_machine_nes == 0) && (g_i32_machine_md == 0) && has_ext(ps_entry, "TZX");
 /* snapshot */
     if (g_i32_machine_c64 != 0)
     {
@@ -512,6 +559,11 @@ static int32_t list_cb(const DIRENT *ps_entry, void *p_ctx)
     {
         b_snap = has_ext(ps_entry, "A8S");
     }
+/* LNES, LMega: no snapshots */
+    else if ((g_i32_machine_nes != 0) || (g_i32_machine_md != 0))
+    {
+        b_snap = false;
+    }
     else
     {
         b_snap = has_ext(ps_entry, "Z80");
@@ -520,6 +572,17 @@ static int32_t list_cb(const DIRENT *ps_entry, void *p_ctx)
     b_atr = (g_i32_machine_atari != 0) && has_ext(ps_entry, "ATR");
     b_xex = (g_i32_machine_atari != 0) && (has_ext(ps_entry, "XEX") || has_ext(ps_entry, "COM"));
     b_xa = b_xex || ((g_i32_machine_atari != 0) && has_ext(ps_entry, "CAR"));
+/* LNES: cartridge files, in the same list flag */
+    if ((g_i32_machine_nes != 0) && has_ext(ps_entry, "NES"))
+    {
+        b_xa = true;
+    }
+/* LMega: the same for its cartridge files */
+    if ((g_i32_machine_md != 0) && (has_ext(ps_entry, "MD") || has_ext(ps_entry, "GEN") || has_ext(ps_entry, "BIN") ||
+                                    has_ext(ps_entry, "SMD")))
+    {
+        b_xa = true;
+    }
 /* L64: .prg, .t64, .d64 (and C64 .tap) */
     b_prg = (g_i32_machine_c64 != 0) && has_ext(ps_entry, "PRG");
     b_t64 = (g_i32_machine_c64 != 0) && has_ext(ps_entry, "T64");
@@ -543,7 +606,8 @@ static int32_t list_cb(const DIRENT *ps_entry, void *p_ctx)
 /* a file of no use here */
         b_take = false;
     }
-    else if (!b_dir && (ps_entry->ui32_size >= FILE_SIZE_LIMIT))
+    else if (!b_dir && ((ps_entry->ui32_size > FILE_SIZE_LIMIT) ||
+                        ((ps_entry->ui32_size == FILE_SIZE_LIMIT) && (g_i32_machine_md == 0))))
     {
 /* > 4 MB: no file type we load */
         b_take = false;
@@ -566,6 +630,11 @@ static int32_t list_cb(const DIRENT *ps_entry, void *p_ctx)
 /* where it is, how long */
         ps_new->ui32_clus = ps_entry->ui32_clus;
         ps_new->ui32_size = ps_entry->ui32_size;
+/* a file of exactly 4 MB (LMega: the largest cartridge) is kept as one byte less, which the entry can hold */
+        if (ps_entry->ui32_size == FILE_SIZE_LIMIT)
+        {
+            ps_new->ui32_size = FILE_SIZE_KEPT;
+        }
 /* what it is */
         ps_new->ui32_dir = (uint32_t)b_dir;
         ps_new->ui32_tzx = (uint32_t)b_tzx;
@@ -943,6 +1012,16 @@ static const char *loader_title(void)
     {
         pc_title = " LTari loader";
     }
+/* LNES */
+    else if (g_i32_machine_nes != 0)
+    {
+        pc_title = " LNES cartridges";
+    }
+/* LMega */
+    else if (g_i32_machine_md != 0)
+    {
+        pc_title = " LMega cartridges";
+    }
     else
     {
 /* the Spectrum */
@@ -1042,6 +1121,16 @@ static void draw_menu(void)
         {
             pc_text = " (no .xex/.com/.atr/.car/.a8s)";
         }
+/* LNES */
+        else if (g_i32_machine_nes != 0)
+        {
+            pc_text = " (no .nes files here)";
+        }
+/* LMega */
+        else if (g_i32_machine_md != 0)
+        {
+            pc_text = " (no .md/.gen/.bin/.smd here)";
+        }
         else
         {
             pc_text = " (no .tap/.tzx/.z80 files here)";
@@ -1087,8 +1176,8 @@ static void draw_menu(void)
 /* (L64: the FPGA runs turbo while a motor runs, if MCTL allows it) */
 static void speed_toggle(void)
 {
-/* LTari: no turbo yet */
-    if (g_i32_machine_atari == 0)
+/* LTari, LNES, LMega: no turbo */
+    if ((g_i32_machine_atari == 0) && (g_i32_machine_nes == 0) && (g_i32_machine_md == 0))
     {
         if (g_i32_slow_mode != 0)
         {
@@ -1770,6 +1859,16 @@ static const char *joy_name(int32_t i32_mode)
     {
         pc_name = g_apc_joy_name_at[i32_mode];
     }
+/* LNES */
+    else if (g_i32_machine_nes != 0)
+    {
+        pc_name = g_apc_joy_name_nes[i32_mode];
+    }
+/* LMega */
+    else if (g_i32_machine_md != 0)
+    {
+        pc_name = g_apc_joy_name_md[i32_mode];
+    }
     else
     {
 /* LSpectrum */
@@ -1785,11 +1884,21 @@ static int32_t joy_modes(void)
     int32_t i32_modes;
 
 /* start values */
-    i32_modes = JOY_MODES;
+    i32_modes = JOY_MODES_3;
     if (g_i32_machine_atari != 0)
     {
 /* LTari has two */
         i32_modes = JOY_MODES_ATARI;
+    }
+/* LMega too */
+    if (g_i32_machine_md != 0)
+    {
+        i32_modes = JOY_MODES_ATARI;
+    }
+/* LNES has four */
+    if (g_i32_machine_nes != 0)
+    {
+        i32_modes = JOY_MODES;
     }
     return i32_modes;
 }
@@ -1868,6 +1977,16 @@ static void joy_draw(void)
     else if (g_i32_machine_atari != 0)
     {
         papc_port = g_apc_port_at;
+    }
+/* LNES */
+    else if (g_i32_machine_nes != 0)
+    {
+        papc_port = g_apc_port_nes;
+    }
+/* LMega */
+    else if (g_i32_machine_md != 0)
+    {
+        papc_port = g_apc_port_md;
     }
     else
     {
@@ -2028,6 +2147,11 @@ static void enter_save(void)
     if (g_i32_machine_atari != 0)
     {
         note("No tape saving on LTari", "");
+    }
+/* LNES: games save by themselves (battery RAM) */
+    else if ((g_i32_machine_nes != 0) || (g_i32_machine_md != 0))
+    {
+        note("Games save by themselves", "");
     }
 /* a name was typed */
     else if (name_prompt(ac_name11, 0) != 0)
@@ -2200,6 +2324,98 @@ static void enter_d64(const ENT *ps_ent)
     menu_close();
 }
 
+/* Enter on a .nes file (LNES): the cartridge goes in and the machine starts */
+static void enter_nes(const ENT *ps_ent)
+{
+/* local variables */
+    char ac_text[TEXT_BUF];
+    char *pc_end;
+    FFILE s_file;
+/* the file's mapper number, the result */
+    uint32_t ui32_mapper;
+    int32_t i32_result;
+
+/* start values */
+    pc_end = ac_text;
+    ui32_mapper = 0;
+/* loading takes a few seconds: said first */
+    osd_text(ROW_STATUS, 0, " Loading...", OSD_COLS, 0);
+    ff_open(&s_file, ps_ent->ui32_clus, ps_ent->ui32_size);
+    i32_result = nes_load(&s_file, ps_ent->ac_name, g_ui32_dir_clus, &ui32_mapper);
+/* what happened */
+    if (i32_result == NES_OK)
+    {
+        note("Cartridge: ", ps_ent->ac_name);
+    }
+/* a cartridge type the core does not have: its number is shown */
+    else if (i32_result == NES_EMAPPER)
+    {
+        pc_end = u_strcpy(ac_text, "No mapper ");
+        pc_end = u_utoa(pc_end, ui32_mapper);
+/* then the file's name */
+        u_strcpy(pc_end, ": ");
+        note(ac_text, ps_ent->ac_name);
+    }
+    else if (i32_result == NES_ESIZE)
+    {
+/* more program or picture data than the core takes */
+        note("Too large: ", ps_ent->ac_name);
+    }
+/* not a .nes file, or the card */
+    else if (i32_result == NES_EBAD)
+    {
+        note("Not usable: ", ps_ent->ac_name);
+    }
+    else
+    {
+        note("Card error", "");
+    }
+/* the browser closes */
+    menu_close();
+}
+
+/* Enter on a cartridge file (LMega): the cartridge goes in and the machine starts */
+static void enter_md(const ENT *ps_ent)
+{
+/* local variables */
+    FFILE s_file;
+    uint32_t ui32_size;
+    int32_t i32_result;
+
+/* start values */
+    ui32_size = ps_ent->ui32_size;
+/* a file of exactly 4 MB is kept as one byte less in the list */
+    if (ui32_size == FILE_SIZE_KEPT)
+    {
+        ui32_size = FILE_SIZE_LIMIT;
+    }
+/* loading takes a while: said first */
+    osd_text(ROW_STATUS, 0, " Loading...", OSD_COLS, 0);
+    ff_open(&s_file, ps_ent->ui32_clus, ui32_size);
+    i32_result = md_load(&s_file, ps_ent->ac_name, g_ui32_dir_clus);
+/* what happened */
+    if (i32_result == MD_OK)
+    {
+        note("Cartridge: ", ps_ent->ac_name);
+    }
+/* too large, not a cartridge, or the card */
+    else if (i32_result == MD_ESIZE)
+    {
+        note("Too large: ", ps_ent->ac_name);
+    }
+    else if (i32_result == MD_EBAD)
+    {
+/* too short to be a cartridge */
+        note("Not usable: ", ps_ent->ac_name);
+    }
+    else
+    {
+        note("Card error", "");
+    }
+/* the browser closes */
+    menu_close();
+}
+
 /* Enter on an entry of the list; true = the key press is done with (a folder is not: the */
 /* other keys of the same pass still count, as before) */
 static bool enter_entry(const ENT *ps_ent)
@@ -2214,6 +2430,16 @@ static bool enter_entry(const ENT *ps_ent)
         enter_dir(ps_ent);
 /* the browser stays open */
         b_done = false;
+    }
+    else if ((ps_ent->ui32_xa != 0) && (g_i32_machine_nes != 0))
+    {
+/* LNES: a cartridge */
+        enter_nes(ps_ent);
+    }
+    else if ((ps_ent->ui32_xa != 0) && (g_i32_machine_md != 0))
+    {
+/* LMega: a cartridge */
+        enter_md(ps_ent);
     }
     else if (ps_ent->ui32_xa != 0)
     {
@@ -2380,8 +2606,8 @@ static void menu_keys(uint32_t ui32_keys)
         {
             speed_toggle();
         }
-/* F2: a snapshot */
-        if ((ui32_keys & K_SNAP) != 0)
+/* F2: a snapshot (not on LNES and LMega) */
+        if (((ui32_keys & K_SNAP) != 0) && (g_i32_machine_nes == 0) && (g_i32_machine_md == 0))
         {
             snap_save_ui();
             menu_close();
@@ -2452,14 +2678,20 @@ static void play_keys(uint32_t ui32_keys)
         }
     }
 /* F2: a snapshot */
+    else if (((ui32_keys & K_SNAP) != 0) && ((g_i32_machine_nes != 0) || (g_i32_machine_md != 0)))
+    {
+        note("No snapshots on this machine", "");
+    }
+/* the other machines: the snapshot dialog */
     else if ((ui32_keys & K_SNAP) != 0)
     {
         snap_save_ui();
     }
-/* F5 on LTari */
-    else if (((ui32_keys & K_CONT) != 0) && (g_i32_machine_atari != 0))
+/* F5 on LTari, LNES and LMega */
+    else if (((ui32_keys & K_CONT) != 0) &&
+             ((g_i32_machine_atari != 0) || (g_i32_machine_nes != 0) || (g_i32_machine_md != 0)))
     {
-/* LTari: F5 not used */
+/* F5 not used */
     }
     else if (((ui32_keys & K_CONT) != 0) && (g_i32_machine_c64 != 0))
     {
@@ -2489,7 +2721,8 @@ static void play_keys(uint32_t ui32_keys)
             note("Contention: ", "on");
         }
     }
-    else if (((ui32_keys & (K_PGUP | K_PGDN)) != 0) && (g_i32_machine_c64 == 0) && (g_i32_machine_atari == 0))
+    else if (((ui32_keys & (K_PGUP | K_PGDN)) != 0) && (g_i32_machine_c64 == 0) && (g_i32_machine_atari == 0) &&
+             (g_i32_machine_nes == 0) && (g_i32_machine_md == 0))
     {
 /* frame interrupt position (ZX only) */
         int_pos_keys(ui32_keys);
@@ -2928,6 +3161,11 @@ static void screenshot(void)
     {
         note("Recording: F12 first", "");
     }
+/* LMega shows its picture without a frame buffer: nothing to read out */
+    else if (g_i32_machine_md != 0)
+    {
+        note("No screenshot on LMega", "");
+    }
     else
     {
 /* the first free name, then the machine's picture */
@@ -2942,6 +3180,11 @@ static void screenshot(void)
             else if (g_i32_machine_atari != 0)
             {
                 i32_result = at_screenshot(g_ui32_dir_clus, ac_name11);
+            }
+/* LNES */
+            else if (g_i32_machine_nes != 0)
+            {
+                i32_result = nes_screenshot(g_ui32_dir_clus, ac_name11);
             }
             else
             {
@@ -3371,7 +3614,221 @@ static void menu_espupd(const DIRENT *ps_entry)
     upd_halt();
 }
 
-/* diagnostics: the bytes at the image start of the menu and the four machine slots, to the serial port */
+/* a list on the screen: Up / Down move, Enter chooses (the entry's number), F12 / Backspace leave */
+/* (INS_CANCEL); also left when the menu is gone */
+static int32_t ins_pick(const char *pc_ask, const char aac_lines[][INS_LINE_BUF], int32_t i32_count)
+{
+/* local variables */
+    uint32_t ui32_keys;
+    int32_t i32_cursor;
+    int32_t i32_index;
+    int32_t i32_result;
+/* running, redraw */
+    bool b_run;
+    bool b_draw;
+
+/* start values */
+    ui32_keys = 0;
+    i32_cursor = 0;
+    i32_index = 0;
+    i32_result = INS_CANCEL;
+/* the first picture */
+    b_run = true;
+    b_draw = true;
+    osd_clear();
+    osd_text(ROW_TITLE, 0, " Install a machine", OSD_COLS, YES);
+    osd_text(INS_ROW_ASK, YES, pc_ask, OSD_COLS - YES, 0);
+    osd_text(INS_ROW_HELP, YES, "Enter: choose   F12: cancel", OSD_COLS - YES, 0);
+    osd_show(YES);
+    while (b_run)
+    {
+/* the entries, the cursor's one inverse */
+        if (b_draw)
+        {
+            for (i32_index = 0; i32_index < i32_count; i32_index++)
+            {
+                osd_text(INS_ROW_FIRST + i32_index, 0, aac_lines[i32_index], OSD_COLS, i32_index == i32_cursor);
+            }
+            b_draw = false;
+        }
+        ui32_keys = key_events();
+/* the menu is gone */
+        if (menu_present() == 0)
+        {
+            b_run = false;
+        }
+        else if ((ui32_keys & K_ENTER) != 0)
+        {
+            i32_result = i32_cursor;
+            b_run = false;
+        }
+/* left without a choice */
+        else if ((ui32_keys & (K_MENU | K_BACK)) != 0)
+        {
+            b_run = false;
+        }
+        else if (((ui32_keys & K_UP) != 0) && (i32_cursor != 0))
+        {
+            i32_cursor--;
+            b_draw = true;
+        }
+/* down */
+        else if (((ui32_keys & K_DOWN) != 0) && (i32_cursor != (i32_count - YES)))
+        {
+            i32_cursor++;
+            b_draw = true;
+        }
+        else
+        {
+/* no key: a moment's rest */
+            wait_ms(UPD_IDLE_MS);
+        }
+    }
+/* the key that ended it must not reach the next screen */
+    while ((menu_present() != 0) && ((KEYS & (CLOSE_KEYS | K_BT)) != 0))
+    {
+    }
+    return i32_result;
+}
+
+/* a message of the install screens, shown for some seconds */
+static void ins_message(const char *pc_line1, const char *pc_line2, const char *pc_line3)
+{
+    upd_screen(" Install a machine", pc_line1, pc_line2, pc_line3);
+    wait_ms(INS_MSG_MS);
+}
+
+/* check a machine file and write it into a position; says how it went */
+static void ins_run(const MCH_FILE *ps_file, int32_t i32_pos, uint32_t ui32_board)
+{
+/* local variables */
+    DIRENT s_entry;
+    char ac_line[MCH_LINE_BUF];
+    uint32_t ui32_written;
+    int32_t i32_result;
+
+/* start values: the list's entry is copied, the list's memory is used while the file is read */
+    s_entry = ps_file->s_entry;
+    u_strncpy(ac_line, ps_file->ac_line, MCH_LINE_LEN);
+    ui32_written = 0;
+/* the whole file is checked before anything is written */
+    upd_screen(" Install a machine", ac_line, "Checking the file ...", "Do not switch off.");
+    g_ui32_upd_time = 0;
+    i32_result = mch_check(&s_entry, ui32_board, upd_bar);
+    if (i32_result == UPD_EBAD)
+    {
+        ins_message(ac_line, "The file is damaged.", "Nothing was changed.");
+    }
+    else if (i32_result != UPD_OK)
+    {
+        ins_message(ac_line, "Card read error.", "Nothing was changed.");
+    }
+    else
+    {
+/* the flash */
+        upd_screen(" Install a machine", ac_line, "Writing the flash ...", "Do not switch off.");
+        g_ui32_upd_time = 0;
+        i32_result = mch_install(&s_entry, i32_pos, upd_bar, &ui32_written);
+/* the menu reads the machines' names again */
+        RELOAD = YES;
+        if (i32_result == UPD_OK)
+        {
+            upd_screen(" Install a machine", ac_line, "Installed.", "");
+            wait_ms(UPD_DONE_MS);
+        }
+        else if (i32_result == UPD_EFLASH)
+        {
+            ins_message("Flash write error.", "That position is empty now:", "install the machine again.");
+        }
+        else
+        {
+/* the card failed while writing */
+            ins_message("Card read error.", "That position is empty now:", "install the machine again.");
+        }
+    }
+}
+
+/* F12 in the machine menu: a machine file from the card's MACHINES folder into one of the positions */
+static void menu_install(void)
+{
+/* local variables */
+    char aac_lines[MCH_FILES_MAX][INS_LINE_BUF];
+    char ac_line[MCH_LINE_BUF];
+    const MCH_FILE *ps_files;
+/* the core board, the machine in a position */
+    uint32_t ui32_board;
+    uint8_t ui8_machine;
+/* counters and choices */
+    int32_t i32_count;
+    int32_t i32_index;
+    int32_t i32_file;
+    int32_t i32_pos;
+
+/* start values */
+    ps_files = NULL;
+    ui32_board = MCTL & MENU_BOARD_MASK;
+    ui8_machine = 0;
+/* nothing chosen */
+    i32_count = 0;
+    i32_index = 0;
+    i32_file = INS_CANCEL;
+    i32_pos = INS_CANCEL;
+/* the card */
+    if ((sd_init() != SD_OK) || (fat_mount() != FAT_OK))
+    {
+        ins_message("No SD card (or it cannot be", "read).", "");
+    }
+    else
+    {
+        i32_count = mch_list(ui32_board, &ps_files);
+        if (i32_count < 0)
+        {
+            ins_message("Card read error.", "", "");
+        }
+        else if (i32_count == 0)
+        {
+/* nothing to install */
+            ins_message("No machine files for this", "board in the card's folder", "MACHINES.");
+        }
+        else
+        {
+/* which machine */
+            for (i32_index = 0; i32_index < i32_count; i32_index++)
+            {
+                aac_lines[i32_index][0] = ' ';
+                aac_lines[i32_index][YES] = ' ';
+                u_strncpy(aac_lines[i32_index] + INS_LINE_TEXT, ps_files[i32_index].ac_line, MCH_LINE_LEN);
+            }
+            i32_file = ins_pick("Which machine?", aac_lines, i32_count);
+        }
+    }
+/* into which position: the three, with what they hold now */
+    if (i32_file != INS_CANCEL)
+    {
+        for (i32_index = 0; i32_index < MCH_POSITIONS; i32_index++)
+        {
+            aac_lines[i32_index][0] = (char)('1' + i32_index);
+            aac_lines[i32_index][YES] = ' ';
+/* an empty position says so */
+            if (mch_position(i32_index, ac_line, &ui8_machine) != MCH_PRESENT)
+            {
+                u_strcpy(ac_line, "(empty)");
+            }
+            u_strncpy(aac_lines[i32_index] + INS_LINE_TEXT, ac_line, MCH_LINE_LEN);
+        }
+        i32_pos = ins_pick("Replace which one?", aac_lines, MCH_POSITIONS);
+    }
+/* check and write */
+    if ((i32_pos != INS_CANCEL) && (menu_present() != 0))
+    {
+        ins_run(&ps_files[i32_file], i32_pos, ui32_board);
+    }
+/* the menu's own screen again */
+    osd_clear();
+    osd_hide();
+}
+
+/* diagnostics: the bytes at the image start of the menu and the three machine positions, to the serial port */
 static void log_slots(void)
 {
 /* local variables */
@@ -3383,7 +3840,7 @@ static void log_slots(void)
     int32_t i32_index;
 
 /* 56 EF EF EF where an image is */
-    pc_end = u_strcpy(ac_line, "flash at +0x20 of menu / 4 machine slots:");
+    pc_end = u_strcpy(ac_line, "flash at +0x20 of menu / 3 machine positions:");
     for (i32_slot = 0; i32_slot <= UPD_SLOTS_LAST; i32_slot++)
     {
         upd_slot_bytes(i32_slot, aui8_bytes);
@@ -3472,6 +3929,14 @@ static void menu_main(void)
                 g_i32_bt_on = YES;
                 bt_open();
             }
+/* F12: install a machine from the card (a menu with machine positions) */
+            else if (((ui32_keys & K_MENU) != 0) && (g_i32_menu_positions != 0))
+            {
+                menu_install();
+/* "no machines" is looked at again, at once */
+                i32_shown = 0;
+                ui32_check_time = TIMER - (UPD_CHECK_MS * CLK_PER_MS);
+            }
             else
             {
 /* no key for the Bluetooth menu */
@@ -3542,7 +4007,17 @@ static void menu_main(void)
                         i32_shown = 0;
                     }
                 }
-                if (upd_machines_present() == 0)
+/* an older menu (1 MB slots) cannot hold today's machines: it must be updated first */
+                if (g_i32_menu_positions == 0)
+                {
+                    if (i32_shown == 0)
+                    {
+                        upd_screen(" L", "This menu is an older version.", "Copy LUPDATE.BIN to the SD",
+                                   "card's root folder.");
+                    }
+                    i32_shown = YES;
+                }
+                else if (upd_machines_present() == 0)
                 {
 /* a machine started meanwhile: those flash reads were the reconfiguration's noise, and the */
 /* screen would go to the new machine's OSD (seen on hardware) */
@@ -3555,7 +4030,8 @@ static void menu_main(void)
 /* said once */
                         if (i32_shown == 0)
                         {
-                            upd_screen(" L", "No machines installed.", "Copy LUPDATE.BIN to the SD", "card's root folder.");
+                            upd_screen(" L", "No machines installed.", "F12: install one from the SD",
+                                       "card's folder MACHINES.");
                         }
                         i32_shown = YES;
                     }
@@ -3615,6 +4091,11 @@ static void machine_main(void)
     {
         c64_roms();
         c64_speed();
+    }
+/* LNES, LMega: nothing runs without a cartridge, so the list of games comes first */
+    if ((g_i32_machine_nes != 0) || (g_i32_machine_md != 0))
+    {
+        menu_open();
     }
 /* the main loop */
     ui32_draw_time = TIMER;
@@ -3681,6 +4162,16 @@ static void machine_main(void)
         else if (g_i32_machine_atari != 0)
         {
             at_service();
+        }
+/* LNES: battery RAM */
+        else if (g_i32_machine_nes != 0)
+        {
+            nes_service();
+        }
+/* LMega: battery RAM */
+        else if (g_i32_machine_md != 0)
+        {
+            md_service();
         }
         else
         {
@@ -3812,6 +4303,9 @@ void loader_reset_all(void)
     g_i32_prt_was = 0;
 /* the modules */
     at_reset();
+    nes_reset();
+    md_reset();
+/* L64, saving */
     c64_reset();
     save_reset();
 /* screenshots, snapshots, the tape */

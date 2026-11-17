@@ -53,15 +53,21 @@
 /* for the report */
 #define HZ_PER_MHZ 1000000u
 #define SHIFT_MB 20
-/* core IDs: LSpectrum ("ZX"), link version 1; L64 ("C6"), link version 2: C64 ROMs at flash */
-/* 0x580000; LTari ("AT"), link version 1; the machine menu ("MN"): flash update, link version 1; */
-/* the same, link version 2: + flash stream frames (FLS) */
+/* core IDs: LSpectrum ("ZX"), link version 1; L64 ("C6"), link version 3: C64 ROMs in the ROM area */
+/* of the position L64 is installed in; LTari ("AT"), link version 1; the machine menu ("MN"): flash */
+/* update, link version 1; the same, link version 2: + flash stream frames (FLS); link version 3: */
+/* + three machine positions of 2 MB, machines installed from the card, the core board in MSTAT */
 #define ID_ZX 0x5A580001u
-#define ID_C64 0x43360002u
+#define ID_C64 0x43360003u
 #define ID_AT 0x41540001u
-/* the machine menu, without and with the flash stream */
+/* LNES, the NES ("NE") */
+#define ID_NES 0x4E450001u
+/* LMega, the Mega Drive ("MD") */
+#define ID_MD 0x4D440001u
+/* the machine menu, without and with the flash stream, and with the machine positions */
 #define ID_MN 0x4D4E0001u
 #define ID_MN2 0x4D4E0002u
+#define ID_MN3 0x4D4E0003u
 /* a core ID read with this many wrong bits at most is a link error, not another device */
 #define ID_NEAR_BITS 6
 /* the IRQ mask register: the bit set at start, and the bits that read back while the FPGA was not reset */
@@ -230,7 +236,12 @@ static bool g_b_fls_ok;
 /* hw.h: 1 = L64, 1 = LTari, 1 = the machine menu (AMenu) */
 int32_t g_i32_machine_c64;
 int32_t g_i32_machine_atari;
+/* the cartridge machines */
+int32_t g_i32_machine_nes;
+int32_t g_i32_machine_md;
 int32_t g_i32_machine_menu;
+/* hw.h: 1 = the menu has the three machine positions (link version 3) */
+int32_t g_i32_menu_positions;
 /* the link's pins are set up */
 static bool g_b_link_up;
 /* a loader task runs (cleared by the task when it ends) */
@@ -1065,11 +1076,12 @@ static bool probe(void)
 /* start values */
     ui32_id = link_rd(R_ID);
     b_found = false;
-    if ((ui32_id != ID_ZX) && (ui32_id != ID_C64) && (ui32_id != ID_AT) && (ui32_id != ID_MN) && (ui32_id != ID_MN2))
+    if ((ui32_id != ID_ZX) && (ui32_id != ID_C64) && (ui32_id != ID_AT) && (ui32_id != ID_MN) && (ui32_id != ID_MN2) &&
+        (ui32_id != ID_MN3) && (ui32_id != ID_NES) && (ui32_id != ID_MD))
     {
 /* nearly an ID: say so, it is a wiring or timing problem */
         if (near_id(ui32_id, ID_ZX) || near_id(ui32_id, ID_C64) || near_id(ui32_id, ID_AT) || near_id(ui32_id, ID_MN) ||
-            near_id(ui32_id, ID_MN2))
+            near_id(ui32_id, ID_MN2) || near_id(ui32_id, ID_MN3) || near_id(ui32_id, ID_NES) || near_id(ui32_id, ID_MD))
         {
             Serial.printf("loader: core id %08lx read with bit errors (link timing?)\r\n", (unsigned long)ui32_id);
         }
@@ -1082,6 +1094,9 @@ static bool probe(void)
 /* which machine */
         g_i32_machine_c64 = 0;
         g_i32_machine_atari = 0;
+/* the cartridge machines */
+        g_i32_machine_nes = 0;
+        g_i32_machine_md = 0;
         g_i32_machine_menu = 0;
 /* the C64 */
         if (ui32_id == ID_C64)
@@ -1093,13 +1108,28 @@ static bool probe(void)
         {
             g_i32_machine_atari = YES;
         }
-/* the machine menu, either version */
-        if ((ui32_id == ID_MN) || (ui32_id == ID_MN2))
+/* the NES */
+        if (ui32_id == ID_NES)
+        {
+            g_i32_machine_nes = YES;
+        }
+/* the Mega Drive */
+        if (ui32_id == ID_MD)
+        {
+            g_i32_machine_md = YES;
+        }
+/* the machine menu, any version; only version 3 has the machine positions */
+        g_i32_menu_positions = 0;
+        if ((ui32_id == ID_MN) || (ui32_id == ID_MN2) || (ui32_id == ID_MN3))
         {
             g_i32_machine_menu = YES;
         }
-/* the flash stream only in version 2 */
-        g_b_fls_ok = ui32_id == ID_MN2;
+        if (ui32_id == ID_MN3)
+        {
+            g_i32_menu_positions = YES;
+        }
+/* the flash stream from version 2 on */
+        g_b_fls_ok = (ui32_id == ID_MN2) || (ui32_id == ID_MN3);
 /* mask bit for the FPGA reset check (housekeeping) */
         link_wr(R_IRQ, IRQ_MARK);
         b_found = (link_rd(R_IRQ) & IRQ_MASK_BITS) != 0;
@@ -1128,6 +1158,16 @@ static const char *machine_name(void)
     else if (g_i32_machine_atari != 0)
     {
         pc_name = "LTari";
+    }
+/* the NES */
+    else if (g_i32_machine_nes != 0)
+    {
+        pc_name = "LNES";
+    }
+/* the Mega Drive */
+    else if (g_i32_machine_md != 0)
+    {
+        pc_name = "LMega";
     }
     else
     {

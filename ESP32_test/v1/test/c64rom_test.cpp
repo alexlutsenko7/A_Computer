@@ -33,7 +33,10 @@
 /* the link is always there */
 #define LINK_ALIVE 1
 /* the ROM image in the flash */
-#define ROM_BASE 0x580000u
+#define ROM_BASE 0x401000u
+/* L64 sits in position 2: its info sector with the tag A5 5A 24 DB is the first of that ROM area */
+#define INFO_ADDR 0x400000u
+#define TAG_LEN 4
 #define ROM_LEN 49152u
 /* its header: F3, the signature, the version */
 #define HDR_MAGIC 0xF3
@@ -83,6 +86,8 @@
 /* one */
 #define ONE 1
 
+/* L64's tag */
+static const uint8_t g_aui8_tag[TAG_LEN] = { 0xA5, 0x5A, 0x24, 0xDB };
 /* the image the flash must hold */
 static uint8_t g_aui8_expect[ROM_LEN];
 /* the card image */
@@ -204,6 +209,8 @@ static int64_t test_hardware_state(void)
     i32_result = 0;
 /* an erased flash with the image, less its header */
     memset(g_aui8_fm_flash, ERASED, sizeof g_aui8_fm_flash);
+/* the tag the ROM install finds L64's ROM area by */
+    memcpy(g_aui8_fm_flash + INFO_ADDR, g_aui8_tag, TAG_LEN);
     memcpy(g_aui8_fm_flash + ROM_BASE, g_aui8_expect, ROM_LEN);
     memset(g_aui8_fm_flash + ROM_BASE, ERASED, HDR_LEN);
 /* without its header the image is not installed */

@@ -55,7 +55,9 @@ Sound sent: AY + beeper, the same as the analog outputs, mono in both channels, 
   C++ here, as C for the PC tests). `src/hw.h` gives the FPGA's registers as proxy objects; `src/esp_hw.cpp`
   implements them over the link, plus SD sectors, the OSD and the loader task.
 - At start the ESP32 looks for a known core ID on the link for 3 s, then every 2 s: 5A580001 = LSpectrum,
-  43360001 = L64 (while the machine menu is shown, nothing answers). Found: the loader runs as a task on
+  43360003 = L64, 41540001 = LTari, 4D4E0003 = the machine menu. In the menu the firmware updates the menu from
+  `LUPDATE.BIN`, opens the Bluetooth menu (F3) and installs machines (F12: a machine file of the card's `MACHINES`
+  folder into one of the flash's three positions; `mch_*` in `src/update.cpp`, `AMenu/ep4_ce15/README.md`). Found: the loader runs as a task on
   core 1 (`loader: ... running` on USB); a different ID later (KEY1 / Ctrl+Alt+Del -> menu) restarts the ESP32. Leaving the menu does not: the menu's task ends
   and the machine is picked up by the next probe (~2 s), so a Bluetooth connection made while the menu was shown is not
   cut (a restart there left Bose headphones connected but silent or chopped). Pulse commands, OSD text and Spectrum memory writes go as bursts;

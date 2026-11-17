@@ -1,11 +1,15 @@
 /* rom_loader -- copies the ROM images from the configuration flash into SDRAM */
 /* after power-up / reset, then releases the CPU (done = 1) */
 /* */
-/* Flash layout (see docs/PLAN.md, programmed with the .jic): */
-/* 0x500000  128K ROM set, 32 KB  -> SDRAM 0x20000 (ROM 0 + ROM 1) */
-/* 0x508000  DiagROM,      16 KB  -> SDRAM 0x28000 */
-/* One continuous READ (0x03) of 48 KB from 0x500000 to SDRAM 0x20000. */
-/* (L64 and LTari use the same module with their own FLASH_ADDR / SD_BASE / LEN.) */
+/* Flash layout (see docs/PLAN.md): a machine takes 2 MB, its bitstream in the first and its */
+/* ROM area in the second megabyte; it can sit in any of the three positions and cannot read */
+/* which one it was started from. The loader therefore looks at the start of each ROM area */
+/* (ROM_AREAS) for its machine's 4-byte tag (TAG, written when the machine is installed) and */
+/* loads from the first area that has it: LEN bytes from area + ROM_OFFSET to SDRAM SD_BASE */
+/* in one continuous READ (0x03). No area with the tag: bad_image, nothing loaded. */
+/* LSpectrum: 128K ROM set, 32 KB -> SDRAM 0x20000 (ROM 0 + ROM 1), DiagROM, 16 KB -> 0x28000. */
+/* (L64 and LTari use the same module with their own TAG / SD_BASE / LEN.) */
+/* The tag's bytes read the same in both bit orders (A5 5A, a machine byte and its complement). */
 /* */
 /* SPI mode 0, DCLK = clk / (2 * DIV) (112 / 8 = 14 MHz). MISO is sampled at */
 /* the end of the high phase, MOSI changes in the low phase. */
@@ -16,7 +20,13 @@
 `default_nettype none
 
 module rom_loader #(
-    parameter [23:0] FLASH_ADDR = 24'h500000,
+/* the machine's tag: A5 5A 18 E7 = LSpectrum, .. 24 DB = L64, .. 42 BD = LTari */
+    parameter [31:0] TAG        = 32'hA55A_18E7,
+/* the ROM areas of the three positions, area i at [24*i +: 24] */
+    parameter integer N_AREAS   = 3,
+    parameter [71:0] ROM_AREAS  = {24'h600000, 24'h400000, 24'h200000},
+/* the ROM image inside its area (the first 4 KB sector holds the tag and the machine's name) */
+    parameter [23:0] ROM_OFFSET = 24'h001000,
     parameter [17:0] SD_BASE    = 18'h20000,
     parameter integer LEN       = 49152,
     parameter integer DIV       = 4
@@ -64,8 +74,14 @@ localparam [2:0] S_CS    = 3'd0,
                  S_WRITE = 3'd3,
 /* wait for the SDRAM */
                  S_WAIT  = 3'd4,
-                 S_END   = 3'd5;
+                 S_END   = 3'd5,
+/* chip select off between two commands */
+                 S_GAP   = 3'd6;
+/* the third and the last byte of the tag */
+localparam [1:0] TAG_THIRD = 2'd2;
+localparam [1:0] TAG_LAST = 2'd3;
 
+/* the state, the clock divider */
 reg [2:0]  state;
 reg [7:0]  div_cnt;
 /* bits left in the current transfer */
@@ -76,6 +92,16 @@ reg [7:0]  sh_in;
 reg        hi;
 reg [15:0] count;
 reg        first, reverse;
+/* the area being tried, its tag was found, the tag byte expected next */
+reg [1:0]  area;
+reg        tag_ok;
+reg [1:0]  tag_n;
+
+/* the flash address of the area being tried */
+wire [23:0] area_addr = ROM_AREAS[24 * area +: 24];
+/* the tag byte expected (the first one is the top byte) */
+wire [7:0]  tag_byte  = tag_n == 2'd0 ? TAG[31:24] : tag_n == 2'd1 ? TAG[23:16] :
+                        tag_n == TAG_THIRD ? TAG[15:8]  : TAG[7:0];
 
 /* byte complete at the last sample */
 wire [7:0] got = {sh_in[6:0], f_miso};
@@ -107,6 +133,10 @@ always @(posedge clk or negedge rst_n)
         sd_req    <= 1'b0;
         sd_addr   <= SD_BASE;
         sd_din    <= 8'd0;
+/* the first area, its tag not seen yet */
+        area      <= 2'd0;
+        tag_ok    <= 1'b0;
+        tag_n     <= 2'd0;
     end
     else
     begin
@@ -120,8 +150,8 @@ always @(posedge clk or negedge rst_n)
                 if (div_cnt == DIV - 1)
                 begin
                     div_cnt <= 8'd0;
-/* the READ command with the address */
-                    sh_out  <= {FLASH_READ, FLASH_ADDR};
+/* the READ command with the address: the area's tag first, then its ROM image */
+                    sh_out  <= {FLASH_READ, tag_ok ? area_addr + ROM_OFFSET : area_addr};
                     bit_cnt <= CMD_BITS;
 /* first bit = MSB of 0x03 */
                     f_mosi  <= 1'b0;
@@ -164,6 +194,41 @@ always @(posedge clk or negedge rst_n)
 /* the command is out: data bytes follow */
                                 f_mosi  <= 1'b0;
                                 state   <= S_DATA;
+                            end
+                            else if (!tag_ok)
+                            begin
+/* a byte of the tag */
+                                if (got != tag_byte)
+                                begin
+/* not this machine's area: the next one, or none at all */
+                                    f_ncs <= 1'b1;
+                                    tag_n <= 2'd0;
+                                    if (area == N_AREAS - 1)
+                                    begin
+/* no area has the tag */
+                                        bad_image <= 1'b1;
+                                        state     <= S_END;
+                                    end
+                                    else
+                                    begin
+/* the next area */
+                                        area  <= area + 2'd1;
+                                        state <= S_GAP;
+                                    end
+                                end
+                                else if (tag_n == TAG_LAST)
+                                begin
+/* the whole tag: a second command reads the ROM image */
+                                    f_ncs  <= 1'b1;
+                                    tag_ok <= 1'b1;
+                                    state  <= S_GAP;
+                                end
+                                else
+                                begin
+/* the next byte of the tag */
+                                    tag_n   <= tag_n + 2'd1;
+                                    bit_cnt <= BYTE_BITS;
+                                end
                             end
                             else
                             begin
@@ -223,6 +288,21 @@ always @(posedge clk or negedge rst_n)
             begin
                 f_ncs <= 1'b1;
                 done  <= 1'b1;
+            end
+
+/* chip select stays off for one half period, then the next command */
+            S_GAP:
+            begin
+                if (div_cnt == DIV - 1)
+                begin
+                    div_cnt <= 8'd0;
+/* the next command */
+                    state   <= S_CS;
+                end
+                else
+                begin
+                    div_cnt <= div_cnt + 8'd1;
+                end
             end
 
 /* any other state: start again */

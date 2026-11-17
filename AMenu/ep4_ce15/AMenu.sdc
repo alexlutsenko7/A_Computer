@@ -14,8 +14,9 @@ set mclk u_mpll|altpll_component|auto_generated|pll1|clk[0]
 # start toggle + boot address (50 MHz -> ruclk, toggle synchronised, address static),
 # ready / trigger / previous address (ruclk -> 50 MHz, level synchronised, data static)
 # ESP32 link clock (mclk, 75 MHz): keyboard report (50 MHz -> mclk, quasi-static, read by the ESP32),
-# OSD on (mclk -> 50 MHz / pixel clock, level synchronised), OSD text RAM (written at mclk, read
-# at the pixel clock: a character may show late for one frame)
+# OSD on (mclk -> 50 MHz / pixel clock, level synchronised), OSD text RAM and the machines' name RAM
+# (written at mclk, read at the pixel clock: a character may show late for one frame), machine
+# installed flags (mclk -> 50 MHz, synchronised)
 set_clock_groups -asynchronous \
     -group [get_clocks CLOCK_50] \
     -group [get_clocks ruclk] \

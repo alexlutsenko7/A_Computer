@@ -1,8 +1,9 @@
 /* tb_amenu -- machine menu: remote-update sequence, keys, error display, one video frame (menu.ppm) */
-/* +define+FAIL: the previous image failed (trigger CRC, previous address 0x100000 << 2 = 0x400000, */
-/* which is also machine 4's address as written): the cursor must be on machine 1 */
-/* (the shifted match wins) with the error shown; key '4' starts machine 4 (0x400000). */
-/* otherwise:    power-up; Down + Enter must start machine 2 (0x200000). */
+/* The flash model holds machines in positions 1 and 2 (their names must show), position 3 is empty. */
+/* +define+FAIL: the previous image failed (trigger CRC, previous address 0x100000 << 2 = 0x400000): */
+/* the cursor must be on machine 1 with the error shown; key '3' (the empty position) must do */
+/* nothing, key '2' starts machine 2 (0x300000). */
+/* otherwise:    power-up; Down + Enter must start machine 2 (0x300000). */
 `timescale 1ns/1ps
 `default_nettype none
 
@@ -107,9 +108,96 @@ localparam integer LOCK_NS = 1000;
     initial #LOCK_NS locked = 1;
 endmodule
 
-module flash_if (input wire dclk, input wire ncs, input wire mosi, output wire miso);
-/* the configuration flash is not used here */
-    assign miso = 1'b1;
+/* the configuration flash: READ (0x03) of the info sectors of the three positions */
+module flash_if (input wire dclk, input wire ncs, input wire mosi, output reg miso);
+
+/* bits of the read command with its address, bits of a byte */
+localparam integer CMD_BITS = 32;
+localparam integer BYTE_BITS = 8;
+/* the menu line starts 16 bytes into the info sector and is 29 characters long */
+localparam integer NAME_OFF = 16;
+localparam integer NAME_LEN = 29;
+/* the megabyte of the two ROM areas that hold a machine (0x200000, 0x400000), the offset inside one */
+localparam [3:0] AREA_1 = 4'h2;
+localparam [3:0] AREA_2 = 4'h4;
+localparam [23:0] MB_MASK = 24'h0FFFFF;
+/* the tag's two fixed bytes */
+localparam [7:0] TAG_0 = 8'hA5;
+localparam [7:0] TAG_1 = 8'h5A;
+/* the lines of positions 1 and 2 */
+localparam [NAME_LEN*8-1:0] NAME_1 = "LSpectrum    ZX Spectrum 128K";
+localparam [NAME_LEN*8-1:0] NAME_2 = "L64          Commodore 64    ";
+
+    reg [31:0] cmd;
+/* the command, its bit counters, the read address */
+    integer    nbits, rd_bits;
+    reg [23:0] addr;
+    reg [7:0]  cur;
+
+/* the byte at a flash address: tag and line in 0x200000 and 0x400000, FF elsewhere */
+    function [7:0] byte_at(input [23:0] a);
+        reg [23:0] o;
+        reg [NAME_LEN*8-1:0] line;
+        begin
+/* FF unless the address is in an info sector */
+            byte_at = 8'hFF;
+            o       = a & MB_MASK;
+            line    = a[23:20] == AREA_1 ? NAME_1 : NAME_2;
+/* an info sector */
+            if (a[23:20] == AREA_1 || a[23:20] == AREA_2)
+            begin
+                if (o == 0)
+                begin
+                    byte_at = TAG_0;
+                end
+/* the tag's second byte */
+                if (o == 1)
+                begin
+                    byte_at = TAG_1;
+                end
+                if (o >= NAME_OFF && o < NAME_OFF + NAME_LEN)
+                begin
+/* a character of the menu line */
+                    byte_at = line[(NAME_LEN - 1 - (o - NAME_OFF)) * 8 +: 8];
+                end
+            end
+        end
+    endfunction
+
+    initial miso = 1'b1;
+/* chip select: a new command */
+    always @(negedge ncs)
+    begin
+        nbits   = 0;
+        rd_bits = 0;
+    end
+/* the command and its address */
+    always @(posedge dclk)
+        if (!ncs && nbits < CMD_BITS)
+        begin
+            cmd   = {cmd[30:0], mosi};
+/* one more bit of the command */
+            nbits = nbits + 1;
+            if (nbits == CMD_BITS)
+            begin
+                addr = cmd[23:0];
+            end
+        end
+/* data out on the falling clock */
+    always @(negedge dclk)
+        if (!ncs && nbits == CMD_BITS)
+        begin
+            cur      = byte_at(addr);
+/* the next bit of the byte */
+            miso    <= cur[7 - rd_bits];
+            rd_bits  = rd_bits + 1;
+            if (rd_bits == BYTE_BITS)
+            begin
+/* the next byte */
+                rd_bits = 0;
+                addr    = addr + 1;
+            end
+        end
 endmodule
 
 /* the testbench */
@@ -143,12 +231,12 @@ localparam integer WRITES = 3;
 localparam [23:0] WDOG_TIME = 24'h000FFF;
 `ifdef FAIL
     localparam [28:0] TRIG = 29'h08, PREV = 29'h400000;
-/* a failed start of machine 4 / a power-up */
-    localparam [23:0] EXPECT = 24'h400000;
+/* a failed start of machine 1 / a power-up */
+    localparam [23:0] EXPECT = 24'h300000;
 `else
     localparam [28:0] TRIG = 29'h00, PREV = 29'h000000;
 /* the address the menu must write */
-    localparam [23:0] EXPECT = 24'h200000;
+    localparam [23:0] EXPECT = 24'h300000;
 `endif
     reg [26:0] wr_log [$];
 /* reconfiguration seen; clock, reset, the keyboard line */
@@ -165,7 +253,8 @@ localparam [23:0] WDOG_TIME = 24'h000FFF;
         .VGA_R(r), .VGA_G(g), .VGA_B(b), .VGA_HS(hs), .VGA_VS(vs),
         .KB_OUT(kbd_rx), .KB_IN(1'b1), .AUDIO_AY(), .AUDIO_BEEP(),
         .JOY1_UP_N(1'b1), .JOY1_DOWN_N(1'b1), .JOY1_FIRE_N(1'b1),
-        .JOY2_UP_N(1'b1), .JOY2_DOWN_N(1'b1), .JOY2_FIRE_N(1'b1)
+        .JOY2_UP_N(1'b1), .JOY2_DOWN_N(1'b1), .JOY2_FIRE_N(1'b1),
+        .ESP_SCK(1'b1), .ESP_MOSI(1'b1), .ESP_CS_N(1'b1), .ESP_MISO(), .ESP_IRQ(), .BT_TX(), .BT_RX(1'b1)
     );
 
 /* one byte on the keyboard line, 115200 baud */
@@ -243,6 +332,15 @@ localparam [23:0] WDOG_TIME = 24'h000FFF;
     begin
         #RST_NS rst_n = 1;
         wait (dut.init_done);
+/* the names are read from the flash: machines in positions 1 and 2 only */
+        wait (dut.u_names.done);
+        #LOCK_NS;
+        if (dut.val_s !== 3'b011)
+        begin
+/* counted */
+            $display("FAIL: installed flags %b, expected 011", dut.val_s);
+            errors++;
+        end
 /* the menu's state at the start */
         #LOCK_NS;
         $display("%t ready: sel %0d err %0d", $time, dut.sel, dut.err);
@@ -255,8 +353,18 @@ localparam [23:0] WDOG_TIME = 24'h000FFF;
         end
 /* the screen */
         grab;
-/* '4' */
-        key_frame(8'h21);
+/* '3': the empty position, nothing may start */
+        key_frame(8'h20);
+        key_frame(8'h00);
+        #1ms;
+/* nothing may have started */
+        if (reconf || dut.started)
+        begin
+            $display("FAIL: the empty position was started");
+            errors++;
+        end
+/* '2' */
+        key_frame(8'h1F);
 `else
         if (dut.sel != 0 || dut.err)
         begin

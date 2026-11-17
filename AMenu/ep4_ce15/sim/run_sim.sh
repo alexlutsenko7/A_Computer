@@ -6,7 +6,7 @@ Q=/mnt/c/Altera/questa_fse/win64
 for c in OK FAIL; do
     rm -rf work
     $Q/vlib.exe work >/dev/null
-    $Q/vlog.exe -quiet ../rtl/AMenu.v ../rtl/menu_boot.v ../rtl/menu_video.v \
+    $Q/vlog.exe -quiet ../rtl/AMenu.v ../rtl/menu_boot.v ../rtl/menu_video.v ../rtl/menu_names.v \
         ../../../LSpectrum/ep4_ce15/rtl/zx_keyboard.v ../../../LSpectrum/ep4_ce15/rtl/vga_timing.v \
         ../../../LSpectrum/ep4_ce15/rtl/tape_loader.v ../../../LSpectrum/ep4_ce15/rtl/esp_link.v || exit 1
     $Q/vlog.exe -quiet -sv +define+$c tb_amenu.sv || exit 1

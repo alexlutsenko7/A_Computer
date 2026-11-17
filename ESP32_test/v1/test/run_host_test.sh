@@ -77,7 +77,7 @@ if [ -f $ROMS/kernal.bin ]; then
     cp $ROMS/kernal.bin $ROMS/basic.bin $ROMS/char.bin $ROMS/dos1541.bin $W/c64rom/tree/ROMS/C64/
     python3 -I ../tools/mkimg.py $W/c64rom/card.img $W/c64rom/tree --fat 32 --mbr --spc 8 > /dev/null
     ${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/c64rom/c64rom_test.exe c64rom_test.cpp flash_model.cpp \
-        ../../../ESP32/v1/src/c64.cpp ../../../ESP32/v1/src/flash.cpp ../../../ESP32/v1/src/fat.cpp ../../../ESP32/v1/src/util.cpp ../../../ESP32/v1/src/tape.cpp ../../../ESP32/v1/src/save.cpp ../../../ESP32/v1/src/shot.cpp
+        ../../../ESP32/v1/src/c64.cpp ../../../ESP32/v1/src/update.cpp ../../../ESP32/v1/src/flash.cpp ../../../ESP32/v1/src/fat.cpp ../../../ESP32/v1/src/util.cpp ../../../ESP32/v1/src/tape.cpp ../../../ESP32/v1/src/save.cpp ../../../ESP32/v1/src/shot.cpp
     for b in 5 25; do
         echo "C64 ROM install, pass-through busy $b us:"
         (cd $W/c64rom && ./c64rom_test.exe card.img tree/ROMS/C64 $b > busy$b.log) || fail=1
@@ -86,11 +86,12 @@ if [ -f $ROMS/kernal.bin ]; then
 else
     echo "C64 ROM install test skipped (no $ROMS/kernal.bin)"
 fi
-# flash update (update.cpp + flash.cpp + fat.cpp delete): needs AMenu/ep4_ce15/output_files/LUPDATE.BIN (tools/mk_update.py)
-UPD=../../../AMenu/ep4_ce15/output_files/LUPDATE.BIN
-if [ -f $UPD ]; then
+# flash update (update.cpp + flash.cpp + fat.cpp delete): its scenarios run with an update file of the whole flash
+# (machines, a skipped range), made here from AMenu/ep4_ce15/output_files/L_flash.bin (tools/mk_flash.py)
+OUT=../../../AMenu/ep4_ce15/output_files
+if [ -f $OUT/L_flash.bin ]; then
     mkdir -p $W/update/tree
-    cp $UPD $W/update/tree/
+    python3 -I ../../../AMenu/ep4_ce15/tools/mk_update.py --whole --flash $OUT/L_flash.bin --out $W/update/tree/LUPDATE.BIN > /dev/null
     python3 -I ../tools/mkimg.py $W/update/card.img $W/update/tree --fat 32 --mbr --spc 1 --mb 64 > /dev/null
     ${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/update/update_test.exe update_test.cpp flash_model.cpp \
         ../../../ESP32/v1/src/update.cpp ../../../ESP32/v1/src/flash.cpp ../../../ESP32/v1/src/fat.cpp ../../../ESP32/v1/src/util.cpp
@@ -98,6 +99,42 @@ if [ -f $UPD ]; then
     (cd $W/update && ./update_test.exe card.img tree/LUPDATE.BIN > update.log) || fail=1
     sed 's/^/  /' $W/update/update.log
 else
-    echo "Flash update test skipped (no $UPD)"
+    echo "Flash update test skipped (no $OUT/L_flash.bin)"
 fi
+# machines in the flash (update.cpp mch_*): the machine files of AMenu/ep4_ce15/output_files/machines, a file for
+# the other board and a damaged one (made here), and the real LUPDATE.BIN (the menu alone)
+if [ -f $OUT/machines/L64_ep4ce15.LMC ] && [ -f $OUT/LUPDATE.BIN ]; then
+    rm -rf $W/machine && mkdir -p $W/machine/tree/MACHINES
+    cp $OUT/machines/*_ep4ce15.LMC $W/machine/tree/MACHINES/
+    cp $OUT/LUPDATE.BIN $W/machine/tree/
+    python3 -I - $OUT/machines/LTari130_ep4ce15.LMC $W/machine/tree/MACHINES <<'PY'
+import struct, sys, zlib
+d = bytearray(open(sys.argv[1], 'rb').read())
+bad = bytearray(d)
+bad[len(bad) - 5000] ^= 1                                  # one bit of the image
+open(sys.argv[2] + '/DAMAGED.LMC', 'wb').write(bad)
+d[8:12] = struct.pack('<I', 2)                             # the other core board
+d[252:256] = struct.pack('<I', zlib.crc32(bytes(d[:252])))
+open(sys.argv[2] + '/OTHER.LMC', 'wb').write(d)
+PY
+    python3 -I ../tools/mkimg.py $W/machine/card.img $W/machine/tree --fat 32 --mbr --spc 1 --mb 64 > /dev/null
+    ${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/machine/machine_test.exe machine_test.cpp flash_model.cpp \
+        ../../../ESP32/v1/src/update.cpp ../../../ESP32/v1/src/flash.cpp ../../../ESP32/v1/src/fat.cpp ../../../ESP32/v1/src/util.cpp
+    cp $OUT/machines/*_ep4ce15.LMC $OUT/L_flash.bin $W/machine/
+    echo "Machines in the flash:"
+    (cd $W/machine && ./machine_test.exe card.img . L_flash.bin > machine.log) || fail=1
+    sed 's/^/  /' $W/machine/machine.log
+else
+    echo "Machine install test skipped (no $OUT/machines/*.LMC: tools/mk_flash.py)"
+fi
+# cartridge machines (cart.cpp, nes.cpp, md.cpp): made-up cartridge files (mkcart.py) into a model of the FPGA's
+# memory port; battery RAM files written to the card image and read back
+rm -rf $W/cart && mkdir -p $W/cart/tree
+python3 -I mkcart.py $W/cart/tree
+python3 -I ../tools/mkimg.py $W/cart/card.img $W/cart/tree --fat 32 --mbr --spc 1 --mb 64 > /dev/null
+${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/cart/cart_test.exe cart_test.cpp \
+    ../../../ESP32/v1/src/cart.cpp ../../../ESP32/v1/src/nes.cpp ../../../ESP32/v1/src/md.cpp ../../../ESP32/v1/src/shot.cpp ../../../ESP32/v1/src/fat.cpp ../../../ESP32/v1/src/util.cpp
+echo "Cartridge machines:"
+(cd $W/cart && ./cart_test.exe card.img tree > cart.log) || fail=1
+sed 's/^/  /' $W/cart/cart.log
 [ $fail = 0 ] && echo "HOST TEST PASSED" || { echo "HOST TEST FAILED"; exit 1; }
