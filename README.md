@@ -177,6 +177,7 @@ The PC tests need a Windows gcc (w64devkit); the simulations need Questa (Intel 
 | `docs/T80_CEN_ANALYSIS.md` | running the T80 from a clock enable at 112 MHz |
 | `docs/BOARD_PINOUT.md` | core board headers and the I/O board wiring |
 | `docs/KNOWN_ISSUES.md` | open issues and limitations |
+| `docs/L_User_Manual.docx` | user manual: connecting, the machine menu, choosing the machines, the SD card, keys of every machine; in nine languages in `docs/manuals/doc/` |
 | `docs/L_Third_Party.docx` | every external core and library: origin, licence, how much of it is used |
 | `docs/PLAN.md` | design decisions and development log |
 

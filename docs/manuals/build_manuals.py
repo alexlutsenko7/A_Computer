@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """build_manuals.py -- the installation guide and the user manual as PDF, in every language.
 
-Content: lang_<code>.py next to this file (INSTALL and USER documents, the same structure in every
-language; English is the reference). Each document is a dict: title, subtitle, blocks. Blocks:
-  ('h1', text) ('h2', text) ('p', text) ('note', text) ('pre', text)
+Content: the installation guide is INSTALL in lang_<code>.py next to this file; the user manual is
+../src/user_manual/lang_<code>.js, the text the Word manuals (../src/user_manual_doc.js -> doc/) are made
+from, read through node. The same structure in every language; English is the reference. Each document
+is a dict: title, subtitle, blocks. Blocks:
+  ('h1', text) ('h2', text) ('p', text) ('note', text) ('pre', text) ('screen', [lines])
   ('ul', [items]) ('ol', [items]) ('table', [headers], [rows], [column widths in %])
 Inline: **bold**, `code`.
 Output: pdf/<CODE>/L_Installation_Guide_<CODE>.pdf and L_User_Manual_<CODE>.pdf, printed by Microsoft
 Edge (headless) from HTML, so the Windows fonts cover Cyrillic, Chinese, Korean and Japanese. US Letter, 1-inch margins.
 Run from WSL: python3 docs/manuals/build_manuals.py [CODE ...]
 """
-import html, importlib, os, re, subprocess, sys
+import html, importlib, json, os, re, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LANGS = ['EN', 'SP', 'PT', 'DE', 'UA', 'RU', 'CN', 'KR', 'JP']
@@ -49,6 +51,8 @@ def render(doc, code, footer):
             out.append('<div class="note">%s</div>' % inline(b[1]))
         elif k == 'pre':
             out.append('<pre>%s</pre>' % html.escape(b[1]))
+        elif k == 'screen':                      # what the monitor shows: white on blue, fixed pitch
+            out.append('<pre class="screen">%s</pre>' % html.escape('\n'.join(l.rstrip() for l in b[1])))
         elif k in ('ul', 'ol'):
             out.append('<%s>%s</%s>' % (k, ''.join('<li>%s</li>' % inline(i) for i in b[1]), k))
         elif k == 'table':
@@ -83,6 +87,7 @@ tr { break-inside: avoid; }
 code { font-family: Consolas, "Courier New", monospace; font-size: 9.5pt; background: #eef1f6; padding: 0 2pt; }
 pre { font-family: Consolas, "Courier New", monospace; font-size: 9pt; background: #f4f6f9; border: 0.6pt solid #ccd;
       padding: 6pt; white-space: pre-wrap; }
+pre.screen { background: #1F2A6B; color: white; border: none; }
 .note { border-left: 3pt solid #c55a11; background: #fbf1ea; padding: 4pt 8pt; margin: 6pt 0; }
 """ % {'font': font, 'footer': footer.replace('"', '\\"')}
     return ('<!doctype html><html lang="%s"><head><meta charset="utf-8"><title>%s</title><style>%s</style></head>'
@@ -101,6 +106,14 @@ def pdf(html_path, pdf_path):
         sys.exit('no PDF: ' + pdf_path)
 
 
+def user_manual(code):
+    """the user manual's text from its .js language file (needs node)"""
+    js = os.path.join(HERE, '..', 'src', 'user_manual', 'lang_%s.js' % code.lower())
+    r = subprocess.run(['node', '-e', 'process.stdout.write(JSON.stringify(require(process.argv[1])))',
+                        os.path.abspath(js)], check=True, capture_output=True)
+    return json.loads(r.stdout.decode('utf-8'))
+
+
 def main():
     codes = [c.upper() for c in sys.argv[1:]] or LANGS
     sys.path.insert(0, HERE)
@@ -110,7 +123,7 @@ def main():
         m = importlib.import_module('lang_' + code.lower())
         outdir = os.path.join(HERE, 'pdf', code)
         os.makedirs(outdir, exist_ok=True)
-        for doc, name in ((m.INSTALL, 'L_Installation_Guide'), (m.USER, 'L_User_Manual')):
+        for doc, name in ((m.INSTALL, 'L_Installation_Guide'), (user_manual(code), 'L_User_Manual')):
             h = os.path.join(build, '%s_%s.html' % (name, code))
             with open(h, 'w', encoding='utf-8', newline='\n') as f:
                 f.write(render(doc, code, doc['title']))

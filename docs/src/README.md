@@ -13,5 +13,8 @@ Paper: US Letter, 1-inch margins.
     python3 ltari_testplan.py ../LTari_Test_Plan.xlsx                      # LTari hardware test plan (openpyxl)
     node build_doc.js ../L_Build_and_Install.docx                         # building, the .jic, ESP32, SD card, ROMs
     node thirdparty_doc.js ../L_Third_Party.docx                          # external cores / libraries, licences, amounts
+    node user_manual_doc.js [EN SP ...]                                   # user manual in 9 languages -> ../manuals/doc/L_User_Manual_<code>.docx
+                                                                          # (+ ../L_User_Manual.docx = English); text: user_manual/lang_<code>.js,
+                                                                          # English is the reference, change all language files together
 
 LSpectrum_FKeys.docx has no generator (export of a claude.ai doc); its F3 and F4 rows and the Ctrl+Alt+Del texts were edited in the .docx XML.

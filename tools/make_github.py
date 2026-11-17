@@ -197,11 +197,10 @@ folder of the card and switch the board on. A menu file for the other board leav
 
 Step by step and in your language: <language>/L_Installation_Guide_<language>.pdf.
 Keys, menus, joysticks: <language>/L_User_Manual_<language>.pdf.
-(The guides were written before the machine files and the two consoles; where they differ, this file is right.)
 Languages: EN English, SP Espanol, PT Portugues, DE Deutsch, UA Ukrainska, RU Russkiy, CN Zhongwen, KR Hangugeo,
 JP Nihongo.
 
-Not included: games and other programs, and the Commodore 64 ROMs (copyrighted). Get them yourself; see section 4
+Not included: games and other programs, and the Commodore 64 ROMs (copyrighted). Get them yourself; see section 5
 of the installation guide.
 """)
 
