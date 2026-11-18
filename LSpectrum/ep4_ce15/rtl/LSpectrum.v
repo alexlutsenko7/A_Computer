@@ -399,7 +399,7 @@ flash_if u_flash (
     .miso (f_miso)
 );
 
-wire led;
+wire led, zx_run;
 /* the video signals */
 wire vga_r, vga_r_low, vga_g, vga_g_low, vga_b, vga_b_low, vga_hs, vga_vs;
 
@@ -453,7 +453,8 @@ zx_system u_sys (
     .bt_data      (BT_DATA),
     .bt_tx        (BT_TX),
     .bt_rx        (BT_RX),
-    .led          (led)
+    .led          (led),
+    .zx_run       (zx_run)
 );
 
 /* active low: led = 0 -> on; on for the first 2.7 s after start */
@@ -462,14 +463,52 @@ assign LEDR = led & up_cnt[25];
 /* 2-bit ZX colour -> 4-bit DAC: normal (high bit) = 4'hE, bright (both bits) = 4'hF */
 /* (the low bit is only ever set together with the high bit). One more pclk register */
 /* stage for colours and syncs alike: these are the I/O registers of the VGA pins. */
+/* Syncs off at each start (configuration, KEY0: the Spectrum waits for its ROMs and the */
+/* keyboard, then tests its RAM on a black screen) until 2 s after the machine started to run, */
+/* when the ROM's first screen is up: a monitor or a VGA to HDMI converter first sees the mode */
+/* with a picture, so its automatic adjustment finds the picture's edges and the sampling */
+/* phase. On a black screen it guesses the phase (fine noise on vertical edges). As in L64. */
+/* 2 s of ruclk (12.5 MHz) */
+localparam [24:0] SP_RUN = 25'd25_000_000;
+reg  [2:0]  run_s = 3'd0;
+reg  [24:0] sp_cnt = 25'd0;
+/* syncs off */
+reg         sp_off = 1'b1;
+always @(posedge ruclk)
+begin
+    run_s <= {run_s[1:0], zx_run};
+/* the machine does not run: syncs off */
+    if (!run_s[2])
+    begin
+        sp_cnt <= 25'd0;
+        sp_off <= 1'b1;
+    end
+/* the delay counts */
+    else if (sp_cnt != SP_RUN)
+    begin
+        sp_cnt <= sp_cnt + 25'd1;
+    end
+    else
+    begin
+        sp_off <= 1'b0;
+    end
+end
+
+/* the sync-off flag in the pixel domain */
+reg [1:0] sp_s = 2'b11;
 always @(posedge pclk)
 begin
-    VGA_R  <= {vga_r, vga_r, vga_r, vga_r_low};
-    VGA_G  <= {vga_g, vga_g, vga_g, vga_g_low};
-/* blue and the syncs */
-    VGA_B  <= {vga_b, vga_b, vga_b, vga_b_low};
-    VGA_HS <= vga_hs;
-    VGA_VS <= vga_vs;
+    sp_s   <= {sp_s[0], sp_off};
+    VGA_R  <= sp_s[1] ? 4'd0 : {vga_r, vga_r, vga_r, vga_r_low};
+    VGA_G  <= sp_s[1] ? 4'd0 : {vga_g, vga_g, vga_g, vga_g_low};
+/* blue */
+    VGA_B  <= sp_s[1] ? 4'd0 : {vga_b, vga_b, vga_b, vga_b_low};
+/* off: the syncs keep their level (no edges) */
+    if (!sp_s[1])
+    begin
+        VGA_HS <= vga_hs;
+        VGA_VS <= vga_vs;
+    end
 end
 
 endmodule

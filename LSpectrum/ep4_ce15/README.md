@@ -12,7 +12,7 @@ Architecture and decisions: `../../docs/PLAN.md`, CPU clock-enable analysis: `..
 | System clock | 112 MHz (sys_pll); CPU stepped by a phase accumulator; SDRAM stalls hold the clock enable (turbo only) |
 | RAM + ROM | W9825G6KH SDRAM via `sdram_ram` (DDR_TEST, proven at 112 MHz): RAM pages 0-7, ROM 0/1, DiagROM |
 | ROMs | in the configuration flash, in the ROM area of the position the machine is installed in (found by its tag A5 5A 18 E7; AMenu/ep4_ce15/README.md), copied to SDRAM at power-up/reset by `rom_loader` (~14 ms) |
-| Video | 640x480@60 (25.208 MHz, 60.02 Hz) or 720x576@50 (27.009 MHz, 50.017 Hz) VGA (CEA-861 VIC 1 / 17 timing, clocks +0.033 %), 4-bit RGB DAC (ZX normal = E, bright = F per colour), from block-RAM shadows of pages 5/7 |
+| Video | 640x480@60 (25.208 MHz, 60.02 Hz) or 720x576@50 (27.009 MHz, 50.017 Hz) VGA (CEA-861 VIC 1 / 17 timing, clocks +0.033 %), 4-bit RGB DAC (ZX normal = E, bright = F per colour), from block-RAM shadows of pages 5/7. At each start (machine menu, KEY0) colours and syncs stay off until 2 s after the machine runs, when the ROM's first screen is up (`LSpectrum.v`): a monitor or VGA to HDMI converter then chooses its sampling phase on a picture, not on a black screen |
 | Sound | AY-3-8912 (JT49, GPL-3) at 1.7734 MHz -> sigma-delta on AUDIO_AY; beeper on AUDIO_BEEP (both to the 3.5 mm jack); the same mix as I2S (`bt_i2s`) to the ESP32, which sends it to Bluetooth headphones / speakers (`ESP32/v2/`) |
 | Keyboard | USB keyboard via the CH9350-style UART module (115200), packet format as the DE10-Lite reference |
 | Joystick | two DB9 ports, mode chosen in the F4 menu: both Kempston (port 1F, default); DB9-1 Kempston + DB9-2 Cursor (5 6 7 8, fire 0); Interface 2 (DB9-1 Sinclair 1 = 6-0, DB9-2 Sinclair 2 = 1-5). Sinclair / Cursor sticks press keys in the keyboard matrix (`zx_system.v`) |
@@ -47,7 +47,7 @@ At power-up the CPU waits for the first keyboard packet (at most 1.5 s) so a hel
 | `LSpectrum.qpf/.qsf/.sdc` | Quartus project, pins, constraints (SDRAM I/O as DDR_TEST, CPU multicycles, clock groups) |
 | `roms48k.hex` | ROMs (128K set + a diagnostics ROM, 48 KB) for the machine's ROM area in the flash, made by `tools/mk_roms48k.py` (the public copy has 48K BASIC in the diagnostics slot: DiagROM's licence is not known); the `.jic` is built by `../../AMenu/ep4_ce15/L.cof` (menu at 0, this bitstream at 0x100000, ROMs at 0x500000) |
 | `sta_report.tcl` | `quartus_sta -t sta_report.tcl`: unconstrained ports, worst paths, CPU multicycle check |
-| `rtl/LSpectrum.v` | top: PLLs, resets (power-up / machine / tape loader), SDRAM clock (DDIO) and DQ, video clock switch (as VGA_TEST), F8/S1 handling |
+| `rtl/LSpectrum.v` | top: PLLs, resets (power-up / machine / tape loader), SDRAM clock (DDIO) and DQ, video clock switch (as VGA_TEST), F8/S1 handling, sync hold-off at start |
 | `rtl/zx_system.v` | the machine without PLLs: SDRAM, loader, bus, AY, keyboard, video, LED |
 | `rtl/zx_bus.v` | CPU clock enable, bus bridge (speculative read at T1, posted writes, stall), paging, ports, INT |
 | `rtl/cpu_t80.v` | T80 wrapper (T80se-style, exports MC/TS/decode) |

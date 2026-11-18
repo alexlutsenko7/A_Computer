@@ -1430,3 +1430,56 @@ system ROM, so their ROM areas in the flash stay empty: a game is a file that th
   (INSTALL/LUPDATE.BIN in the root is gone). README.md and BUILDING_AND_LICENSES.md name the consoles and the Mega
   Drive cores' licences (VDP notice in Appendix A). `ESP32/vN/build/esp32.esp32.esp32/*.bin` = the builds of 17 November
   (the earlier exports are in `tmp/nes_fw/before/esp32_export_vN/`).
+
+## 2026-11-17 (later): user manual in Word + PDF, installation guide rewritten, manuals name the 10CL025 only
+
+- New user manual for the current design (six machines, menu, F12 "Install a machine", SD card, keys, Bluetooth,
+  joysticks, updates, problems): text in `docs/src/user_manual/lang_<en sp pt de ua ru cn kr jp>.js` (English = the
+  reference; all nine have the same block structure), generator `docs/src/user_manual_doc.js` ->
+  `docs/manuals/doc/L_User_Manual_<CODE>.docx` and `docs/L_User_Manual.docx` (English). Run in `docs/src` with the
+  `docx` package on `NODE_PATH`.
+- `docs/manuals/build_manuals.py` builds both PDFs per language: the user manual from the same `.js` text (read through
+  `node`), the installation guide from `INSTALL` in `docs/manuals/lang_<code>.py` (the `USER` dicts are gone; the guide is
+  rewritten for machine files, F12, the ESP32 and menu updates). `INSTALL/<language>/` holds the two PDFs only.
+- User's decision: the EP4CE15 boards are test boards, the production board is the 10CL025. The user manual and the
+  installation guide (Word and PDF, nine languages) do not mention the EP4CE15: no board column, no `_ep4ce15` file
+  names, the menu update is taken from `MENU_UPDATE/10cl025`.
+- Open (asked, not decided): `INSTALL/README.txt` (text in `tools/make_github.py`) still describes both boards, and
+  `INSTALL/MACHINES/*_ep4ce15.LMC` and `INSTALL/MENU_UPDATE/ep4_ce15/` are still shipped.
+- The translations are machine-made and not reviewed by native speakers.
+- `github/`: the files above are copied in by hand (`make_github.py` was not run); not committed (the user's step).
+
+## 2026-11-18: I/O board revision 2 arrives; first run on the 10CL025
+
+- Revision 2 board alone on USB-C: CP2102N enumerates (COM12), auto-reset works, ESP32-D0WD-V3 rev 3.1, 16 MB flash,
+  `ESP32/v2` uploaded (first run of v2 on hardware), PSRAM present (largest free block 4.1 MB), Bluetooth scan finds
+  the headphones at -42 dBm.
+- The board is soldered to the **10CL025** core board (user: not to an EP4CE15 test board). Flash programmed with the
+  2 MB-position `AMenu/10cl025/output_files/L.jic` over JTAG (verified): first run of this image on the 10CL025.
+- Works on hardware (user): ESP32 link (core ID 4D4E_0003), I2S clocks (44.0 kHz at the ESP32), USB keyboard through the
+  CH9350L, picture through a VGA-to-HDMI dongle (5 V from J9), SD card, game load on LSpectrum. First test of the
+  10CL025 header pins (generated .qsf pin lists).
+- Later the same day (user): Bluetooth works (F3 menu = control UART on IO27 / IO21), music good on LSpectrum, L64 and
+  LTari; the menu starts from the flash after a USB replug; everything tried in the three machines works.
+- Not tested yet: joysticks (none at hand), LNES and LMega (F12 install), the other four boards.
+- LSpectrum: fine noise on vertical edges through the VGA to HDMI converter after a cold start (user: gone after F8
+  twice). Cause: the syncs ran while the screen was black (ROM load, keyboard wait, RAM test), so the converter chose its
+  sampling phase without a picture. Fix as in L64: `zx_system.v` output `zx_run`, `LSpectrum.v` keeps colours and syncs
+  off until 2 s after it. Both boards rebuilt timing-clean (10CL025 7,781 LEs, setup + 1.112 / hold + 0.132 ns; EP4CE15
+  7,784 LEs, + 0.619 / + 0.140 ns), VGA outputs still in the I/O registers. `mk_flash.py` rerun for both boards (L.jic,
+  machine files). The 10CL025's flash programmed with the new L.jic. Result from cold starts (user): a minor
+  improvement only; the noise also came once or twice after F8, never at 50 Hz, never in the other machines.
+- Tried next: HSYNC / VSYNC as 3.3-V LVCMOS 2 mA (L64, LTari and LNES have it, LSpectrum and AMenu do not): **much
+  worse** (user), taken out again (LSpectrum.qsf as before, both boards rebuilt, same slack, L.jic + machine files remade,
+  10CL025 flash programmed). So the converter's result depends on the sync edges, and weaker is worse here. Cause not
+  found. The sync hold-off stays in. The EP4CE15 boards, the staged card set (`tmp/nes_fw/sd_card/`) and `github/`
+  still carry the LSpectrum without it.
+- More on the picture noise (user): vertical soft bands that MOVE, and the machine menu shows them too: tied to the
+  mode 640x480@60 (vga_timing / vga_pll c0 25.208 MHz), not to the Spectrum. Static timing: all 14 VGA outputs are I/O
+  registers, register-to-pin spread 0.15 ns (R[1], R[3] latest). Next: scope at the VGA connector, an analogue monitor.
+- Scope (user): white level 650 mV as designed; on it a free-running sawtooth of 8-10 mV, about four teeth per line, in
+  both modes. Not on the core board's three rails (TPS563201 U2 3V3 / U3 2V5 / U4 1V2), not on the I/O board's LDO, not
+  between the grounds; **gone when the converter is unplugged from J2**: the converter puts it on the colour lines. The
+  noise was there with the EP4CE15 + rev 1 board too. Our output is clean as far as measured; an analogue monitor is
+  still to be tried.
+- Analogue monitor (user): no noise at 640x480@60. The fault is the converter's; more tests by the user to come.

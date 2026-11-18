@@ -98,7 +98,9 @@ module zx_system #(
     output wire        esp_irq,
 
 /* on = turbo (tape loader); fast blink = ROMs missing in flash */
-    output reg         led
+    output reg         led,
+/* the machine runs: out of reset, ROMs loaded, keyboard wait over (clk domain) */
+    output wire        zx_run
 );
 
 /* Hz in a MHz */
@@ -344,6 +346,9 @@ wire [12:0] sh_addr;
 wire [7:0]  sh_data;
 /* the border colour; the bus */
 wire [2:0]  border;
+
+/* for the top level: the picture comes up a moment after this */
+assign zx_run = rst_n & ld_done & kbd_ready;
 
 zx_bus u_bus (
     .clk         (clk),
