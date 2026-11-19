@@ -12,7 +12,7 @@ ROOT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else '.')
 DST = os.path.join(ROOT, 'github')
 
 TOP = ['AMenu', 'LSpectrum', 'L64', 'LTari', 'LNES', 'LMega', 'FX68K', 'JT12', 'JT89', 'ESP32', 'ESP32_test', 'T65', 'T80', 'DDR_TEST', 'VGA_TEST', 'FirstLight', 'docs', 'tests', 'tools',
-       'Extra_PCB_CycloneIV', 'Extra_PCB_CycloneIV_R2', 'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md', 'IP_BLOCKS.txt']
+       'Extra_PCB_CycloneIV', 'Extra_PCB_CycloneIV_R2', '3D_case', 'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md', 'IP_BLOCKS.txt']
 
 SKIP_DIRS = {'db', 'incremental_db', 'greybox_tmp', '.qsys_edit', '__pycache__', 'node_modules', '.git',
              'roms_local',          # C64 ROMs (copyright)
@@ -40,6 +40,7 @@ SKIP_FILES = ['*.log', 'transcript', '*.rpt', '*.summary', '*.smsg', '*.done', '
 SKIP_PATH_RE = [r'(^|/)sim/[^/]*\.png$', r'(^|/)sim/.*\.bmp$', r'^tests/.*/output_files/',
                 r'^docs/manuals/(build|pdf)/',   # manual previews / PDFs (the PDFs go into INSTALL/)
                 r'^ESP32/v\d/build/(?!esp32\.esp32\.esp32/)',   # arduino-cli's build folder (local paths); the exported binaries stay
+                r'^3D_case/out/L_case_assembly\.step$',   # 16 MB, made by case.py (holds KiCad's part models)
                 r'^LMega/[^/]*/sim/[^/]*\.mem$',    # fx68k's microcode, copied for the simulation (FX68K/ has it)
                 r'^LNES/[^/]*/sim/(w/|batch1\.sh$|list\d\.txt$)']   # Questa library, local test lists
 # build outputs: only the programming files

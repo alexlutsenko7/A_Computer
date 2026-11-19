@@ -85,6 +85,7 @@ AMenu, LSpectrum, L64, LTari and DDR_TEST each hold one subfolder per core board
 | `VGA_TEST/` | stand-alone VGA test (colour bars, both video modes) |
 | `Extra_PCB_CycloneIV/` | **the I/O board, revision 1**: KiCad 10 project (schematic + PDF, routed 2-layer layout, project symbols / footprints), JLCPCB order files (`jlcpcb/`: Gerbers, drill, BOM, CPL), wiring to the core board (`README.md`) |
 | `Extra_PCB_CycloneIV_R2/` | **the I/O board, revision 2**: KiCad 10 project (schematic + PDF, routed 4-layer layout with GND / +3V3 planes, project footprints incl. the ESP32-WROVER-E), JLCPCB order files (`jlcpcb/`), generator / routing scripts (`tools/`), `README.md` |
+| `3D_case/` | **printed case** for the 10CL025 core board on the I/O board revision 2: two halves (bottom with pins through the I/O board's holes, top glued on), `case.py` (CadQuery) and the STL / STEP files in `out/`, `README.md` |
 | `docs/` | design notes, user documents, data sheets (see below) |
 
 ## Building
