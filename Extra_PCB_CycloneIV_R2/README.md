@@ -33,7 +33,7 @@ Most resistors and small capacitors are JLCPCB **Basic** parts (no per-line fee)
 4.22k per colour (full scale 0.70 V into 75 Ohm, steps even within about 0.02 LSB), 6p8 on the VGA lines, 68 Ohm in the AY low-pass
 (23 kHz with 0.1 uF), 47.5k in the CP2102N VBUS divider, ESP32-WROVER-E, CP2102N, CH9350L, LDL1117S33R (kept over the Basic
 AMS1117 for its lower dropout and better PSRR), USBLC6-2SC6, PTS810 buttons, and the connectors. USB-A J8 / J9:
-CONNFLY DS1095-WNR0 (C19944603). Older states of the board and its order files are in `archive/` (the ordered set: `archive/2026-11-03_as_ordered/`).
+SOFNG USB-302-T (C112456), as in JLCPCB's final BOM of the boards built. Older states of the board and its order files are in `archive/` (the ordered set: `archive/2026-11-03_as_ordered/`).
 
 ## JLCPCB order files (`jlcpcb/`, made by `python3 tools/jlc_export.py` in WSL)
 

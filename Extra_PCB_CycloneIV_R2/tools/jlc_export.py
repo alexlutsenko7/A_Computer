@@ -46,8 +46,8 @@ LCSC = {
     ("LDL1117S33R", "Package_TO_SOT_SMD:SOT-223-3_TabPin2"): "C435835",
     ("MMBT3904", "Package_TO_SOT_SMD:SOT-23"): "C20526",                # JSCJ MMBT3904
     ("USBLC6-2SC6", "Package_TO_SOT_SMD:SOT-23-6"): "C7519",            # ST
-    ("USB keyboard", "Connector_USB:USB_A_Connfly_DS1095"): "C19944603",   # CONNFLY DS1095-WNR0, THT R/A
-    ("USB 5V (HDMI dongle)", "Connector_USB:USB_A_Connfly_DS1095"): "C19944603",
+    ("USB keyboard", "Connector_USB:USB_A_Connfly_DS1095"): "C112456",   # SOFNG USB-302-T, THT R/A (JLCPCB's final BOM)
+    ("USB 5V (HDMI dongle)", "Connector_USB:USB_A_Connfly_DS1095"): "C112456",
     ("USB-C 5V / console", "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12"): "C165948",
 }
 

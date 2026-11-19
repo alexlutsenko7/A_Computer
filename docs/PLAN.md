@@ -1483,3 +1483,45 @@ system ROM, so their ROM areas in the flash stay empty: a game is a file that th
   noise was there with the EP4CE15 + rev 1 board too. Our output is clean as far as measured; an analogue monitor is
   still to be tried.
 - Analogue monitor (user): no noise at 640x480@60. The fault is the converter's; more tests by the user to come.
+- I/O board revision 2, USB-A sockets J8 / J9: JLCPCB's final BOM of the boards built (user's `bom_x.xls`) has SOFNG
+  USB-302-T, C112456, not the CONNFLY DS1095-WNR0 (C19944603) of the 2026-11-09 entry. Put back in the schematic and
+  board (MPN field), `jlcpcb/` BOM, `tools/jlc_export.py`, `bom_xlsx.py`, `design.py`, README, 7pcb/NOTES.md (backup
+  `archive/2026-11-18_before_usb_a_c112456/`); all 33 lines of the order BOM now match bom_x.xls. Book: Table 1.3
+  corrected, new Table 2.14 with the order's quantities and prices (US$90.80 for five boards).
+- **LNES and LMega: first run on hardware** (user, 10CL025 + I/O board revision 2): "at first glance they work"; more
+  testing to come. Joysticks and the other four boards are still to be tested.
+- Also this day: `Games/ESP32_old` (the card content as it was) and `Games/ESP_32` (the same with each letter's folders
+  joined, for the 4,096-entry lists of ESP32/v2; largest folder 2,001 entries); `IP_BLOCKS.txt` (every core, library and ROM
+  with origin and licence; in `make_github.py`). Book (private): parts list with prices, placeholders removed, cover /
+  copyright / contents pages, ISBN; a web page for the two books in `Book/website/`.
+- Open: joysticks, the other four revision 2 boards, more testing of LNES and LMega; github/ and Book/ to be committed
+  by the user.
+
+### 2026-11-19: LMega, no picture on a 60 Hz-only monitor while a game uses interlace
+
+- User: the noise bands of 2026-11-18 are confirmed as the VGA to HDMI converter's fault (three analogue monitors clean).
+- User: a Mega Drive game lost the picture on a monitor that takes 60 Hz only (sound went on, F8 did nothing, only
+  Ctrl+Alt+Del helped); the same game is fine on a FreeSync monitor. Cause (shown in simulation, the game's name is
+  not known yet): in its interlace modes the VDP delays the vertical sync of every second field by half a line =
+  one output line of the line doubler, and `md_video.v` passed the sync on as it came: frames of 523 and 525 lines
+  in turn.
+- Fix in `LMega/10cl025/rtl/md_video.v` (the VDP copy is unchanged): the VDP's sync is looked at in the middle of
+  every output line (`vs_mid`) and the monitor's sync changes only where a VDP line starts: 524 lines in every frame
+  (626 at 50 Hz). The sync comes two output lines later than before. The double-resolution mode is still drawn
+  without the field offset.
+- `sim/run_video_sim.sh +define+INTERLACE` (new case in `tb_md_video.sv`; the stand-in VDP's vertical sync now
+  starts with a horizontal one, as the real VDP's): 523 / 525 before the change (FAIL), 524 / 524 after it; the
+  plain run PASS as before.
+- Build: 17,569 LEs (71 %), timing clean (setup + 1.115 ns, hold + 0.131 ns). Machine files remade
+  (`AMenu/10cl025/output_files/machines/LMega_10cl025.LMC`; L.jic unchanged in content: it holds no LMega).
+  The 10CL025 board's flash was programmed over JTAG with a one-off image (user's choice): menu + LSpectrum, L64,
+  LMega (`tmp/L_Spectrum_64_Mega_10cl025.jic`, made by mk_flash.py with another INSTALLED set; the product L.jic is
+  unchanged). The C64 ROMs must be installed from the card again.
+- Found on the way, not changed: the F8 step counter is cleared at power-up only, not at a cartridge load, and it
+  steps also in a game for America / Japan, so a Europe-only game can start in a 50 Hz mode.
+- Asked by the user: saving the state of LNES / LMega with a key. Not there (battery RAM only). LNES: possible
+  (own chips); LMega: not realistic (state hidden in the three unchanged cores).
+- `github/` rebuilt (make_github.py): md_video.v, the test, README, LMega.sof, the LMega machine file (also in
+  INSTALL/MACHINES); date-only changes of the other binaries put back.
+- Open: the user's test with that game on the 60 Hz-only monitor; the staged card set carries the old LMega
+  machine file.

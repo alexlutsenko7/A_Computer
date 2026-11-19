@@ -28941,7 +28941,7 @@
 				)
 			)
 		)
-		(property "MPN" "DS1095-WNR0"
+		(property "MPN" "USB-302-T"
 			(at 304.8 142.24 0)
 			(hide yes)
 			(show_name no)
@@ -29205,7 +29205,7 @@
 				)
 			)
 		)
-		(property "MPN" "DS1095-WNR0"
+		(property "MPN" "USB-302-T"
 			(at 342.9 106.68 0)
 			(hide yes)
 			(show_name no)

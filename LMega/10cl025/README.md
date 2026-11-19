@@ -39,6 +39,8 @@ on plane A, RAM check); result in `../../docs/PLAN.md`.
   640 x 480 at the console's own frame rate and scrolling is smooth. The output counts 800 pixel times per line
   with a fraction counter, so the 320 pixels of a line fill exactly 640 monitor pixels (sharp); in the VDP's
   256-pixel mode a pixel is 2 or 3 monitor pixels wide. No Print Screen.
+  The monitor's vertical sync changes only where a VDP line starts, so a frame has 524 lines (626 at 50 Hz) also
+  while a game uses an interlace mode, in which the VDP delays every second field's sync by half a line.
 - **50 Hz game on a 60 Hz screen (third F8 mode):** `rtl/md_fb.v` stores the VDP's pictures in the SDRAM (three
   buffers of 320 x 240 words at 0x500000) and `md_video.v` makes a standard 640 x 480 @ 60 Hz frame from the
   newest complete one. The screen side reads the SDRAM in runs of 8 words; for that LMega has its own
@@ -97,4 +99,4 @@ theirs.
 | `rtl/md_pll.v` | 53.693 MHz (the console's master clock) and 107.386 MHz |
 | `rtl/genesis/` | the VDP (unchanged copy), `SOURCE.md` |
 | `sim/run_sim.sh`, `sim/tb_md.sv`, `sim/mk_testrom.py` | smoke test (Questa): a small 68000 test cartridge |
-| `sim/run_video_sim.sh`, `sim/run_fb_sim.sh` | the video output alone, and the frame buffer mode with the SDRAM model, against a made-up VDP timing |
+| `sim/run_video_sim.sh [+define+INTERLACE]`, `sim/run_fb_sim.sh` | the video output alone (also with an interlaced VDP's delayed vertical sync), and the frame buffer mode with the SDRAM model, against a made-up VDP timing |

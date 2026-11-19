@@ -35,7 +35,7 @@ it is changed only when the choice is final.
 | Audio jack | PJ-320D-4A | Same Sky SJ-3524-SMT-TR | **does not fit** |
 | DB9 (2) | CONNFLY DS1037 | ASSMANN A-DS09A/KG-T1 | fits the holes; **must be the male A-DS, the offered A-DF is female**; 9.4 mm footprint: sits 2.2 mm further out |
 | USB-C | TYPE-C-31-M-12 | Same Sky UJ20-C-H-G-SMT-1-P16-TR | fits; shell legs about 1 mm on a 1.6 mm board: soldered in the slots |
-| USB-A | CONNFLY DS1095-WNR0 | Stewart SS-52100-001 | drop-in (only the -001 version) |
+| USB-A | SOFNG USB-302-T (the quote of 2026-11-12 named CONNFLY DS1095-WNR0, same footprint) | Stewart SS-52100-001 | drop-in (only the -001 version) |
 | Transistor | JSCJ MMBT3904 | Diotec MMBT3904 | same part |
 | Buttons | C&K PTS810 | Würth 434133025816 | same pad pattern (KiCad library footprint); Alps SKRPABE010 is a second choice, not checked |
 

@@ -15,6 +15,11 @@
 /* 525 lines) and takes the pixels from md_fb's line buffer (fb_addr -> fb_q), telling it when a frame */
 /* starts (fb_frame) and when the next picture line is on screen (fb_line). */
 /* */
+/* Vertical sync: in its interlace modes the VDP delays the sync of every second field by half a */
+/* line (one output line). The monitor must not see that (frames of 523 and 525 lines in turn: a */
+/* monitor that takes 60 Hz only shows nothing), so the VDP's sync is looked at in the middle of */
+/* every output line and the monitor's sync changes only where a VDP line starts: 524 lines always. */
+/* */
 /* Write side (mclk): the VDP's colours with ce_pix while neither blanking is active. */
 /* Read side (clk_sd = 2 x mclk, edges aligned): the line buffer, the OSD and the VGA outputs. */
 /* OSD (as the other machines'): 32 x 24 characters of 16 x 16 pixels in the middle of the */
@@ -71,6 +76,8 @@ localparam [11:0] PIX_WRAP = 12'd2620;
 localparam [11:0] LINE_LAST_FB = 12'd3411;
 localparam [11:0] PIX_WRAP_FB = 12'd2612;
 localparam [9:0] V_LAST = 10'd524;
+/* where in an output line the VDP's vertical sync is looked at: the middle */
+localparam [11:0] VS_SAMPLE = 12'd1710;
 /* the picture's lines, the vertical sync */
 localparam [9:0] V_ACT = 10'd480;
 localparam [9:0] VS_BEG = 10'd490;
@@ -128,9 +135,12 @@ end
 reg        lt_d = 1'b0, rsel = 1'b0, half = 1'b0;
 reg [11:0] oc = 12'd0, acc = 12'd0;
 reg  [9:0] px = 10'd0, y = 10'd0, ytop = 10'd0, pic_h = 10'd0, pic_cnt = 10'd0;
-/* what the buffer on screen holds; the vertical sync as seen at line starts */
-reg        r_valid = 1'b0, r_h40 = 1'b0, was_valid = 1'b0, vs_s = 1'b0, vs_line = 1'b0;
+/* what the buffer on screen holds; the vertical sync: synchronised, as seen in the middle of a */
+/* line, and the monitor's (it changes with a VDP line only) */
+reg        r_valid = 1'b0, r_h40 = 1'b0, was_valid = 1'b0, vs_s = 1'b0, vs_mid = 1'b0, vs_line = 1'b0;
 wire       line_ev = ltgl != lt_d;
+/* the sync of the output line that starts: a VDP line takes the newest look, its repeat keeps it */
+wire       vs_now  = line_ev ? vs_mid : vs_line;
 /* the line's length and who starts it: the VDP, or (frame buffer mode) the counter alone */
 wire [11:0] line_last = fb_mode ? LINE_LAST_FB : LINE_LAST;
 wire [11:0] pix_wrap  = fb_mode ? PIX_WRAP_FB : PIX_WRAP;
@@ -149,6 +159,11 @@ always @(posedge clk_sd)
 begin
     lt_d <= ltgl;
     vs_s <= vs;
+/* the VDP's vertical sync in the middle of an output line: far from both places where it changes */
+    if (oc == VS_SAMPLE)
+    begin
+        vs_mid <= vs_s;
+    end
 /* an output line: 3,420 clocks, 800 pixel times */
     if (line_start)
     begin
@@ -203,10 +218,10 @@ begin
 /* line counting from the vertical sync; where the picture starts and how high it is */
     if (line_start)
     begin
-        vs_line   <= vs_s;
+        vs_line   <= vs_now;
         was_valid <= r_valid;
 /* the sync pulse: the frame's lines are counted from here */
-        if (vs_s)
+        if (vs_now)
         begin
             y <= 10'd0;
             if (!vs_line)

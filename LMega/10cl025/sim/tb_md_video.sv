@@ -6,6 +6,9 @@
 /* Checked on the VGA side: the horizontal sync's period (3,420 clk_sd), two output lines per */
 /* VDP line, 524 lines between two vertical syncs, and that the picture's columns come out in */
 /* order, two output pixels each (the colour changes 319 times in a picture line). */
+/* With +define+INTERLACE the stand-in VDP is in an interlace mode: the vertical sync of every */
+/* second field comes half a line late, as the real VDP's. The output frames must all keep 524 */
+/* lines (a monitor that takes 60 Hz only shows nothing if their length alternates). */
 /* Prints the measurements and RESULT: PASS / FAIL; ./run_video_sim.sh */
 `timescale 1ns/1ps
 
@@ -33,8 +36,16 @@ localparam integer COLOUR_STEPS = 319;
 localparam integer DOUBLE = 2;
 localparam integer EDGE = 2;
 /* frames simulated, the frame that is measured */
-localparam integer FRAMES = 3;
+localparam integer FRAMES = 6;
 localparam integer MEASURED = 2;
+/* the vertical sync's delay in the fields that have one: half a line */
+`ifdef INTERLACE
+localparam integer VS_DELAY = 1710;
+`else
+localparam integer VS_DELAY = 0;
+`endif
+/* a number no frame has: the start of the search for the shortest frame */
+localparam integer LINES_HUGE = 9999;
 /* colour fields */
 localparam integer NIBBLE = 16;
 
@@ -57,7 +68,11 @@ wire       in_pic_y = vcnt < PIC_LINES;
 /* a pixel every eight clocks; the two syncs */
 wire       ce_pix = hcnt % PIX_CLKS == PIX_CLKS - 1;
 wire       hs = hcnt >= HS_AT && hcnt < HS_AT + HS_LEN;
-wire       vs = vcnt >= VS_AT && vcnt < VS_AT + VS_LEN;
+/* the vertical sync starts and ends with a horizontal one, as the VDP's; in every second field of */
+/* an interlace mode both come half a line later */
+wire [31:0] vpos = vcnt * LINE_CLKS + hcnt;
+wire [31:0] vs_beg = VS_AT * LINE_CLKS + HS_AT + (frame % DOUBLE == 0 ? VS_DELAY : 0);
+wire       vs = vpos >= vs_beg && vpos < vs_beg + VS_LEN * LINE_CLKS;
 /* the pixel's column */
 wire [8:0] col = hcnt / PIX_CLKS;
 always @(posedge mclk)
@@ -99,6 +114,8 @@ md_video #(.FONT_HEX("../../../AMenu/ep4_ce15/rtl/menu_font.hex")) u_video (
 /* measurements on the VGA side */
 integer t = 0, hs_last = 0, hs_period = 0, hs_bad = 0, lines = 0, lines_frame = 0, steps = 0, steps_max = 0;
 integer lit_lines = 0, lit_frame = 0, lit_now = 0;
+/* the shortest and the longest frame seen, the frames seen */
+integer lines_min = LINES_HUGE, lines_max = 0, frames_seen = 0;
 reg        hs_d = 1, vs_d = 1;
 /* the colour seen last */
 reg [7:0]  rg_d = 0;
@@ -152,6 +169,21 @@ begin
     begin
         lines_frame <= lines;
         lit_frame   <= lit_lines;
+/* the first count is not a whole frame */
+        frames_seen <= frames_seen + 1;
+        if (frames_seen != 0)
+        begin
+/* the shortest frame */
+            if (lines < lines_min)
+            begin
+                lines_min <= lines;
+            end
+/* the longest frame */
+            if (lines > lines_max)
+            begin
+                lines_max <= lines;
+            end
+        end
 /* the next frame's counts */
         lines       <= 0;
         lit_lines   <= 0;
@@ -160,14 +192,17 @@ end
 
 initial
 begin
-/* three frames, then the verdict */
+/* some frames, then the verdict */
     wait (frame == FRAMES);
     $display("line period %0d clk_sd (wanted %0d), wrong periods in a frame %0d", hs_period, OUT_LINE_CLKS, hs_bad);
     $display("lines per frame %0d (wanted %0d), picture lines %0d (wanted %0d)", lines_frame, OUT_LINES, lit_frame,
              DOUBLE * PIC_LINES);
+/* every frame must have the same length */
+    $display("shortest / longest frame %0d / %0d lines (wanted %0d / %0d)", lines_min, lines_max, OUT_LINES, OUT_LINES);
 /* the picture's width in colour steps */
     $display("colour changes in a picture line %0d (wanted %0d or one more for the edge)", steps_max, COLOUR_STEPS);
     $display("RESULT: %s", (hs_period == OUT_LINE_CLKS && hs_bad == 0 && lines_frame == OUT_LINES &&
+                            lines_min == OUT_LINES && lines_max == OUT_LINES &&
                             lit_frame >= DOUBLE * PIC_LINES - EDGE && lit_frame <= DOUBLE * PIC_LINES &&
                             steps_max >= COLOUR_STEPS && steps_max <= COLOUR_STEPS + EDGE) ? "PASS" : "FAIL");
     $finish;

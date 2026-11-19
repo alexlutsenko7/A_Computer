@@ -159,12 +159,12 @@ add("C21", "Device:C_Small", "0.1u", FP_C, {"1": "+5V", "2": "GND"}, grp="usba")
 add("U6", "Power_Protection:USBLC6-2SC6", "USBLC6-2SC6", FP_SOT236,
     {"1": "KB1_DP", "6": "KB1_DP", "3": "KB1_DM", "4": "KB1_DM", "2": "GND", "5": "+5V"}, mpn="USBLC6-2SC6")
 add("J8", "Connector:USB_A", "USB keyboard", FP_USBA,
-    {"1": "+5V", "2": "KB1_DM", "3": "KB1_DP", "4": "GND", "SH": "GND"}, mpn="DS1095-WNR0")
+    {"1": "+5V", "2": "KB1_DM", "3": "KB1_DP", "4": "GND", "SH": "GND"}, mpn="USB-302-T")
 # USB 2 (J9): 5 V only, beside the VGA socket, for a VGA2HDMI dongle's power lead (data pins open)
 add("C20", "Device:C_Small", "100u", FP_C100, {"1": "+5V", "2": "GND"}, grp="usba")
 add("C22", "Device:C_Small", "0.1u", FP_C, {"1": "+5V", "2": "GND"}, grp="usba")
 add("J9", "Connector:USB_A", "USB 5V (HDMI dongle)", FP_USBA,
-    {"1": "+5V", "2": None, "3": None, "4": "GND", "SH": "GND"}, mpn="DS1095-WNR0")
+    {"1": "+5V", "2": None, "3": None, "4": "GND", "SH": "GND"}, mpn="USB-302-T")
 
 # ---------------- power: +5V -> LDO -> +3V3 ----------------
 add("U1", "Regulator_Linear:AMS1117-3.3", "LDL1117S33R", "Package_TO_SOT_SMD:SOT-223-3_TabPin2",

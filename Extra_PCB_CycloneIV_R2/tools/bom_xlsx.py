@@ -40,7 +40,7 @@ PARTS = {
     "C75750": ("D-sub 9 plug (pins), right angle, through hole", "CONNFLY", "DS1037 series", "THT"),
     "C165948": ("USB Type-C receptacle, 16 pin, SMD", "Korean Hroparts", "TYPE-C-31-M-12", "SMD"),
     "C585350": ("microSD card socket, push-push", "Molex", "104031-0811", "SMD"),
-    "C19944603": ("USB Type-A receptacle, right angle, through hole", "CONNFLY", "DS1095-WNR0", "THT"),
+    "C112456": ("USB Type-A receptacle, right angle, through hole", "SOFNG", "USB-302-T", "THT"),
     "C20526": ("NPN transistor SOT-23", "JSCJ (or any)", "MMBT3904", "SMD"),
     "C23199": ("Resistor 523 R 1 % 0603", ANY, "", "SMD"),
     "C22832": ("Resistor 1.05 k 1 % 0603", ANY, "", "SMD"),
