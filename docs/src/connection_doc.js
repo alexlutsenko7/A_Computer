@@ -51,22 +51,23 @@ const PINH = ["I/O board J1", "Core board U8", "FPGA pin", "Signal", "Dir", "Not
 
 const C = [];
 C.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: "LSpectrum — connections", bold: true, size: 44, font: FONT, color: "1F3864" })] }));
-C.push(new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "How the QMTECH Cyclone IV core board, the Extra_PCB_CycloneIV I/O board, the ESP32 system controller and the microSD card are wired (state of 23 October 2026)", size: 21, font: FONT, color: "595959" })] }));
+C.push(new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "How the QMTECH core board (Cyclone IV EP4CE15 or Cyclone 10 LP 10CL025), the I/O board (revision 1 or 2), the ESP32 system controller and the microSD card are wired (state of 20 November 2026)", size: 21, font: FONT, color: "595959" })] }));
 
 C.push(h1("1. Overview"));
 C.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new ImageRun({ type: "png", data: img, transformation: { width: 624, height: 340 } })] }));
-C.push(caption("Figure 1. The core board, the I/O board and what plugs into the I/O board."));
+C.push(caption("Figure 1. The core board, the I/O board (revision 1 shown) and what plugs into the I/O board."));
 C.push(table([2400, 2600, 4360], ["Part", "Connected to", "Carries"], [
-  ["Extra_PCB_CycloneIV I/O board", "core board U8, by 64 short wires from its J1, each pin pair swapped", "VGA, keyboard, audio, two joysticks, the ESP32's link, I2S and UART, 5 V for the I/O board"],
-  ["ESP32-WROOM-32 DevKit", "sockets U2 on the I/O board", "SPI link for the tape loader, sound as I2S, UART for the F3 Bluetooth menu, the microSD card"],
+  ["I/O board: revision 1 (Extra_PCB_CycloneIV) or revision 2 (Extra_PCB_CycloneIV_R2)", "core board U8, by 64 short wires from its J1, each pin pair swapped; the same J1 pinout on both revisions", "VGA, keyboard, audio, two joysticks, the ESP32's link, I2S and UART, 5 V"],
+  ["ESP32", "revision 1: an ESP32-WROOM-32 DevKit in the sockets U2; revision 2: an ESP32-WROVER-E module (U2) soldered on the board", "SPI link for the tape loader, sound as I2S, UART for the F3 Bluetooth menu, the microSD card"],
+  ["USB keyboard", "revision 1: a USB-HID to UART module on J5; revision 2: the USB-A socket J8, read by the CH9350L (U4) on the board", "keyboard reports as a UART, 115,200 baud"],
   ["microSD card", "socket J7 on the I/O board, wired to the ESP32", "SD card (SPI) for the tape loader"],
   ["Bluetooth headphones / speaker", "the ESP32, by radio (A2DP)", "the Spectrum's sound"],
 ]));
 C.push(gap());
-C.push(p("All FPGA pins are 3.3 V (LVTTL) and **not 5 V tolerant**. Every signal between the boards is 3.3 V: the I/O board makes its own 3.3 V for its pull-ups and the SD card, the keyboard module's UART is 3.3 V, and the ESP32 is a 3.3 V part."));
+C.push(p("All FPGA pins are 3.3 V (LVTTL) and **not 5 V tolerant**. Every signal between the boards is 3.3 V: the I/O board makes its own 3.3 V for its pull-ups and the SD card, the keyboard UART (module or CH9350L) is 3.3 V, and the ESP32 is a 3.3 V part."));
 
 C.push(h1("2. The core board headers"));
-C.push(p("U7 is the left header (not used) and U8 the right one (32 x 2 pins each). On both: pins 1/2 ground, 3/4 3.3 V, 61/62 ground, 63/64 VIN (5 V). The numbering was read from the QMTECH schematic: **check 1/2, 3/4, 61/62 and 63/64 with a meter** before connecting anything new. Full header map: docs/BOARD_PINOUT.md."));
+C.push(p("This section is the EP4CE15 board; the 10CL025 board is in section 7. U7 is the left header (not used) and U8 the right one (32 x 2 pins each). On both: pins 1/2 ground, 3/4 3.3 V, 61/62 ground, 63/64 VIN (5 V). The numbering was read from the QMTECH schematic: **check 1/2, 3/4, 61/62 and 63/64 with a meter** before connecting anything new. Full header map: docs/BOARD_PINOUT.md."));
 C.push(table([2400, 6960], ["On-board", "Pin / use"], [
   ["50 MHz oscillator", "T2"],
   ["KEY0 (button farther from the long edge)", "W13: reset of everything"],
@@ -76,25 +77,25 @@ C.push(table([2400, 6960], ["On-board", "Pin / use"], [
 ]));
 
 C.push(h1("3. I/O board J1 to core board U8"));
-C.push(p("The I/O board sits beside the core board, its J1 holes directly opposite U8. The two are joined by 64 short wires with **each pin pair swapped**: J1 pin 2k-1 goes to U8 pin 2k, and J1 pin 2k to U8 pin 2k-1 (J1.1 to U8.2, J1.2 to U8.1, and so on). Each power pair carries the same net on both pins (ground, 3.3 V, ground, 5 V), so power stays correct; the signals land on the FPGA pins below, which is what the LSpectrum pin assignment expects."));
+C.push(p("The I/O board (either revision) sits beside the core board, its J1 holes directly opposite U8. The two are joined by 64 short wires with **each pin pair swapped**: J1 pin 2k-1 goes to U8 pin 2k, and J1 pin 2k to U8 pin 2k-1 (J1.1 to U8.2, J1.2 to U8.1, and so on). Each power pair carries the same net on both pins (ground, 3.3 V, ground, 5 V), so power stays correct; the signals land on the FPGA pins below, which is what the pin assignments expect. The FPGA pins in the table are the EP4CE15's; the 10CL025's are in `docs/BOARD_PINOUT.md`."));
 C.push(table(PINW, PINH, [
   ["1", "2", "-", "GND", "", "ground"],
   ["2", "1", "-", "GND", "", ""],
   ["3, 4", "4, 3", "-", "(3.3 V)", "", "not connected on the I/O board"],
   ["5, 6", "6, 5", "AB11, AA11", "-", "", "not connected (clock-only FPGA inputs)"],
-  ["7", "8", "AB13", "ESP_SCK", "in", "ESP32 D14, link clock 8 MHz"],
-  ["8", "7", "AA13", "ESP_MOSI", "in", "ESP32 D13"],
-  ["9", "10", "AB14", "ESP_CS_N", "in", "ESP32 D33"],
-  ["10", "9", "AA14", "ESP_MISO", "out", "ESP32 D35"],
-  ["11", "12", "AB15", "ESP_IRQ", "out", "ESP32 D34"],
-  ["12", "11", "AA15", "BT_BCLK", "in", "ESP32 D26, I2S"],
-  ["13", "14", "AB16", "BT_LRCK", "in", "ESP32 D25, I2S"],
-  ["14", "13", "AA16", "BT_DATA", "out", "ESP32 D22, I2S"],
-  ["15", "16", "AB17", "BT_TX", "out", "ESP32 RX2 (GPIO16), F3 menu"],
-  ["16", "15", "AA17", "BT_RX", "in", "ESP32 TX2 (GPIO17)"],
-  ["17", "18", "AB18", "KB_IN", "in", "keyboard module J5.3"],
+  ["7", "8", "AB13", "ESP_SCK", "in", "ESP32 GPIO14, link clock 8 MHz"],
+  ["8", "7", "AA13", "ESP_MOSI", "in", "ESP32 GPIO13"],
+  ["9", "10", "AB14", "ESP_CS_N", "in", "ESP32 GPIO33"],
+  ["10", "9", "AA14", "ESP_MISO", "out", "ESP32 GPIO35"],
+  ["11", "12", "AB15", "ESP_IRQ", "out", "ESP32 GPIO34"],
+  ["12", "11", "AA15", "BT_BCLK", "in", "ESP32 GPIO26, I2S"],
+  ["13", "14", "AB16", "BT_LRCK", "in", "ESP32 GPIO25, I2S"],
+  ["14", "13", "AA16", "BT_DATA", "out", "ESP32 GPIO22, I2S"],
+  ["15", "16", "AB17", "BT_TX", "out", "ESP32 RX2, F3 menu: GPIO16 (revision 1), GPIO27 (revision 2)"],
+  ["16", "15", "AA17", "BT_RX", "in", "ESP32 TX2: GPIO17 (revision 1), GPIO21 (revision 2)"],
+  ["17", "18", "AB18", "KB_IN", "in", "keyboard module J5.3 (revision 1); CH9350L TXD (revision 2)"],
   ["18", "17", "AA18", "AUDIO_AY", "out", "AY, sigma-delta; RC filter on the board"],
-  ["19", "20", "AB19", "KB_OUT", "in", "keyboard module J5.2"],
+  ["19", "20", "AB19", "KB_OUT", "in", "keyboard module J5.2 (revision 1); CH9350L RXD (revision 2)"],
   ["20", "19", "AA19", "AUDIO_BEEP", "out", "beeper, port FE bit 4"],
   ["21", "22", "AB20", "JOY1_UP_N", "in", "J4 pin 1; 3.3 kΩ pull-ups on the board"],
   ["22", "21", "AA20", "JOY1_DOWN_N", "in", "J4 pin 2"],
@@ -114,13 +115,14 @@ C.push(table(PINW, PINH, [
   ["57, 59, 58, 60", "58, 60, 57, 59", "N19, M19, N20, M20", "VGA_B[3:0]", "out", "same DAC"],
   ["61", "62", "-", "GND", "", ""],
   ["62", "61", "-", "GND", "", ""],
-  ["63", "64", "-", "VIN 5 V", "power", "feeds the whole I/O board"],
+  ["63", "64", "-", "VIN 5 V", "power", "revision 1: the core board feeds the I/O board; revision 2: the I/O board's USB-C feeds the core board"],
   ["64", "63", "-", "VIN 5 V", "power", ""]
 ]));
 C.push(gap());
 C.push(p("The 3.3 V pins (J1.3/4) are not used by the I/O board: it makes its own 3.3 V from the 5 V. U8.5 and U8.6 are clock-only inputs of the FPGA: never use them for anything else."));
 
 C.push(h1("4. Connectors on the I/O board"));
+C.push(p("**Revision 1** (Extra_PCB_CycloneIV):"));
 C.push(table([2200, 7160], ["Connector", "Use"], [
   ["J2 VGA (DB15 HD)", "4 bits per colour (binary-weighted resistor DAC into the monitor's 75 Ω, 0.7 V full scale). LSpectrum outputs ZX normal colours as level 14 of 15 and bright as 15."],
   ["J4, J6 joysticks (DB9 male)", "Atari/Kempston pinout: 1 up, 2 down, 3 left, 4 right, 6 fire, 8 ground. Mode chosen with F4: both Kempston (port 1F, default), J4 Kempston + J6 Cursor, or Interface 2 (J4 Sinclair 1, J6 Sinclair 2)."],
@@ -130,37 +132,48 @@ C.push(table([2200, 7160], ["Connector", "Use"], [
   ["U2 ESP32 sockets", "two 1x15 female sockets for the 30-pin ESP32 DevKit."],
   ["U1 K7803", "5 V to 3.3 V switching module for the pull-ups and the SD card."],
 ]));
+C.push(gap());
+C.push(p("**Revision 2** (Extra_PCB_CycloneIV_R2), 4 layers, everything on the board:"));
+C.push(table([2200, 7160], ["Connector / part", "Use"], [
+  ["J2 VGA, J4 / J6 joysticks, J3 audio, J7 microSD", "as on revision 1 (the same circuits)."],
+  ["J8 USB-A (keyboard)", "the USB keyboard. The CH9350L (U4) reads it and sends the reports as a UART, 115,200 baud at 3.3 V: TXD to KB_IN, RXD from KB_OUT. ESD protection (USBLC6-2SC6) on the data lines."],
+  ["J9 USB-A (power)", "5 V only, data pins open: power for a VGA to HDMI converter."],
+  ["J5 USB-C", "the 5 V input of the whole system (5.1 kΩ on CC1 / CC2), and through the CP2102N (U3) the ESP32's console and programming port, with automatic reset (DTR / RTS)."],
+  ["U2 ESP32-WROVER-E", "the module ESP32-WROVER-E-N16R8 (16 MB flash, 8 MB PSRAM), its antenna at the board edge; EN and BOOT buttons beside it."],
+  ["U1 LDL1117S33R", "5 V to 3.3 V regulator for the ESP32, the CP2102N, the pull-ups and the SD card."],
+]));
 
 C.push(h1("5. ESP32 system controller and microSD card"));
-C.push(p("A 30-pin ESP32-WROOM-32 DevKit (CP2102, USB-C) with the sketch ESP32/v2/v2.ino, plugged into the I/O board. It owns the microSD card, runs the tape loader and the Bluetooth audio, and talks to the FPGA over an SPI link with an interrupt line, an I2S sound input and a UART. The ESP32 drives the link and I2S clocks. ESP32 pins are given by their DOIT 30-pin board labels."));
+C.push(p("Revision 1: a 30-pin ESP32-WROOM-32 DevKit (CP2102, USB-C) with the sketch ESP32/v1/v1.ino, plugged into the I/O board. Revision 2: the ESP32-WROVER-E module on the board with the sketch ESP32/v2/v2.ino. The ESP32 owns the microSD card, runs the tape loader and the Bluetooth audio, and talks to the FPGA over an SPI link with an interrupt line, an I2S sound input and a UART. The ESP32 drives the link and I2S clocks. Both revisions use the same GPIOs, except for the UART; on the DevKit the pins are labelled D with the GPIO number (D35 = GPIO35)."));
 const ESPW = [1500, 1500, 1300, 1000, 1000, 3060];
-C.push(table(ESPW, ["ESP32 board pin", "Signal", "Dir", "J1 / U8", "FPGA pin", "Notes"], [
-  ["D35", "ESP_MISO", "FPGA → ESP32", "10 / 9", "AA14", "link data to the ESP32; D35 is input-only"],
-  ["D34", "ESP_IRQ", "FPGA → ESP32", "11 / 12", "AB15", "interrupt, active high; D34 is input-only"],
-  ["D14", "ESP_SCK", "ESP32 → FPGA", "7 / 8", "AB13", "link clock, 8 MHz; FPGA pull-up"],
-  ["D13", "ESP_MOSI", "ESP32 → FPGA", "8 / 7", "AA13", "link data to the FPGA; FPGA pull-up"],
-  ["D33", "ESP_CS_N", "ESP32 → FPGA", "9 / 10", "AB14", "link select; FPGA pull-up (idle while the ESP32 boots)"],
-  ["D26", "BT_BCLK", "ESP32 → FPGA", "12 / 11", "AA15", "I2S bit clock, 1.4112 MHz; FPGA pull-up"],
-  ["D25", "BT_LRCK", "ESP32 → FPGA", "13 / 14", "AB16", "I2S word select, 44.1 kHz; FPGA pull-up"],
-  ["D22", "BT_DATA", "FPGA → ESP32", "14 / 13", "AA16", "sound, 16-bit; ESP32 pull-down"],
-  ["RX2 (GPIO16)", "BT_TX", "FPGA → ESP32", "15 / 16", "AB17", "F3 menu commands, 115,200 baud"],
-  ["TX2 (GPIO17)", "BT_RX", "ESP32 → FPGA", "16 / 15", "AA17", "answers and events; FPGA pull-up"],
-  ["VIN, GND", "5 V, GND", "", "63, 64 / 1, 2", "-", "power from the core board through J1"],
+C.push(table(ESPW, ["ESP32 GPIO", "Signal", "Dir", "J1 / U8", "FPGA pin", "Notes"], [
+  ["35", "ESP_MISO", "FPGA → ESP32", "10 / 9", "AA14", "link data to the ESP32; GPIO35 is input-only"],
+  ["34", "ESP_IRQ", "FPGA → ESP32", "11 / 12", "AB15", "interrupt, active high; GPIO34 is input-only"],
+  ["14", "ESP_SCK", "ESP32 → FPGA", "7 / 8", "AB13", "link clock, 8 MHz; FPGA pull-up"],
+  ["13", "ESP_MOSI", "ESP32 → FPGA", "8 / 7", "AA13", "link data to the FPGA; FPGA pull-up"],
+  ["33", "ESP_CS_N", "ESP32 → FPGA", "9 / 10", "AB14", "link select; FPGA pull-up (idle while the ESP32 boots)"],
+  ["26", "BT_BCLK", "ESP32 → FPGA", "12 / 11", "AA15", "I2S bit clock, 1.4112 MHz; FPGA pull-up"],
+  ["25", "BT_LRCK", "ESP32 → FPGA", "13 / 14", "AB16", "I2S word select, 44.1 kHz; FPGA pull-up"],
+  ["22", "BT_DATA", "FPGA → ESP32", "14 / 13", "AA16", "sound, 16-bit; ESP32 pull-down"],
+  ["RX2: 16 (revision 1), 27 (revision 2)", "BT_TX", "FPGA → ESP32", "15 / 16", "AB17", "F3 menu commands, 115,200 baud"],
+  ["TX2: 17 (revision 1), 21 (revision 2)", "BT_RX", "ESP32 → FPGA", "16 / 15", "AA17", "answers and events; FPGA pull-up"],
+  ["Power", "5 V, GND", "", "63, 64 / 1, 2", "-", "revision 1: 5 V into the DevKit's VIN, from the core board through J1; revision 2: 3.3 V from the board's regulator"],
 ], "FDF0E2"));
 C.push(gap());
-C.push(table([2000, 2400, 1700, 3260], ["ESP32 board pin", "microSD (J7)", "Signal", "Notes"], [
-  ["D18", "CLK", "SD SCK", "ESP32 VSPI, 20 MHz"],
-  ["D19", "DAT0", "SD MISO", "10 kΩ pull-up on the board"],
-  ["D23", "CMD", "SD MOSI", "10 kΩ pull-up"],
-  ["D5", "DAT3", "SD CS", "10 kΩ pull-up"],
+C.push(table([2000, 2400, 1700, 3260], ["ESP32 GPIO", "microSD (J7)", "Signal", "Notes"], [
+  ["18", "CLK", "SD SCK", "ESP32 VSPI, 20 MHz"],
+  ["19", "DAT0", "SD MISO", "10 kΩ pull-up on the board"],
+  ["23", "CMD", "SD MOSI", "10 kΩ pull-up"],
+  ["5", "DAT3", "SD CS", "10 kΩ pull-up"],
 ], "E2EFDA"));
 C.push(gap());
 C.push(b("**Direction check:** the FPGA's TX goes to the ESP32's RX2, and the ESP32's TX2 to the FPGA's RX; I2S data and link MISO go from the FPGA to the ESP32."));
-C.push(b("**ESP32 unplugged** is safe: the FPGA's pull-ups keep the lines quiet; the Spectrum boots and runs without the ESP32 (no SD card, no Bluetooth)."));
-C.push(b("**USB on the ESP32** is for programming and debugging (a terminal at 115,200 baud shows the loader's messages and takes the Bluetooth commands). Pairing is done from LSpectrum: **F3** opens the Bluetooth menu."));
-C.push(b("Pins avoided on the ESP32 on purpose: GPIO12 (the FPGA's pull-ups would select 1.8 V flash at boot), GPIO2 and GPIO15 (boot strapping), GPIO6-11 (flash)."));
+C.push(b("**Without the ESP32** (revision 1: DevKit unplugged) the FPGA's pull-ups keep the lines quiet; the Spectrum boots and runs without the ESP32 (no SD card, no Bluetooth)."));
+C.push(b("**The ESP32's USB port** (the DevKit's own socket on revision 1, the USB-C socket J5 on revision 2) is for programming and debugging (a terminal at 115,200 baud shows the loader's messages and takes the Bluetooth commands). Pairing is done from LSpectrum: **F3** opens the Bluetooth menu."));
+C.push(b("Pins avoided on the ESP32 on purpose: GPIO12 (the FPGA's pull-ups would select 1.8 V flash at boot), GPIO2 and GPIO15 (boot strapping), GPIO6-11 (flash); on revision 2 also GPIO16 and GPIO17, which the WROVER-E module uses for its PSRAM."));
 
 C.push(h1("6. Power"));
+C.push(p("**Revision 1:**"));
 C.push(table([2600, 6760], ["What", "From"], [
   ["Core board", "its own power input (USB or 5 V); everything else is fed from it"],
   ["I/O board", "5 V (VIN) from U8.63/64 through J1.64/63; U1 (K7803) makes its 3.3 V"],
@@ -168,9 +181,19 @@ C.push(table([2600, 6760], ["What", "From"], [
   ["ESP32 DevKit", "5 V into VIN from the I/O board"],
   ["microSD card", "3.3 V from U1 on the I/O board"],
 ]));
+C.push(gap());
+C.push(p("**Revision 2:**"));
+C.push(table([2600, 6760], ["What", "From"], [
+  ["Everything", "the USB-C socket J5 on the I/O board: a 5 V supply of at least 1.5 A (a charger or a self-powered hub)"],
+  ["Core board", "5 V from the I/O board through J1.63/64 to U8.64/63 (VIN)"],
+  ["ESP32, CP2102N, microSD card, pull-ups", "3.3 V from U1 (LDL1117S33R) on the I/O board"],
+  ["CH9350L, the keyboard on J8, J9", "5 V"],
+]));
+C.push(gap());
+C.push(p("On revision 2, power the system from the USB-C socket **or** from the core board's own input, never from both: the two 5 V inputs are joined without protection."));
 
 C.push(h1("7. The Cyclone 10 LP core board (10CL025)"));
-C.push(p("QMTECH's 10CL025YU256 core board has the same size and the same two headers at the same places; the I/O board is wired to its U8 in the same way, each pin pair swapped. The power pins are the same (1/2 and 61/62 ground, 3/4 3.3 V, 63/64 VIN); pins 5/6 are ground on this board. Every signal keeps its J1 and U8 pin; only the FPGA ball behind the pin differs (full table: `docs/BOARD_PINOUT.md`). **Not tried on hardware yet (11 November 2026).**"));
+C.push(p("QMTECH's 10CL025YU256 core board has the same size and the same two headers at the same places; the I/O board is wired to its U8 in the same way, each pin pair swapped. The power pins are the same (1/2 and 61/62 ground, 3/4 3.3 V, 63/64 VIN); pins 5/6 are ground on this board. Every signal keeps its J1 and U8 pin; only the FPGA ball behind the pin differs (full table: `docs/BOARD_PINOUT.md`). It runs on hardware with the I/O board revision 2 (since 18 November 2026)."));
 C.push(table([2400, 6960], ["On-board", "Pin / use"], [
   ["50 MHz oscillator", "E2"],
   ["KEY0 (SW1)", "F3: reset of everything"],
@@ -186,8 +209,8 @@ C.push(b("The flash must hold the image built for this board (`AMenu/10cl025/out
 C.push(h1("8. Before switching on"));
 C.push(n("Meter check of the header power pins (section 2) after any change in the wiring."));
 C.push(n("Continuity check of the swapped wiring: J1.1 to U8.2 and J1.2 to U8.1 (ground), J1.63 to U8.64 and J1.64 to U8.63 (5 V), and no short between 5 V and ground."));
-C.push(n("The configuration flash holds the LSpectrum image built for this I/O board."));
-C.push(n("ESP32 and keyboard module plugged in the right way round (pin 1 / silkscreen)."));
+C.push(n("The configuration flash holds the image built for this core board (`L.jic`: the machine menu and the machines, LSpectrum among them)."));
+C.push(n("Revision 1: ESP32 and keyboard module plugged in the right way round (pin 1 / silkscreen). Revision 2: only one 5 V source connected."));
 C.push(n("The wires are short and the two boards fixed to each other, so the wires do not lever on U8."));
 
 const doc = new Document({

@@ -27,6 +27,8 @@
 /* flash stream, restart, the cut-off jump */
 #include "flash.h"
 #include "reset.h"
+#include "next.h"
+#include "pccard.h"
 #include <setjmp.h>
 
 /* the link's pins and speed */
@@ -64,6 +66,8 @@
 #define ID_NES 0x4E450001u
 /* LMega, the Mega Drive ("MD") */
 #define ID_MD 0x4D440001u
+/* "NX": LNext (ZX Spectrum Next) */
+#define ID_NX 0x4E580001u
 /* the machine menu, without and with the flash stream, and with the machine positions */
 #define ID_MN 0x4D4E0001u
 #define ID_MN2 0x4D4E0002u
@@ -239,6 +243,7 @@ int32_t g_i32_machine_atari;
 /* the cartridge machines */
 int32_t g_i32_machine_nes;
 int32_t g_i32_machine_md;
+int32_t g_i32_machine_next;
 int32_t g_i32_machine_menu;
 /* hw.h: 1 = the menu has the three machine positions (link version 3) */
 int32_t g_i32_menu_positions;
@@ -961,6 +966,36 @@ int32_t sd_ready(void)
     return i32_result;
 }
 
+/* the card's size in 512-byte sectors, 0 without a card; the card is started if it was not */
+uint32_t sd_sectors(void)
+{
+/* local variables */
+    uint32_t ui32_sectors;
+
+/* start values */
+    ui32_sectors = 0;
+#ifdef NEXT_SERIAL_CARD
+/* test option: LNext's card is a disk image on the PC (pccard.h) */
+    if (g_i32_machine_next != 0)
+    {
+        ui32_sectors = pccard_sectors();
+    }
+    else
+#endif
+    {
+        if (!g_b_sd_ok)
+        {
+            sd_init();
+        }
+/* a card that answers */
+        if (g_b_sd_ok)
+        {
+            ui32_sectors = (uint32_t)sdcard_num_sectors(g_ui8_sd_pdrv);
+        }
+    }
+    return ui32_sectors;
+}
+
 /* read one 512-byte sector: 0 = ok; a failed read means the card is gone */
 int32_t sd_read(uint32_t ui32_lba, uint8_t *pui8_buf)
 {
@@ -969,6 +1004,14 @@ int32_t sd_read(uint32_t ui32_lba, uint8_t *pui8_buf)
 
 /* start values */
     i32_result = ERROR_RESULT;
+#ifdef NEXT_SERIAL_CARD
+/* test option: LNext's card is a disk image on the PC (pccard.h) */
+    if (g_i32_machine_next != 0)
+    {
+        i32_result = pccard_read(ui32_lba, pui8_buf);
+    }
+    else
+#endif
     if (g_b_sd_ok)
     {
         if (sd_read_raw(g_ui8_sd_pdrv, pui8_buf, ui32_lba))
@@ -992,6 +1035,14 @@ int32_t sd_write(uint32_t ui32_lba, const uint8_t *pui8_buf)
 
 /* start values */
     i32_result = ERROR_RESULT;
+#ifdef NEXT_SERIAL_CARD
+/* test option: LNext's card is a disk image on the PC (pccard.h) */
+    if (g_i32_machine_next != 0)
+    {
+        i32_result = pccard_write(ui32_lba, pui8_buf);
+    }
+    else
+#endif
     if (g_b_sd_ok)
     {
         if (sd_write_raw(g_ui8_sd_pdrv, const_cast<uint8_t *>(pui8_buf), ui32_lba))
@@ -1077,11 +1128,12 @@ static bool probe(void)
     ui32_id = link_rd(R_ID);
     b_found = false;
     if ((ui32_id != ID_ZX) && (ui32_id != ID_C64) && (ui32_id != ID_AT) && (ui32_id != ID_MN) && (ui32_id != ID_MN2) &&
-        (ui32_id != ID_MN3) && (ui32_id != ID_NES) && (ui32_id != ID_MD))
+        (ui32_id != ID_MN3) && (ui32_id != ID_NES) && (ui32_id != ID_MD) && (ui32_id != ID_NX))
     {
 /* nearly an ID: say so, it is a wiring or timing problem */
         if (near_id(ui32_id, ID_ZX) || near_id(ui32_id, ID_C64) || near_id(ui32_id, ID_AT) || near_id(ui32_id, ID_MN) ||
-            near_id(ui32_id, ID_MN2) || near_id(ui32_id, ID_MN3) || near_id(ui32_id, ID_NES) || near_id(ui32_id, ID_MD))
+            near_id(ui32_id, ID_MN2) || near_id(ui32_id, ID_MN3) || near_id(ui32_id, ID_NES) || near_id(ui32_id, ID_MD) ||
+            near_id(ui32_id, ID_NX))
         {
             Serial.printf("loader: core id %08lx read with bit errors (link timing?)\r\n", (unsigned long)ui32_id);
         }
@@ -1097,6 +1149,7 @@ static bool probe(void)
 /* the cartridge machines */
         g_i32_machine_nes = 0;
         g_i32_machine_md = 0;
+        g_i32_machine_next = 0;
         g_i32_machine_menu = 0;
 /* the C64 */
         if (ui32_id == ID_C64)
@@ -1117,6 +1170,11 @@ static bool probe(void)
         if (ui32_id == ID_MD)
         {
             g_i32_machine_md = YES;
+        }
+/* the Spectrum Next */
+        if (ui32_id == ID_NX)
+        {
+            g_i32_machine_next = YES;
         }
 /* the machine menu, any version; only version 3 has the machine positions */
         g_i32_menu_positions = 0;
@@ -1169,6 +1227,11 @@ static const char *machine_name(void)
     {
         pc_name = "LMega";
     }
+/* the Spectrum Next */
+    else if (g_i32_machine_next != 0)
+    {
+        pc_name = "LNext";
+    }
     else
     {
 /* the Spectrum */
@@ -1193,6 +1256,11 @@ static void start_if_found(void)
             if (g_i32_machine_menu != 0)
             {
                 pc_what = "flash update ready (LUPDATE.BIN)";
+            }
+/* LNext has no file list: the card's sectors go to the machine */
+            if (g_i32_machine_next != 0)
+            {
+                pc_what = "the SD card is the machine's";
             }
 /* said on the console, then the loader's task starts */
             Serial.printf("loader: %s found, %s, free heap %u bytes, largest block %u\r\n", machine_name(), pc_what,
@@ -1275,7 +1343,13 @@ static void loader_report(Print &r_out)
 /* more to report */
     bool b_more;
 
+/* LNext: sectors moved */
+    uint32_t ui32_next_rd;
+    uint32_t ui32_next_wr;
+
 /* start values */
+    ui32_next_rd = 0;
+    ui32_next_wr = 0;
     s_task = g_s_loader_th;
     e_state = eInvalid;
     pui32_stack = nullptr;
@@ -1290,6 +1364,13 @@ static void loader_report(Print &r_out)
 /* the link */
     r_out.printf("loader: running=%d core %08lx frames=%lu last frame %lu ms ago\r\n", (int)g_b_running,
                  (unsigned long)g_ui32_core_id, (unsigned long)g_ui32_frames, (unsigned long)(millis() - g_ui32_frame_ms));
+/* LNext: the sectors moved */
+    if (g_i32_machine_next != 0)
+    {
+        next_counts(&ui32_next_rd, &ui32_next_wr);
+        r_out.printf("loader: LNext sectors read %lu, written %lu, files in %s\r\n", (unsigned long)ui32_next_rd,
+                     (unsigned long)ui32_next_wr, (next_in_folder() != 0) ? "the folder ZXNEXT" : "the card's root");
+    }
     if (b_more)
     {
         e_state = eTaskGetState(s_task);

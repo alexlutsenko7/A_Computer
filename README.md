@@ -49,6 +49,11 @@ yourself): [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md).**
   Drive / Genesis from open cores (fx68k, jt12, jt89, the MiSTer Genesis video processor, T80) with our memory, video
   output (line doubler) and bus. Games (`.md`, `.gen`, `.bin`, `.smd`, up to 4 MB) load from the SD card. F8 steps through
   the video modes of a game made for 50 Hz.
+- **LNext** (`LNext/10cl025/README.md`, Cyclone 10 LP 10CL025 board only; **new: first run on hardware, not yet installed
+  from the menu**): the ZX Spectrum Next. The open Spectrum Next core in its MiSTer port (`ZXNEXT/`, unchanged) with our
+  memories for this FPGA, SDRAM controller, video output (line doubler) and keyboard. It starts from the SD card as a
+  real Next does: the card must hold the Spectrum Next distribution (`TBBLUE.FW`, `machines`, `nextzxos` ...; not part
+  of this project). The card is on the ESP32, which moves its sectors to an SD card made of logic inside the FPGA.
 - **Machine menu** (`AMenu/ep4_ce15/`): the factory image at flash 0 starts a machine through the Cyclone IV remote update
   block; KEY1 in a machine returns to it.
 - **Fully constrained timing**: every clock and I/O constrained, timing met at all corners.
@@ -78,6 +83,8 @@ AMenu, LSpectrum, L64, LTari and DDR_TEST each hold one subfolder per core board
 | `LNES/ep4_ce15/` | **The NES**: Quartus project, `rtl/` (own PPU, APU, mappers, frame buffer), `sim/`, `tools/` (sound tables, palette); `LNES/10cl025/` the project for the other board |
 | `LMega/10cl025/` | **The Sega Mega Drive** (10CL025 only): Quartus project, `rtl/` (our bus, memory, video; `rtl/genesis/` the MiSTer video processor, unchanged), `sim/` |
 | `FX68K/`, `JT12/`, `JT89/` | 68000, YM2612 and SN76489 cores, from the MiSTer Genesis core, unchanged (`SOURCE.md` in each) |
+| `LNext/10cl025/` | **The ZX Spectrum Next** (10CL025 only): Quartus project, `rtl/` (our memories, SDRAM, SD card link, keyboard, video), `sim/`, `tools/` |
+| `ZXNEXT/` | the Spectrum Next core (MiSTer port) and the MiSTer SD card of logic, unchanged (`ZXNEXT/SOURCE.md`) |
 | `T65/` | 6502 core (VHDL), from the MiSTer C64 core, unchanged (`T65/SOURCE.md`) |
 | `tests/` | FPGA test projects: `Test_wires/fpga/` (ESP32 <-> FPGA wiring, FPGA side; the sketch is `ESP32_test/v1/Test_wires/`), `t80_fmax/`, `jtag_rig/` (testing a core board without its I/O board: keys, status and the video picture over JTAG) |
 | `T80/` | Z80 core (VHDL), from the MiSTer ZX Spectrum core, unchanged (`T80/SOURCE.md`) |
@@ -196,12 +203,15 @@ The project's own files are under the MIT licence (`LICENSE`). Third-party parts
 | `L64/ep4_ce15/rtl/sid/`, `L64/ep4_ce15/rtl/cia/` (MiSTer C64 core) | CERN-OHL-S v2 (`sid_dac.sv`, `sid_filter.sv`) and GPL (the MiSTer C64 core) |
 | `FX68K/` (68000, Jorge Cwik), `JT12/`, `JT89/` (YM2612, SN76489, Jose Tejada) | **GPL-3** |
 | `LMega/10cl025/rtl/genesis/` (Mega Drive video processor: Gregory Estrade, Till Harbaum, Alexey Melnikov, György Szombathelyi) | BSD-style, see the file headers and `SOURCE.md` |
+| `ZXNEXT/rtl/` (ZX Spectrum Next core: Alvin Albrecht, Victor Trucco, Fabio Belavenuto; MiSTer port Alexey Melnikov), `LNext/10cl025/rtl/next_sdram.v` (after the port's SDRAM controller) | **GPL-3** (the controller: GPL-2 or later) |
+| `ZXNEXT/sys/sd_card.sv` (Till Harbaum, Sorgelig) | LGPL-3 |
+| Spectrum Next firmware, ROMs and NextZXOS (`TBBLUE.FW`, `machines/`, `nextzxos/`) | **not included**: get the distribution from specnext.com and copy it to the SD card |
 | `ESP32/v2/` uses ESP32-A2DP (Phil Schatzmann) | Apache-2.0 (library, not included) |
 | ROM images in `LSpectrum/ep4_ce15/roms48k.hex` and `LSpectrum/ep4_ce15/sim/roms.mem` | ZX Spectrum 128 ROMs (c) Amstrad, distributed for emulator use with permission, copyright messages unchanged. Retroleum's DiagROM is not included (its licence is not known): the published image has a copy of the 48K BASIC ROM in that slot; `LSpectrum/ep4_ce15/tools/mk_roms48k.py` builds the image with your own copy |
 | `LTari/ep4_ce15/roms/` (AltirraOS, Altirra BASIC, Avery Lee) | permissive notice: copying and distribution permitted, notice preserved |
 | Commodore 64 / 1541 ROMs | **not included**: copyrighted; bring your own (`L64/ep4_ce15/README.md`) |
 | `Extra_PCB_CycloneIV/Extra_PCB_CycloneIV.pretty/` and `Extra_PCB_CycloneIV_R2/Extra_PCB_CycloneIV_R2.pretty/`: footprints adapted from the KiCad libraries (D-Sub 15 HD, pin headers); revision 2's ESP32-WROVER-E footprint is own work from Espressif's land pattern | CC-BY-SA 4.0 with the KiCad library exception (designs made with them, the board files and Gerbers included, are not bound by it); the rest of the boards is MIT |
 
-Because of the GPL-3 parts, the LSpectrum, L64 and LMega bitstreams (and `L.jic`, and their machine files) are GPL-3 works. Details, the
+Because of the GPL-3 parts, the LSpectrum, L64, LMega and LNext bitstreams (and `L.jic`, and their machine files) are GPL-3 works. Details, the
 notices the BSD-style cores require, and what was changed in external code: [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md);
 how much of each part is used: `docs/L_Third_Party.docx`.

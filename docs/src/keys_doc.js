@@ -61,7 +61,7 @@ const stepOf = ref => t => new Paragraph({ numbering: { reference: ref, level: 0
 
 const children = [
   new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: "LSpectrum — extra keys", bold: true, size: 40, font: FONT, color: "1F3864" })] }),
-  new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "ZX Spectrum 128K on the QMTECH Cyclone IV board, with the SD card tape loader, snapshots, memory contention and Bluetooth audio (build of 13 October 2026)", size: 21, font: FONT, color: "595959" })] }),
+  new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "ZX Spectrum 128K on the QMTECH Cyclone IV board, with the SD card tape loader, snapshots, memory contention and Bluetooth audio (state of 20 November 2026)", size: 21, font: FONT, color: "595959" })] }),
 
   p("All keys below are on the USB keyboard unless a board button is named. Keys that the Spectrum itself uses (letters, digits, Enter, Space, Shift) work as on a real 128K and are listed at the end."),
 
@@ -85,8 +85,10 @@ const children = [
        "Border effects (stripes in the border that line up with the picture) only work in the 50 Hz mode."]],
     ["**Page Up** / **Page Down** (browser closed)", "Moves the frame interrupt 1/8 line earlier / later (50 Hz mode)",
       ["Lines up border effects with the picture: Page Down moves them down. Shows \"Frame INT: 24.1\" (line.eighth) for 4 seconds; 24.1 is the default, measured with Aquaplane. Back to 24.1 after KEY0 or power-up. With the browser open these keys page through the list."]],
+    ["**Print Screen**", "Saves the picture as a file",
+      ["The screen with its border as SCRNnnnn.BMP (320 x 240, 16 colours) in the folder the browser was last in (the top folder after a start)."]],
     ["**KEY0** (board button W13)", "Resets everything, including the SD tape loader", ["The video mode is kept. The ESP32 restarts with it; Bluetooth headphones reconnect after a few seconds."]],
-    ["**Ctrl + Alt + Del**, or KEY1 (board button Y13)", "Back to the machine menu", ["Ctrl + Alt + Del acts when the keys are released. The FPGA loads the menu that appears at power-up (choose a machine with Up/Down + Enter, its digit, or a joystick); no board button is needed. The Spectrum's state is lost; the ESP32 restarts by itself when a machine is started again."]],
+    ["**Ctrl + Alt + Del**, or KEY1 (board button Y13)", "Back to the machine menu", ["Ctrl + Alt + Del acts when the keys are released. The FPGA loads the menu that appears at power-up (choose one of its three machines with Up/Down + Enter, its digit, or a joystick); no board button is needed. The Spectrum's state is lost; the ESP32 restarts by itself when a machine is started again."]],
   ]),
 
   h1("SD tape loader keys"),
@@ -171,18 +173,19 @@ const children = [
   stepOf("reset")("**Ctrl + Alt + Del**: back to the machine menu; choosing LSpectrum there starts it as at power-up."),
 
   h2("Sound on Bluetooth headphones or a speaker"),
-  p("The Spectrum's sound (AY and beeper) also goes to an ESP32 board wired to the FPGA board (see LSpectrum_Connection.docx), which sends it to Bluetooth headphones or a speaker. Everything is done from the **F3** menu; the ESP32 remembers the device and reconnects by itself when both are switched on."),
+  p("The Spectrum's sound (AY and beeper) also goes to the ESP32 on the I/O board (see LSpectrum_Connection.docx), which sends it to Bluetooth headphones or a speaker. Everything is done from the **F3** menu; the ESP32 remembers the device and reconnects by itself when both are switched on."),
   stepOf("bt")("Put the headphones or speaker into pairing mode."),
   stepOf("bt")("Press **F3**. The second line shows the state (Not connected / Connected: name)."),
   stepOf("bt")("Choose **Scan for devices** and press **Enter**. After a few seconds the devices found are listed at the bottom (an old device may show (no name))."),
   stepOf("bt")("Move down to the device and press **Enter**. The second line changes to **Connected: name**."),
   stepOf("bt")("Press **F3** (or Esc) to close the menu."),
   p("Other lines of the menu: **Disconnect**; **Forget the device** (it will not reconnect by itself); **PIN** (Enter, type the code, Enter; empty = auto); **Volume** (Left / Right); **Sound: Spectrum / test tone** (Enter swaps; the test tone checks the Bluetooth side alone)."),
-  p("Old devices that need a PIN code are paired automatically with 0000, 1234, 8888 and 1111 in turn (one try per connection attempt, about 20 seconds each; the bottom line shows the PIN being tried). If the device uses another code, set it under PIN before connecting. Bluetooth adds about 0.2 s of delay: fine for music, noticeable in fast games. If the menu says **No answer from the ESP32**, check its power and the wires."),
+  p("Old devices that need a PIN code are paired automatically with 0000, 1234, 8888 and 1111 in turn (one try per connection attempt, about 20 seconds each; the bottom line shows the PIN being tried). If the device uses another code, set it under PIN before connecting. Bluetooth adds about 0.2 s of delay: fine for music, noticeable in fast games. If the menu says **No answer from the ESP32**, switch the board off and on; on the first I/O board check that the ESP32 board sits in its sockets."),
 
   h1("Good to know"),
   bullet("SD card: FAT32 or FAT16. exFAT does not work (most cards larger than 32 GB come as exFAT: format them as FAT32)."),
-  bullet("Folders work. The browser shows folders first, then files, sorted by name, up to 320 per folder; long names are shown up to 27 characters."),
+  bullet("Folders work. The browser shows folders first, then files, sorted by name, up to 320 per folder (4,096 on the second I/O board); long names are shown up to 27 characters (29 on the second I/O board)."),
+  bullet("At each start (machine menu, KEY0) the monitor gets no signal for about 2 seconds, until the Spectrum's first screen is up: the monitor then adjusts itself to a real picture."),
   bullet("Unmodified .tap and .tzx files are played and .z80 snapshots are loaded; no conversion on the PC is needed."),
   bullet("If the browser says **No SD card, or not FAT16/FAT32**, insert the card and press Enter to try again."),
 

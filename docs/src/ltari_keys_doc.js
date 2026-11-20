@@ -63,13 +63,13 @@ const stepOf = ref => t => new Paragraph({ numbering: { reference: ref, level: 0
 
 const children = [
   new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: "LTari — keys", bold: true, size: 40, font: FONT, color: "1F3864" })] }),
-  new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "Atari 800XL / 130XE (PAL) on the QMTECH Cyclone IV board: AltirraOS and Altirra BASIC, SD card disk drive (.atr), .xex and cartridges (.car), snapshots, 60 / 50 Hz video, Bluetooth audio (build of 2 November 2026)", size: 21, font: FONT, color: "595959" })] }),
+  new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "Atari 800XL / 130XE (PAL) on the QMTECH Cyclone IV board: AltirraOS and Altirra BASIC, SD card disk drive (.atr), .xex and cartridges (.car), snapshots, 60 / 50 Hz video, Bluetooth audio (state of 20 November 2026)", size: 21, font: FONT, color: "595959" })] }),
 
-  p("All keys below are on the USB keyboard unless a board button is named. The machine menu is described in L64_Keys.docx; LTari has two entries there: **3 LTari 800** (800XL, 64 KB) and **4 LTari 130** (130XE, 128 KB)."),
+  p("All keys below are on the USB keyboard unless a board button is named. The machine menu is described in L64_Keys.docx. LTari is two machines there, **LTari 800** (800XL, 64 KB) and **LTari 130** (130XE, 128 KB): each is a machine file and takes one of the menu's three positions (F12 in the menu installs it from the SD card)."),
 
   h1("Machine keys"),
   table([2234, 2816, 4310], ["Key", "What it does", "Notes"], [
-    ["**F12**, keypad **/** or **NumLock**", "Opens / closes the SD card browser", ["Lists folders and the .atr, .xex and .car files. See \"Usage cases\" below."]],
+    ["**F12**, keypad **/** or **NumLock**", "Opens / closes the SD card browser", ["Lists folders and the .atr, .xex, .car and .a8s files. See \"Usage cases\" below."]],
     ["**Alt + F2 / F3 / F4**", "The Atari's **START / SELECT / OPTION**", ["Held as long as the keys are held. OPTION held while the Atari starts switches BASIC off: Alt + F4 held while pressing KEY0 without a disk (for an .atr the browser asks)."]],
     ["**Alt + F5**", "The Atari's **Reset** key", ["A warm start: BASIC keeps its program."]],
     ["**Alt + F6**", "The Atari's **Help** key", []],
@@ -102,7 +102,7 @@ const children = [
   h1("Usage cases"),
 
   h2("Starting"),
-  stepOf("boot")("In the machine menu choose **3 LTari 800** or **4 LTari 130**. No ROM files are needed: AltirraOS and Altirra BASIC (free replacements by Avery Lee) are in the flash."),
+  stepOf("boot")("In the machine menu choose **LTari 800** or **LTari 130**. No ROM files are needed: AltirraOS and Altirra BASIC (free replacements by Avery Lee) are in the flash, installed with the machine."),
   stepOf("boot")("The monitor gets no signal for about 2 seconds, then the screen turns blue. With no disk the OS asks the disk drive for about a second, then **Altirra 8K BASIC** shows **Ready**."),
 
   h2("Booting a disk (.atr)"),
@@ -168,7 +168,7 @@ const children = [
   ]),
 
   h1("Good to know"),
-  bullet("SD card: FAT32 or FAT16, not exFAT. The browser shows folders first, then files, up to 320 per folder."),
+  bullet("SD card: FAT32 or FAT16, not exFAT. The browser shows folders first, then files, up to 320 per folder (4,096 on the second I/O board)."),
   bullet("The LTari 130 has 128 KB (the 130XE's extra 64 KB in banks of 16 KB); the LTari 800 has 64 KB."),
   bullet("The chips are new designs from the Atari documentation; some rare hardware tricks may still be missing (see LTari/ep4_ce15/README.md)."),
 ];

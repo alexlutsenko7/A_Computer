@@ -41,6 +41,21 @@ Mega Drive video processor (VDP)
     License:  BSD-style
     Changed:  no (LMega/10cl025/rtl/genesis/SOURCE.md)
 
+ZX Spectrum Next core (Z80N, ULA, Layer 2, sprites, tilemap, copper, DMA, sound, DivMMC ...)
+    Used in:  LNext (the whole machine)
+    Origin:   MiSTer ZXNext core, commit 7daebd1 (port by Alexey Melnikov) of the Spectrum
+              Next core by Alvin Albrecht, Victor Trucco, Fabio Belavenuto
+    License:  GPL-3
+    Changed:  no (ZXNEXT/SOURCE.md). LNext builds two files from the unchanged ones with
+              LNext/10cl025/tools/mk_c10_files.py (sprite attribute memories merged, the boot
+              ROM split) and has its own memory file for the Cyclone 10 LP.
+
+SD card made of logic (sd_card.sv)
+    Used in:  LNext (the Next's card port; the real card is on the ESP32)
+    Origin:   MiSTer framework, same commit; Till Harbaum, Sorgelig
+    License:  LGPL-3
+    Changed:  no (ZXNEXT/SOURCE.md)
+
 JT49 (AY-3-8910 / 8912)
     Used in:  LSpectrum (sound)
     Origin:   Jose Tejada, version 1.0
@@ -100,6 +115,10 @@ LNES                  picture processor, sound, cartridge mappers, bus and frame
                       from the NESdev documentation; only the CPU is external
 LMega                 system logic, memory, line doubler and frame buffer (around the cores of
                       section 1)
+LNext                 memories for the Cyclone 10 LP, SD card link to the ESP32, keyboard, line
+                      doubler, top level (around the Spectrum Next core). Its SDRAM controller
+                      next_sdram.v follows the MiSTer port's (Alexey Melnikov, GPL-2 or later)
+                      and carries that notice.
 ESP32 firmware        SD card browser, FAT, tape player and recorder, snapshots, disk and
                       cartridge loaders, installers, menus
 I/O boards            Extra_PCB_CycloneIV (revision 1), Extra_PCB_CycloneIV_R2 (revision 2)
@@ -145,5 +164,5 @@ KiCad library footprints (adapted)
     License:  CC-BY-SA 4.0 with the KiCad library exception
 
 
-Because of the GPL-3 parts, the LSpectrum, L64 and LMega bitstreams (and L.jic and their machine
-files) are GPL-3 works. LTari and LNES contain no GPL part.
+Because of the GPL-3 parts, the LSpectrum, L64, LMega and LNext bitstreams (and L.jic and their
+machine files) are GPL-3 works. LTari and LNES contain no GPL part.

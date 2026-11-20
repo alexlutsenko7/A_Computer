@@ -50,7 +50,7 @@ const bullet = t => new Paragraph({ numbering: { reference: "bullets", level: 0 
 const gap = () => new Paragraph({ spacing: { after: 60 }, children: [] });
 
 // numbering instances: each procedure restarts at 1
-const procs = ["roms", "disk", "dir", "prg", "tape", "save", "snapsave", "snapload", "video", "bt"];
+const procs = ["install", "roms", "disk", "dir", "prg", "tape", "save", "snapsave", "snapload", "video", "bt"];
 const numbering = {
   config: [
     { reference: "bullets", levels: [{ level: 0, format: LevelFormat.BULLET, text: "•", alignment: AlignmentType.LEFT,
@@ -63,22 +63,30 @@ const stepOf = ref => t => new Paragraph({ numbering: { reference: ref, level: 0
 
 const children = [
   new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: "L64 and the machine menu — keys", bold: true, size: 40, font: FONT, color: "1F3864" })] }),
-  new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "Commodore 64 (PAL) with 1541 disk drive on the QMTECH Cyclone IV board: SD card loader, turbo, snapshots, 60 / 50 Hz video, Bluetooth audio (build of 28 October 2026)", size: 21, font: FONT, color: "595959" })] }),
+  new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "Commodore 64 (PAL) with 1541 disk drive on the QMTECH Cyclone IV board: SD card loader, turbo, snapshots, 60 / 50 Hz video, Bluetooth audio (state of 20 November 2026)", size: 21, font: FONT, color: "595959" })] }),
 
   p("All keys below are on the USB keyboard unless a board button is named. The C64's own keys are listed at the end. The keys for the ZX Spectrum are in LSpectrum_Keys.docx."),
 
   // ------------------------------------------------------------------ menu
   h1("The machine menu"),
-  p("At every power-up the FPGA first shows the machine menu: **1 LSpectrum** (ZX Spectrum 128K), **2 L64** (Commodore 64), **3 LTari 800** and **4 LTari 130** (Atari 800XL / 130XE, see LTari_Keys.docx). It needs nothing but the board, the monitor and the keyboard or a joystick."),
+  p("At every power-up the FPGA first shows the machine menu with the **three machines** the board holds, for example **1 LSpectrum** (ZX Spectrum 128K), **2 L64** (Commodore 64) and **3 LTari 800** (Atari 800XL, see LTari_Keys.docx). Which three is your choice: every machine is a file on the SD card, and F12 puts one of them in place of any of the three. The menu needs nothing but the board, the monitor and the keyboard or a joystick."),
   table([3108, 6252], ["Key", "What it does"], [
     ["**Up** / **Down** (or keypad 8 / 2)", "Moves the highlight"],
     ["**Enter** (or keypad Enter)", "Starts the highlighted machine"],
-    ["**1** ... **4** (also on the keypad)", "Starts that machine at once"],
+    ["**1**, **2**, **3** (also on the keypad)", "Starts that machine at once"],
     ["Joystick (either socket)", "Up / down moves, fire starts"],
+    ["**F3**", "Bluetooth audio menu, as in the machines"],
+    ["**F12**", "Installs a machine from the SD card (below)"],
     ["**Ctrl + Alt + Del** or **KEY1** (board button Y13) in a machine", "Back to this menu; the highlight is on the machine you left. The machine's state is lost."],
   ]),
   gap(),
-  p("Keys already held at power-up are ignored. If a machine cannot start (its image is missing or damaged), the menu comes back with red lines saying **Could not start**, the reason and the address that was tried, and the board LED blinks: program the .jic again."),
+  p("Keys already held at power-up are ignored. A position that holds no machine shows **(empty)** and cannot be started; **No machines installed** means that all three are empty. If a machine cannot start (its image is damaged), the menu comes back with red lines saying **Could not start**, the reason and the address that was tried, and the board LED blinks: install that machine again with F12."),
+
+  h2("Installing a machine (F12 in the menu)"),
+  stepOf("install")("Copy the folder **MACHINES** with the machine files (.LMC) to the top folder of the SD card. The menu lists only the files made for its core board."),
+  stepOf("install")("In the menu press **F12**. **Which machine?** lists the machine files: choose one with Up / Down and Enter."),
+  stepOf("install")("**Replace which one?** shows the three positions and what they hold now: choose the position."),
+  stepOf("install")("Wait for **Installed.** (about 15 seconds); do not switch off meanwhile. If the power fails, that position shows (empty): install the machine again. Installing L64 again keeps the C64 ROMs that are in the board."),
 
   // ------------------------------------------------------------------ machine keys
   h1("L64: machine keys"),
@@ -99,6 +107,7 @@ const children = [
     ["**F8**", "Swaps the video between 60 Hz and 50 Hz",
       ["After power-up the picture is 800x600 at 60 Hz, which monitors accept best. The C64 itself always runs at its real 50 Hz (PAL); at 60 Hz every fifth picture is shown twice, so scrolling is very slightly uneven. The 50 Hz mode shows every picture once. The monitor takes a moment to switch; the C64 runs on meanwhile."]],
     ["**Alt + F1 ... F8**", "The C64's own F1 ... F8 keys", ["Without Alt, the PC's F-keys are the functions in this table. Alt+F2 / F4 / F6 / F8 give SHIFT + F1 / F3 / F5 / F7, as on the C64."]],
+    ["**Print Screen**", "Saves the picture as a file", ["As SCRNnnnn.BMP (400 x 284, 16 colours) in the browser's current folder; the C64 runs on."]],
     ["**KEY0** (board button W13)", "Resets everything", ["The C64 starts as after switching it on (its memory is cleared, so a game's reset protection cannot catch it); the loader and the ESP32 restart; Bluetooth reconnects after a few seconds."]],
     ["**Ctrl + Alt + Del**, or **KEY1** (board button Y13)", "Back to the machine menu", ["Ctrl + Alt + Del acts when the keys are released; no board button is needed. See above."]],
   ]),
@@ -185,9 +194,9 @@ const children = [
   ]),
 
   h1("Good to know"),
-  bullet("SD card: FAT32 or FAT16, not exFAT. The browser shows folders first, then files, up to 320 per folder."),
+  bullet("SD card: FAT32 or FAT16, not exFAT. The browser shows folders first, then files, up to 320 per folder (4,096 on the second I/O board)."),
   bullet("Most games want a joystick in **control port 2**: that is the DB9-1 socket by default (F4 changes it)."),
-  bullet("Games on several disks: insert the next .d64 with F12 when the game asks for it, then go on as the game says. Disk changes are not signalled to the drive yet, so a game that checks for the change may not notice the new disk."),
+  bullet("Games on several disks: insert the next .d64 with F12 when the game asks for it, then go on as the game says. The drive notices the change, as when a real disk is swapped."),
   bullet("A game that keeps the disk motor running stays in turbo: if it runs too fast, press F6."),
   bullet("Cartridges are not supported."),
 ];

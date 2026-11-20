@@ -3,11 +3,11 @@
 
 INSTALL = dict(
     title='L — Guia de instalação',
-    subtitle='Instalar e atualizar as máquinas da placa L a partir de um cartão SD: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System e Sega Mega Drive. Edição de 17 de novembro de 2026.',
+    subtitle='Instalar e atualizar as máquinas da placa L a partir de um cartão SD: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive e ZX Spectrum Next. Edição de 20 de novembro de 2026.',
     blocks=[
         ('h1', '1. O que está nesta pasta'),
         ('table', ['Ficheiro', 'O que é'], [
-            ['`MACHINES`', 'As máquinas, um ficheiro cada (`.LMC`): LSpectrum, L64, LTari 800, LTari 130, LNES, LMega. Copie a pasta inteira para o cartão SD.'],
+            ['`MACHINES`', 'As máquinas, um ficheiro cada (`.LMC`): LSpectrum, L64, LTari 800, LTari 130, LNES, LMega, LNext. Copie a pasta inteira para o cartão SD.'],
             ['`ESP32_UPDATE`', 'O firmware do ESP32, `LESP32.BIN`: pasta `v1` para a primeira placa de E/S, `v2` para a segunda.'],
             ['`MENU_UPDATE`', 'O próprio menu de máquinas: `LUPDATE.BIN` na pasta `10cl025`.'],
             ['`EN`, `SP`, `PT`, `DE`, `UA`, `RU`, `CN`, `KR`, `JP`', 'Este guia e o manual do utilizador em nove línguas.'],
@@ -32,6 +32,7 @@ INSTALL = dict(
             ['a lista de máquinas está vazia', 'A pasta tem de se chamar `MACHINES`, estar na pasta raiz do cartão, e o cartão tem de ser FAT32 ou FAT16.'],
             ['falta a corrente durante a instalação', 'Essa posição mostra **(empty)**. Instale a máquina de novo. O menu e as outras duas posições não são tocados.'],
             ['o LNES ou o LMega arranca mas não mostra a lista de jogos', 'O ESP32 precisa do firmware mais recente: secção 4.'],
+            ['o LNext não arranca', 'Os seus ficheiros têm de estar na pasta `ZXNEXT` do cartão (secção 5), e o ESP32 precisa do firmware mais recente (secção 4).'],
         ], [40, 60]),
         ('note', 'Instalar uma máquina nunca altera os ficheiros do cartão SD. Instalar o L64 de novo mantém as ROM do C64 que lá pôs (secção 5).'),
         ('h1', '4. Atualizar'),
@@ -41,7 +42,7 @@ INSTALL = dict(
             'Tire `LESP32.BIN` de `ESP32_UPDATE/v1` (primeira placa de E/S: o ESP32 é uma pequena placa de encaixe) ou de `ESP32_UPDATE/v2` (segunda placa de E/S: conector USB-C na placa).',
             'Copie-o para a pasta raiz do cartão SD, ponha o cartão e ligue. A atualização corre sozinha.',
         ]),
-        ('p', 'O LNES e o LMega precisam deste firmware: faça-o antes de os instalar.'),
+        ('p', 'O LNES, o LMega e o LNext precisam deste firmware: faça-o antes de os instalar.'),
         ('h2', 'O menu de máquinas'),
         ('ol', [
             'Tire `LUPDATE.BIN` de `MENU_UPDATE/10cl025`.',
@@ -53,13 +54,14 @@ INSTALL = dict(
         ('p', 'As próprias máquinas são atualizadas instalando os seus ficheiros `.LMC` mais recentes (secção 3).'),
         ('p', 'Uma placa que ainda tem o menu anterior com quatro máquinas: ponha juntos no cartão os novos `LESP32.BIN` e `LUPDATE.BIN` e a pasta `MACHINES`. Primeiro é atualizado o ESP32 e depois o menu. Depois de desligar e ligar, o menu mostra três posições vazias: instale as máquinas com F12.'),
         ('h1', '5. Software não incluído'),
-        ('p', 'O conjunto de placas e esta pasta **não contêm jogos nem outros programas**, nem **as ROM do Commodore 64**. Obtenha-os por si e copie-os para o cartão SD. Respeite os direitos de autor: use apenas software e ROM que tenha autorização para usar; um jogo não é livre só por ser antigo. Muitos programas antigos podem ser partilhados livremente com a autorização dos autores; outros não.'),
+        ('p', 'O conjunto de placas e esta pasta **não contêm jogos nem outros programas**, **nem as ROM do Commodore 64**, **nem os ficheiros de sistema do ZX Spectrum Next**. Obtenha-os por si e copie-os para o cartão SD. Respeite os direitos de autor: use apenas software e ROM que tenha autorização para usar; um jogo não é livre só por ser antigo. Muitos programas antigos podem ser partilhados livremente com a autorização dos autores; outros não.'),
         ('table', ['Máquina', 'Precisa antes de arrancar', 'Programas'], [
             ['LSpectrum', 'Nada', '.tap, .tzx, .z80'],
             ['L64', '**As ROM do C64, uma vez** (abaixo)', '.d64, .prg, .t64, .tap'],
             ['LTari 800 / 130', 'Nada', '.atr, .xex, .car'],
             ['LNES', 'Nada', '.nes'],
             ['LMega', 'Nada', '.md, .gen, .bin, .smd'],
+            ['LNext', '**Os ficheiros do Spectrum Next, uma vez** (abaixo)', 'Tudo o que um Spectrum Next corre, a partir da pasta `ZXNEXT`'],
         ], [22, 38, 40]),
         ('h2', 'As ROM do Commodore 64 (uma vez)'),
         ('p', 'Os programas internos do C64 têm direitos de autor e não fazem parte do L. Use cópias a que tenha direito: lidas de um C64 e de uma 1541 seus, ou licenciadas.'),
@@ -68,7 +70,15 @@ INSTALL = dict(
             'Inicie o **L64** no menu de máquinas. As ROM são copiadas para a placa (alguns segundos, mostrado no ecrã) e o C64 arranca.',
             'A partir daí o C64 arranca sem o cartão. Se faltar um ficheiro, o ecrã diz onde o pôr. Sem o ficheiro da 1541 o C64 funciona, mas não tem unidade de disco.',
         ]),
-        ('pre', 'Cartão SD (exemplo)\n  MACHINES/    os ficheiros de máquina (.LMC)\n  ROMS/C64/    os quatro ficheiros ROM do C64\n  Spectrum/    .tap .tzx .z80\n  C64/         .d64 .prg .t64 .tap .a64\n  Atari/       .atr .xex .car .a8s\n  NES/         .nes\n  MegaDrive/   .md .gen .bin .smd'),
+        ('h2', 'Os ficheiros do Spectrum Next (uma vez)'),
+        ('p', 'Um Spectrum Next guarda todo o seu sistema no cartão SD. Estes ficheiros não fazem parte do L. Descarregue a distribuição do Spectrum Next de `https://www.specnext.com/latestdistro/`.'),
+        ('ol', [
+            'O cartão SD tem de ser **FAT32**. Crie a pasta `ZXNEXT` na pasta principal do cartão.',
+            'Copie tudo o que vem na distribuição para `ZXNEXT`, tal como vem: o ficheiro `TBBLUE.FW`, as pastas `machines`, `nextzxos` e todo o resto.',
+            'Instale o **LNext** com F12 no menu de máquinas (secção 3) e inicie-o.',
+            'No primeiro arranque o Next testa a imagem e pergunta pelas suas definições; guarda-as no cartão. Depois o NextZXOS mostra o seu menu.',
+        ]),
+        ('pre', 'Cartão SD (exemplo)\n  MACHINES/    os ficheiros de máquina (.LMC)\n  ROMS/C64/    os quatro ficheiros ROM do C64\n  Spectrum/    .tap .tzx .z80\n  C64/         .d64 .prg .t64 .tap .a64\n  Atari/       .atr .xex .car .a8s\n  NES/         .nes\n  MegaDrive/   .md .gen .bin .smd\n  ZXNEXT/      os ficheiros do Spectrum Next'),
         ('p', 'As pastas podem ter qualquer nome e estar umas dentro das outras. Uma pasta mostra até 320 entradas na lista de ficheiros (4096 na segunda placa de E/S), por isso organize uma coleção grande em subpastas.'),
         ('h1', '6. Verificação rápida'),
         ('table', ['Faça isto', 'Deverá ver'], [
@@ -77,6 +87,7 @@ INSTALL = dict(
             ['**Ctrl + Alt + Del**, inicie **L64**', 'O ecrã READY do C64 (da primeira vez: as ROM são instaladas)'],
             ['**Ctrl + Alt + Del**, inicie **LTari 130**', 'Altirra BASIC, READY'],
             ['Inicie o **LNES** ou o **LMega**', 'Abre-se a lista de jogos'],
+            ['Inicie o **LNext**', 'O NextZXOS arranca a partir da pasta `ZXNEXT`'],
             ['**F8** numa máquina', 'A imagem alterna entre 60 Hz e 50 Hz'],
         ], [45, 55]),
         ('p', 'Tudo o resto — teclas, menus, joysticks, carregar e gravar — está descrito no **Manual do utilizador** na mesma pasta.'),

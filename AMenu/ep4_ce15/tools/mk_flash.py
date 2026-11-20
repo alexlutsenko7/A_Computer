@@ -62,6 +62,8 @@ MACHINES = [
     ('LNES', 'LNES', 'LNES', 0x66, 0x4E450001, ('LNES', 'Nintendo NES'), None, 0),
     # the Mega Drive needs the larger FPGA: a ninth field names the boards a machine exists for
     ('LMega', 'LMega', 'LMega', 0x3C, 0x4D440001, ('LMega', 'Sega Mega Drive'), None, 0, ('10cl025',)),
+    # the Spectrum Next too; it starts from the SD card (its firmware and ROMs are the user's files there)
+    ('LNext', 'LNext', 'LNext', 0x7E, 0x4E580001, ('LNext', 'ZX Spectrum Next'), None, 0, ('10cl025',)),
 ]
 # the machines of L.jic, position 1 to 3
 INSTALLED = ('LSpectrum', 'L64', 'LTari800')

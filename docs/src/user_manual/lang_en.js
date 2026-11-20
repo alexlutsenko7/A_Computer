@@ -4,12 +4,12 @@
 /* ['table', header, rows, column widths in percent] */
 module.exports = {
   title: "L — User Manual",
-  subtitle: "One board, your choice of classic machines: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System and Sega Mega Drive. How to connect it, choose the machines and play. Edition of 17 November 2026.",
+  subtitle: "One board, your choice of classic machines: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive and ZX Spectrum Next. How to connect it, choose the machines and play. Edition of 20 November 2026.",
   page: "page",
   blocks: [
     /* ------------------------------------------------------------ 1 */
     ["h1", "1. What L is"],
-    ["p", "L is a small board set that becomes one of several classic home computers and game consoles. When you switch it on it shows the **machine menu**. You choose a machine, and a moment later the board is that machine: a ZX Spectrum, a Commodore 64, an Atari, a Nintendo console or a Sega console. It is not an emulator program on a PC; the chips of the old machine are rebuilt inside the board."],
+    ["p", "L is a small board set that becomes one of several classic home computers and game consoles. When you switch it on it shows the **machine menu**. You choose a machine, and a moment later the board is that machine: a ZX Spectrum, a Commodore 64, an Atari, a Nintendo console, a Sega console or a ZX Spectrum Next. It is not an emulator program on a PC; the chips of the old machine are rebuilt inside the board."],
     ["p", "Games and programs come from a microSD card. A file list on the screen replaces the tape recorder, the disk drive and the cartridge slot. The picture goes to a VGA monitor, the sound to the audio socket or to Bluetooth headphones."],
     ["table", ["Machine", "What it is", "Files it uses"], [
       ["**LSpectrum**", "ZX Spectrum 128K (also runs 48K programs)", ".tap .tzx (tapes), .z80 (snapshots)"],
@@ -18,6 +18,7 @@ module.exports = {
       ["**LTari 130**", "Atari 130XE, 128 KB", "as LTari 800"],
       ["**LNES**", "Nintendo Entertainment System", ".nes (cartridges)"],
       ["**LMega**", "Sega Mega Drive / Genesis", ".md .gen .bin .smd (cartridges)"],
+      ["**LNext**", "ZX Spectrum Next", "The Spectrum Next's own files in the folder `ZXNEXT` (section 14)"],
     ], [18, 36, 46]],
     ["p", "The board keeps **three machines** at a time. Which three is your choice: every machine is a file on the SD card, and you can put any of them in place of another in about 15 seconds (section 4)."],
     ["note", "The board set comes without games and other programs, and without the Commodore 64 ROMs. Section 5 says what each machine needs."],
@@ -79,7 +80,8 @@ module.exports = {
     ["table", ["If ...", "Then ..."], [
       ["the list of machines is empty", "The folder must be named `MACHINES`, in the top folder of the card, and the card must be FAT32 or FAT16."],
       ["the power fails while installing", "That position shows **(empty)**. Install the machine again. The menu and the other two positions are not touched."],
-      ["LNES or LMega starts but shows no list of games", "The ESP32 needs its newer firmware: section 14."],
+      ["LNES or LMega starts but shows no list of games", "The ESP32 needs its newer firmware: section 15."],
+      ["LNext does not start", "Its files must be in the folder `ZXNEXT` on the card (section 14), and the ESP32 needs its newer firmware (section 15)."],
     ], [40, 60]],
     ["note", "Installing a machine never changes the files on the SD card. Installing L64 again keeps the C64 ROMs you put in (section 5)."],
 
@@ -96,6 +98,7 @@ module.exports = {
       "  Atari/       .atr .xex .car .a8s              ",
       "  NES/         .nes                             ",
       "  MegaDrive/   .md .gen .bin .smd               ",
+      "  ZXNEXT/      the Spectrum Next's files        ",
     ]],
     ["p", "Please respect the copyright: use only software and ROMs you are allowed to use. A game is not free just because it is old. Many old programs may be shared with their authors' permission, others may not."],
     ["table", ["Machine", "Needs before it starts", "Programs"], [
@@ -104,6 +107,7 @@ module.exports = {
       ["LTari 800 / 130", "Nothing", ".atr, .xex, .car"],
       ["LNES", "Nothing", ".nes"],
       ["LMega", "Nothing", ".md, .gen, .bin, .smd"],
+      ["LNext", "**The Spectrum Next's files, once** (section 14)", "Whatever a Spectrum Next runs, from the folder `ZXNEXT`"],
     ], [22, 38, 40]],
     ["h2", "The Commodore 64 ROMs (once)"],
     ["p", "The C64's built-in programs are copyrighted and are not part of L. Use copies you are entitled to: read from a C64 and a 1541 you own, or licensed ones."],
@@ -124,6 +128,7 @@ module.exports = {
       ["**F8**", "Computers: swaps the picture between 60 Hz and the machine's own 50 Hz. It is 60 Hz after every start. If the monitor shows nothing, press F8 again. LMega: section 13. LNES: no function."],
       ["**Print Screen**", "Saves the picture as `SCRNnnnn.BMP` in the folder the file list is in (not in LMega)"],
     ], [34, 66]],
+    ["note", "LNext has its own keys (section 14). Of the keys above only F3, F8 and Ctrl + Alt + Del work there."],
     ["p", "Short messages (for example **Speed: turbo**) appear for a few seconds on the bottom line of the picture. While a menu or the file list is open, the machine itself sees no keys."],
     ["h2", "The file list"],
     ["p", "The list shows folders first, then the files the running machine can use, white on blue over the picture."],
@@ -166,6 +171,7 @@ module.exports = {
       ["LTari", "**DB9-1 = stick 0** (player 1 in most games), DB9-2 = stick 1 — swapped"],
       ["LNES", "Which socket is controller 1; whether the fire button is **A** (default) or B"],
       ["LMega", "Which socket is pad 1"],
+      ["LNext", "No F4 menu: DB9-1 is the Next's left joystick, DB9-2 its right one. Their type (Kempston, Sinclair, cursor ...) is chosen in NextZXOS."],
     ], [18, 82]],
     ["p", "The consoles' pads have more buttons than a joystick. The joystick gives the directions and one button; the other buttons are on the keyboard (sections 12 and 13). A console game can be played with the keyboard and one joystick, or with the joystick's button and the keys next to your other hand."],
 
@@ -265,7 +271,7 @@ module.exports = {
 
     /* ------------------------------------------------------------ 12 */
     ["h1", "12. LNES (Nintendo Entertainment System)"],
-    ["note", "LNES and LMega are the newest machines. When this edition was written they had passed their tests in simulation and had not yet been run on a board."],
+    ["note", "LNES and LMega are new machines. When this edition was written they ran on the board, but had been tried with only a few games."],
     ["p", "The list of games opens by itself when LNES starts. Choose a .nes file and press **Enter**: the game starts. **F12** opens the list again for another game."],
     ["table", ["Button", "Controller 1", "Controller 2"], [
       ["Up, Down, Left, Right", "Joystick in DB9-1", "Joystick in DB9-2"],
@@ -313,14 +319,50 @@ module.exports = {
     ]],
 
     /* ------------------------------------------------------------ 14 */
-    ["h1", "14. Updating the board"],
+    ["h1", "14. LNext (ZX Spectrum Next)"],
+    ["note", "LNext is the newest machine. When this edition was written it had started NextZXOS and run programs on the board in a test set-up. Its picture on a monitor, its sound, the joysticks and the USB keyboard had not yet been tested."],
+    ["p", "LNext is the ZX Spectrum Next, the modern successor of the Spectrum: a faster processor (up to 28 MHz), 2 MB of memory, new graphics with sprites, and three sound chips. It runs **NextZXOS**, the Next's own system, which also offers the 48K and 128K Spectrum."],
+    ["h2", "The Spectrum Next's files (once)"],
+    ["p", "A Spectrum Next keeps its whole system on the SD card. These files are not part of L. Download the Spectrum Next distribution from `https://www.specnext.com/latestdistro/`."],
+    ["ol", [
+      "The SD card must be **FAT32**. Make the folder `ZXNEXT` in the top folder of the card.",
+      "Copy everything from the distribution into `ZXNEXT`, as it comes: the file `TBBLUE.FW`, the folders `machines`, `nextzxos` and all the rest.",
+      "Install **LNext** with F12 in the machine menu (section 4) and start it.",
+      "At the first start the Next tests the picture and asks for its settings; it stores them on the card. Then NextZXOS shows its menu.",
+    ]],
+    ["p", "For the Next the folder `ZXNEXT` is the whole card (its drive `C:`). Put the Next's games and programs into this folder and start them from the **Browser** of NextZXOS. The Next does not see the other machines' files, and the file list of the other machines (F12) is not used here."],
+    ["table", ["Key", "What it does"], [
+      ["**F1**", "Hard reset: the Next starts again from the card"],
+      ["**F4**", "Soft reset"],
+      ["**F6**", "Processor speed: 3.5 → 7 → 14 → 28 MHz"],
+      ["**F8**", "50 / 60 Hz"],
+      ["**F9**", "The Next's Multiface button (NMI): the NMI menu of NextZXOS"],
+      ["**F10**", "The Next's Drive button"],
+      ["**F3**", "Bluetooth audio menu (section 7)"],
+      ["**Ctrl + Alt + Del**", "Back to the machine menu"],
+    ], [34, 66]],
+    ["p", "The PC keyboard is the Next's keyboard: letters, digits, cursor keys, Backspace and punctuation act as on a Spectrum Next."],
+    ["table", ["Joystick button", "Left joystick (DB9-1)", "Right joystick (DB9-2)"], [
+      ["Directions, fire (button B)", "The joystick", "The joystick"],
+      ["Button C (second fire)", "**Insert**", "**Delete**"],
+      ["Button A (third fire)", "**Home**", "**End**"],
+      ["Start", "**Page Up**", "**Page Down**"],
+    ], [34, 33, 33]],
+    ["ul", [
+      "The picture has the Next's own timing, about 49 Hz or 58 Hz (F8). If the monitor shows nothing, press F8.",
+      "The sound is the same on both channels.",
+      "Not available: the mouse, the real-time clock, Wi-Fi, the expansion port, Print Screen, snapshots with F2, and updating the Next's core from NextZXOS.",
+    ]],
+
+    /* ------------------------------------------------------------ 15 */
+    ["h1", "15. Updating the board"],
     ["p", "Updates are files in the folder `INSTALL` of the project's download. They are needed only when a new version is published."],
     ["h2", "The ESP32 (file list, Bluetooth)"],
     ["ol", [
       "Take `LESP32.BIN` from `ESP32_UPDATE/v1` (first I/O board: the ESP32 is a small plug-in board) or `ESP32_UPDATE/v2` (second I/O board: USB-C socket on the board).",
       "Copy it to the top folder of the SD card, put the card in and switch on. The update runs by itself.",
     ]],
-    ["p", "LNES and LMega need this firmware: do it before you install them."],
+    ["p", "LNES, LMega and LNext need this firmware: do it before you install them."],
     ["h2", "The machine menu"],
     ["ol", [
       "Take `LUPDATE.BIN` from `MENU_UPDATE/10cl025`.",
@@ -331,8 +373,8 @@ module.exports = {
     ["note", "Use only the file from `MENU_UPDATE/10cl025`. A menu file made for a different board leaves the board unable to start; it then has to be written again with a programming cable."],
     ["p", "The machines themselves are updated by installing their newer `.LMC` files (section 4)."],
 
-    /* ------------------------------------------------------------ 15 */
-    ["h1", "15. If something does not work"],
+    /* ------------------------------------------------------------ 16 */
+    ["h1", "16. If something does not work"],
     ["table", ["Problem", "What to do"], [
       ["No picture after F8", "The monitor does not accept 50 Hz: press F8 again."],
       ["The file list is empty", "The card must be FAT32 or FAT16, not exFAT. Press F12 again after changing the card. The list shows only the files the running machine can use."],
@@ -345,6 +387,7 @@ module.exports = {
       ["No sound", "The audio socket needs an amplifier or active speakers. For Bluetooth check **Connected** in the F3 menu and its Volume line."],
       ["A Spectrum game does not load", "Press F6 (normal speed) and load it again."],
       ["An Atari game hangs at its start", "Load the .atr again and answer **F1** (No BASIC)."],
+      ["LNext shows an error at its start, or no picture", "The folder `ZXNEXT` must hold the complete Spectrum Next distribution, on a FAT32 card (section 14). No picture: press F8."],
       ["A console game is refused", "LNES: its cartridge type is not built in. LMega: games above 4 MB and games with extra chips in the cartridge do not run."],
     ], [38, 62]],
   ],

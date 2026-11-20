@@ -63,6 +63,7 @@
 /* the cartridge machines */
 #include "nes.h"
 #include "md.h"
+#include "next.h"
 #include "reset.h"
 
 /* entries per folder, in the PSRAM (40 bytes each: 160 KB); without PSRAM: internal RAM (12.8 KB) */
@@ -275,6 +276,8 @@
 
 /* keys that close the browser: it goes away only when the key that closed it is released */
 #define CLOSE_KEYS (K_ENTER | K_F11 | K_MENU | K_BACK)
+/* LNext: milliseconds between two looks for a card */
+#define NEXT_CARD_MS 1000u
 /* keys that repeat while held */
 #define REP_KEYS (K_UP | K_DOWN | K_LEFT | K_RIGHT | K_PGUP | K_PGDN)
 
@@ -4234,12 +4237,132 @@ static void machine_main(void)
     }
 }
 
+/* LNext: the Spectrum Next works from the card by itself (its own browser, its own settings), */
+/* so there is no file list here: the loader moves the card's sectors (next.cpp) and offers the */
+/* Bluetooth menu (F3). Runs until the machine leaves the link (esp_hw.cpp ends the task). */
+static void next_main(void)
+{
+/* local variables */
+    uint32_t ui32_keys;
+    uint32_t ui32_draw_time;
+    uint32_t ui32_card_time;
+/* the card is in the machine; Bluetooth: a line came, the keys' result; redraw */
+    int32_t i32_card;
+    int32_t i32_bt_line;
+    int32_t i32_bt_result;
+    bool b_draw;
+
+/* start values */
+    ui32_keys = 0;
+    ui32_draw_time = TIMER;
+    ui32_card_time = TIMER;
+/* no card yet, nothing from Bluetooth */
+    i32_card = NEXT_ENOCARD;
+    i32_bt_line = 0;
+    i32_bt_result = 0;
+    b_draw = false;
+/* no tape plays; an empty screen */
+    TAPE = TAPE_FLUSH;
+    osd_hide();
+    osd_clear();
+/* the card goes into the machine, which starts from it */
+    i32_card = next_start();
+    if (i32_card != NEXT_OK)
+    {
+        osd_text(OSD_ROWS - YES, 0, " No SD card", OSD_COLS, YES);
+        osd_show(0);
+    }
+/* the main loop */
+    while (true)
+    {
+/* without a card: look for one once a second */
+        if (i32_card != NEXT_OK)
+        {
+            if ((TIMER - ui32_card_time) > (NEXT_CARD_MS * CLK_PER_MS))
+            {
+                ui32_card_time = TIMER;
+                i32_card = next_start();
+/* found: the message goes */
+                if ((i32_card == NEXT_OK) && (g_i32_bt_on == 0))
+                {
+                    osd_clear();
+                    osd_hide();
+                }
+            }
+        }
+        else
+        {
+/* the machine's sectors */
+            next_service();
+        }
+        ui32_keys = key_events();
+/* the Bluetooth menu closes when the key that closed it is released */
+        if (g_i32_closing != 0)
+        {
+            if ((KEYS & (CLOSE_KEYS | K_BT)) == 0)
+            {
+                g_i32_closing = 0;
+                g_i32_bt_on = 0;
+                bt_close();
+/* an empty screen again, or the card message */
+                osd_clear();
+                osd_hide();
+                if (i32_card != NEXT_OK)
+                {
+                    osd_text(OSD_ROWS - YES, 0, " No SD card", OSD_COLS, YES);
+                    osd_show(0);
+                }
+            }
+        }
+/* the Bluetooth menu's keys */
+        else if (g_i32_bt_on != 0)
+        {
+            i32_bt_result = bt_keys(ui32_keys);
+            if (i32_bt_result == BT_KEYS_CLOSE)
+            {
+                g_i32_closing = YES;
+            }
+        }
+/* F3 opens the Bluetooth menu */
+        else if ((ui32_keys & K_BT) != 0)
+        {
+            bt_menu();
+        }
+        else
+        {
+/* no other keys here: the keyboard is the machine's */
+        }
+/* lines from the ESP32's Bluetooth part */
+        i32_bt_line = bt_service();
+/* the Bluetooth menu is drawn on a key, on news, and 5 times a second */
+        if (g_i32_bt_on != 0)
+        {
+            b_draw = (ui32_keys != 0) || (i32_bt_line != 0) || (i32_bt_result == BT_KEYS_REDRAW);
+            if (!b_draw)
+            {
+                b_draw = (TIMER - ui32_draw_time) > (DRAW_MS * CLK_PER_MS);
+            }
+/* drawn now */
+            if (b_draw)
+            {
+                bt_draw();
+                ui32_draw_time = TIMER;
+            }
+        }
+    }
+}
+
 /* the loader's task (esp_hw.cpp): returns only when the machine menu is left */
 int main(void)
 {
     if (g_i32_machine_menu != 0)
     {
         menu_main();
+    }
+/* the Spectrum Next */
+    else if (g_i32_machine_next != 0)
+    {
+        next_main();
     }
     else
     {
@@ -4305,6 +4428,7 @@ void loader_reset_all(void)
     at_reset();
     nes_reset();
     md_reset();
+    next_reset();
 /* L64, saving */
     c64_reset();
     save_reset();

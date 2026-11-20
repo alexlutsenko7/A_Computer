@@ -1525,3 +1525,92 @@ system ROM, so their ROM areas in the flash stay empty: a game is a file that th
   INSTALL/MACHINES); date-only changes of the other binaries put back.
 - Open: the user's test with that game on the 60 Hz-only monitor; the staged card set carries the old LMega
   machine file.
+
+### 2026-11-19 (evening, unattended): LNext, the ZX Spectrum Next, first run on hardware
+
+User: "what will it take to port the ZX Spectrum Next?", then "go ahead" for the night, board left connected.
+
+- **What it is:** the open Spectrum Next core in its MiSTer port as an unchanged copy (`ZXNEXT/`, commit 7daebd1,
+  GPL-3; `ZXNEXT/SOURCE.md`), 10CL025 only (`LNext/10cl025`, README there). The MiSTer port already has what we
+  need: the CPU's memory port with wait states for an SDRAM, Layer 2's own memory port, key events instead of a
+  PS/2 line. Ours: `next_bram.vhd`, `next_sdram.v`, `next_sd.v`, `next_keyboard.v`, `next_video.v`, `LNext.v`.
+- **Fit:** the bare core is 15,974 LEs; the machine 18,289 (74 %). The limit was block RAM: 76 blocks wanted, 66
+  there. Saved: one line buffer instead of two in the video output (the first reading of a line runs ahead of the
+  writing, the second behind it), the sprite attribute memories merged (5 -> 2), the boot ROM as 4 + 2 + 1 KB block
+  ROMs with its last kilobyte in logic (8 -> 7; one 7 KB ROM still takes 8, and three inferred ROMs were merged into
+  one of 12), no command memory for the tape player (LNext's copy of the loader), no shift registers in block RAM.
+  66 of 66 now: nothing more fits without taking something out.
+- **Asynchronous memories:** the core reads its small memories without a clock (sprite attributes, line buffers).
+  The Cyclone 10 LP has none of those; `next_bram.vhd` uses block RAM whose read address is taken on the opposite
+  clock edge, with a one-word bypass for a read half a clock after a write to the same word.
+- **Clocks:** PLL 1: 28 / 14 / 7 MHz for the machine, 112 MHz for the SDRAM and its shifted copy for the SDRAM
+  clock pin (all five outputs). The loader with the ESP32 link needs 56 MHz (the link's sampling was made for it):
+  a second PLL, treated as asynchronous to the machine; every crossing is a synchroniser or a held handshake.
+  Timing: the MiSTer port's constraints (the CPU's gated clock as a generated clock, two cycles between it and
+  the 112 MHz domain). Clean with fitter seed 2: setup + 0.84 ns (112 MHz), hold + 0.13 ns; seed 1 missed hold
+  by 0.08 ns on one path.
+- **SD card:** the Next starts from the card (boot ROM -> `TBBLUE.FW` -> ROMs, NextZXOS), and the card is on the
+  ESP32. So: the MiSTer framework's SD card of logic (`ZXNEXT/sys/sd_card.sv`) in the FPGA, and the ESP32 moves
+  sectors between its buffer and the real card (`ESP32/vN/src/next.cpp`, `next_sd.v`; MSTAT = request + sector,
+  MCTL = buffer is mine / card is in, MCLR = card size, bytes through the memory commands). The user asked why
+  `TBBLUE.FW` (620 KB) is not put into the flash: it would not remove the card (it loads everything else from it,
+  NextZXOS works from it), the boot ROM would have to be replaced, and the file is not ours to ship.
+- **Found on hardware:** "Error reading TBBLUE.FW data": while the ESP32 was still bringing a sector read ahead,
+  the core sent its next read command, and the card of logic took the late sector for the new command's first one.
+  On MiSTer the host answers in microseconds. Fix: the CPU waits whenever a sector is on its way (`sd_wait` in
+  `next_sd.v`: from the request until the ESP32 gives the buffer back), not only for written ones.
+  Also: a reconfiguring FPGA reads as all ones, which looked like a write request for sector 0x3FFFFFFF;
+  `next.cpp` now ignores a word with both request bits and sectors outside the card (PC test `next_test.cpp`).
+- **Hardware results** (10CL025 + rev 2 I/O board, bitstream over JTAG, nobody at the board: keys and picture
+  through `tests/jtag_rig`, see its README): from a complete distribution (MiSTer's `boot.vhd` image served by the
+  PC through the firmware's test option `NEXT_SERIAL_CARD`, the user's card untouched): the firmware's video test,
+  settings written back (the file system checked on the PC with the written sectors applied), NextZXOS 2.09 with
+  1792K, Browser, Guide (tilemap), a Layer 2 picture from a `.nex`, Spectron 2084 (sprites). From the user's card
+  with the normal firmware: boot ROM and `TBBLUE.FW` run and stop at "Error opening 'menu.ini/.def'": the card has
+  `TBBLUE.FW` only.
+- **Video as measured:** 912 pixel times per line at 28 MHz = 30.70 kHz; 622 lines = 49.36 Hz, 528 lines = 58.15 Hz
+  (the Next's own timing; the real machine offers faster master clocks, VGA modes 1 to 6, for monitors that want
+  more: not built, the MiSTer top does not pass the chosen mode on).
+- **Firmware:** `next.cpp` / `next.h`, core ID 4E58_0001, `sd_sectors()` in esp_hw.cpp, a main loop of its own
+  for this machine (sectors + the F3 Bluetooth menu, no file list); v1 and v2 the same; host tests PASS with the
+  new `next_test.cpp`. v2 with these changes is on the board's ESP32 (the normal build).
+- **Machine file:** `AMenu/10cl025/output_files/machines/LNext_10cl025.LMC` (mk_flash.py: machine byte 0x7E; the
+  other outputs byte-identical). Not installed: the board's flash is as the user left it.
+- **For the user to do:** copy the Spectrum Next distribution onto the card (its `machines` folder goes into our
+  `MACHINES` folder: sub-folders and our `.LMC` files side by side), copy `LNext_10cl025.LMC` into `MACHINES`,
+  F12 in the menu. Then: does the monitor take the picture (50 and 60 Hz, F8), the real keyboard, sound,
+  joysticks, Ctrl+Alt+Del back to the menu.
+- **Open:** the monitor question above (VGA modes 1 to 6 would need the video mode out of the core and a PLL that
+  can be re-tuned); the ESP32's own file system code must not write to the card while the Next uses it (it does
+  not in this machine: no file list, no Print Screen); the Next's Wi-Fi UART could go to the ESP32; real-time
+  clock; no ESP32 tape player here (TZX with custom loaders); the manuals, the .docx documents, the book and
+  `github/` do not know the machine yet; `INSTALL/README.txt` text.
+
+## 2026-11-20: LNext works from the folder ZXNEXT
+
+User: the card's root stays ours; the Next's distribution goes into a folder `ZXNEXT`. The Next's boot ROM, firmware and
+NextZXOS all look in the root directory, so `ESP32/vN/src/next.cpp` shows the machine the folder as the root: at the
+start it finds the folder's first cluster in the first FAT32 partition, and in the boot sector (and its copy) on the
+way to the machine the root directory's cluster is replaced by it; a boot sector the machine writes gets the real one
+back. The folder's "." and ".." entries are shown with the long-name attribute (skipped by every FAT reader, not taken
+for free entries) and kept as they are when the machine writes that sector. No disk image, nothing different on the
+card. A card without the folder (or FAT16) is given as it is. `status` on the console says which.
+
+- PC test (`next_test.cpp`, second part with a card image from `mkimg.py`): PASS, v1 and v2.
+- On the board (10CL025, JTAG rig, test option NEXT_SERIAL_CARD, the distribution image with everything moved into
+  `ZXNEXT`; its volume label is also "ZXNEXT", which the search must not take for the folder): boot ROM, TBBLUE.FW,
+  video test, settings written, NextZXOS 2.09 menu, Browser shows the folder's contents as `C:/`, no dot entries.
+- Not exercised on the board: the machine writing the folder's first directory sector or a boot sector (PC test only).
+- Open: the user's real card with the complete folder; everything listed as untested on 2026-11-19.
+- Board left with the product v2 firmware (with this change) and the menu; v1 compiles (90 % of its flash).
+- Later: the 10CL025 board's flash programmed and verified over JTAG with a one-off image menu + LSpectrum, L64, LNext
+  (`tmp/L_Spectrum_64_Next_10cl025.jic`, user's choice: LNext in LMega's position; the product L.jic is unchanged).
+  The C64 ROMs must be installed from the card again. `Games/ESP_32/ZXNext` = the distribution extracted from the
+  test image (1,030 files; the user's own 636 KB TBBLUE.FW kept beside it as `TBBLUE_yours_620K.FW`).
+- **Works from the user's real card** (user, 2026-11-20): NextZXOS from `ZXNEXT`, a game loaded, the monitor takes the
+  picture, Ctrl+Alt+Del works. (First try: "Version mismatch" = the user's own 2.08 enNextZX.rom among the 2.09 files.)
+- Joystick buttons on keys (user's choice of keys): Insert / Home / Page Up = left joystick's C / A / Start, Delete /
+  End / Page Down = the right one's; these keys give no key events any more (`next_keyboard.v` pad, `LNext.v`).
+  Keyboard sim PASS; build 18,347 LEs, 66 block RAMs, timing clean (worst + 0.08 ns); machine file remade; flash
+  programmed again with the one-off image (menu + LSpectrum, L64, LNext). Not tried on hardware yet.
+  mk_flash.py stamps the day into the info sectors: L.jic differs from day to day in those bytes only.

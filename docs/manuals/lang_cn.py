@@ -3,11 +3,11 @@
 
 INSTALL = dict(
     title='L — 安装指南',
-    subtitle='通过 SD 卡安装和更新 L 板卡上的机器：ZX Spectrum 128K、Commodore 64、Atari 800XL / 130XE、Nintendo Entertainment System 和 Sega Mega Drive。2026 年 11 月 17 日版。',
+    subtitle='通过 SD 卡安装和更新 L 板卡上的机器：ZX Spectrum 128K、Commodore 64、Atari 800XL / 130XE、Nintendo Entertainment System、Sega Mega Drive 和 ZX Spectrum Next。2026 年 11 月 20 日版。',
     blocks=[
         ('h1', '1. 本文件夹的内容'),
         ('table', ['文件', '内容'], [
-            ['`MACHINES`', '机器，每台一个文件（`.LMC`）：LSpectrum、L64、LTari 800、LTari 130、LNES、LMega。把整个文件夹复制到 SD 卡。'],
+            ['`MACHINES`', '机器，每台一个文件（`.LMC`）：LSpectrum、L64、LTari 800、LTari 130、LNES、LMega、LNext。把整个文件夹复制到 SD 卡。'],
             ['`ESP32_UPDATE`', 'ESP32 的固件 `LESP32.BIN`：文件夹 `v1` 用于第一版 I/O 板，`v2` 用于第二版。'],
             ['`MENU_UPDATE`', '机器菜单本身：文件夹 `10cl025` 中的 `LUPDATE.BIN`。'],
             ['`EN`、`SP`、`PT`、`DE`、`UA`、`RU`、`CN`、`KR`、`JP`', '本指南和用户手册的九种语言版本。'],
@@ -32,6 +32,7 @@ INSTALL = dict(
             ['机器列表是空的', '文件夹必须名为 `MACHINES`，位于卡的根目录，并且卡必须是 FAT32 或 FAT16。'],
             ['安装过程中断电', '该位置显示 **(empty)**。重新安装这台机器即可。菜单和另外两个位置不受影响。'],
             ['LNES 或 LMega 能启动，但不显示游戏列表', 'ESP32 需要较新的固件：第 4 节。'],
+            ['LNext 无法启动', '它的文件必须位于卡上的 `ZXNEXT` 文件夹中（第 5 节），并且 ESP32 需要较新的固件（第 4 节）。'],
         ], [40, 60]),
         ('note', '安装机器绝不会改动 SD 卡上的文件。重新安装 L64 会保留您放入的 C64 ROM（第 5 节）。'),
         ('h1', '4. 更新'),
@@ -41,7 +42,7 @@ INSTALL = dict(
             '从 `ESP32_UPDATE/v1`（第一版 I/O 板：ESP32 是一块插接的小板）或 `ESP32_UPDATE/v2`（第二版 I/O 板：板上有 USB-C 插座）中取出 `LESP32.BIN`。',
             '把它复制到 SD 卡的根目录，插入卡并开机。更新会自动进行。',
         ]),
-        ('p', 'LNES 和 LMega 需要这个固件：请在安装它们之前完成更新。'),
+        ('p', 'LNES、LMega 和 LNext 需要这个固件：请在安装它们之前完成更新。'),
         ('h2', '机器菜单'),
         ('ol', [
             '从 `MENU_UPDATE/10cl025` 中取出 `LUPDATE.BIN`。',
@@ -53,13 +54,14 @@ INSTALL = dict(
         ('p', '机器本身通过安装较新的 `.LMC` 文件来更新（第 3 节）。'),
         ('p', '仍是旧菜单（四台机器）的板卡：把新的 `LESP32.BIN`、`LUPDATE.BIN` 和 `MACHINES` 文件夹一起放到卡上。先更新 ESP32，再更新菜单。断电并重新开机后，菜单显示三个空位置：用 F12 安装机器。'),
         ('h1', '5. 不包含的软件'),
-        ('p', '开发板套件和本文件夹 **不包含任何游戏或其他程序**，也 **不包含 Commodore 64 的 ROM**。请自行获取并复制到 SD 卡。请尊重版权：只使用您有权使用的软件和 ROM；游戏并不会因为年代久远就成为免费的。许多老程序经作者许可可以自由传播，但也有一些不行。'),
+        ('p', '开发板套件和本文件夹 **不包含任何游戏或其他程序**，**不包含 Commodore 64 的 ROM**，也 **不包含 ZX Spectrum Next 的系统文件**。请自行获取并复制到 SD 卡。请尊重版权：只使用您有权使用的软件和 ROM；游戏并不会因为年代久远就成为免费的。许多老程序经作者许可可以自由传播，但也有一些不行。'),
         ('table', ['机器', '启动前需要', '程序'], [
             ['LSpectrum', '无', '.tap、.tzx、.z80'],
             ['L64', '**C64 的 ROM，只需一次**（见下）', '.d64、.prg、.t64、.tap'],
             ['LTari 800 / 130', '无', '.atr、.xex、.car'],
             ['LNES', '无', '.nes'],
             ['LMega', '无', '.md、.gen、.bin、.smd'],
+            ['LNext', '**Spectrum Next 的文件，只需一次**（见下）', 'Spectrum Next 能运行的一切，来自 `ZXNEXT` 文件夹'],
         ], [22, 38, 40]),
         ('h2', 'Commodore 64 的 ROM（只需一次）'),
         ('p', 'C64 的内置程序受版权保护，不属于 L 的一部分。请使用您有权使用的副本：从您自己拥有的 C64 和 1541 中读出的，或获得授权的。'),
@@ -68,7 +70,15 @@ INSTALL = dict(
             '在机器菜单中启动 **L64**。ROM 被复制到板卡中（几秒钟，屏幕上有提示），然后 C64 启动。',
             '此后 C64 不需要卡也能启动。如果缺少某个文件，屏幕会说明该放在哪里。没有 1541 的文件时 C64 可以运行，但没有磁盘驱动器。',
         ]),
-        ('pre', 'SD 卡（示例）\n  MACHINES/    机器文件（.LMC）\n  ROMS/C64/    四个 C64 ROM 文件\n  Spectrum/    .tap .tzx .z80\n  C64/         .d64 .prg .t64 .tap .a64\n  Atari/       .atr .xex .car .a8s\n  NES/         .nes\n  MegaDrive/   .md .gen .bin .smd'),
+        ('h2', 'Spectrum Next 的文件（只需一次）'),
+        ('p', 'Spectrum Next 把整个系统保存在 SD 卡上。这些文件不属于 L 的一部分。请从 `https://www.specnext.com/latestdistro/` 下载 Spectrum Next 发行包。'),
+        ('ol', [
+            'SD 卡必须是 **FAT32**。在卡的根目录建立文件夹 `ZXNEXT`。',
+            '把发行包中的全部内容原样复制到 `ZXNEXT` 中：文件 `TBBLUE.FW`、文件夹 `machines`、`nextzxos` 以及其余所有内容。',
+            '在机器菜单中用 F12 安装 **LNext**（第 3 节）并启动它。',
+            '首次启动时，Next 会测试画面并询问设置；设置保存在卡上。随后 NextZXOS 显示其菜单。',
+        ]),
+        ('pre', 'SD 卡（示例）\n  MACHINES/    机器文件（.LMC）\n  ROMS/C64/    四个 C64 ROM 文件\n  Spectrum/    .tap .tzx .z80\n  C64/         .d64 .prg .t64 .tap .a64\n  Atari/       .atr .xex .car .a8s\n  NES/         .nes\n  MegaDrive/   .md .gen .bin .smd\n  ZXNEXT/      Spectrum Next 的文件'),
         ('p', '文件夹可以任意命名，也可以嵌套。文件列表中每个文件夹最多显示 320 个条目（第二版 I/O 板为 4096 个），因此请把大量文件分放到子文件夹中。'),
         ('h1', '6. 快速检查'),
         ('table', ['操作', '应看到'], [
@@ -77,6 +87,7 @@ INSTALL = dict(
             ['**Ctrl + Alt + Del**，启动 **L64**', 'C64 的 READY 画面（首次：正在安装 ROM）'],
             ['**Ctrl + Alt + Del**，启动 **LTari 130**', 'Altirra BASIC，READY'],
             ['启动 **LNES** 或 **LMega**', '游戏列表打开'],
+            ['启动 **LNext**', 'NextZXOS 从 `ZXNEXT` 文件夹启动'],
             ['在机器中按 **F8**', '画面在 60 Hz 与 50 Hz 之间切换'],
         ], [45, 55]),
         ('p', '其他所有内容——按键、菜单、摇杆、加载与保存——请参阅同一文件夹中的 **用户手册**。'),

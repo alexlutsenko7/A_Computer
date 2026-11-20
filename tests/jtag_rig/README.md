@@ -41,3 +41,21 @@ For the C64 the test image needs the C64 ROMs in the flash (the ESP32 normally i
 
 What the rig cannot test: everything behind the I/O board's connectors (keyboard, sound, joysticks, the ESP32 link,
 the SD update) and the monitor itself.
+
+## LNext (2026-11-19)
+
+The Spectrum Next machine was brought up with the I/O board on, but without anybody at the keyboard and the
+monitor, so the rig did both:
+
+```
+python3 tests/jtag_rig/setup_next.py                     # scratch copy with the rig: tmp/next_rig/LNext/10cl025
+cd tmp/next_rig/LNext/10cl025 && quartus_sh --flow compile LNext
+quartus_pgm -c USB-Blaster -m JTAG -o "p;output_files/LNext.sof"
+bash tests/jtag_rig/stp.sh stat                          # ID 4E580001, lines per frame, rates
+quartus_stp -t tests/jtag_rig/keys.tcl 29 W4000 5A E72 5A    # Space, wait 4 s, Enter, cursor down, Enter
+bash tests/jtag_rig/stp.sh grab s.txt 6 2 260 "40" 2 "11 7 3" && python3 tests/jtag_rig/mkpng.py s.txt s.png 2 2
+```
+
+`keys.tcl` takes PS/2 set 2 codes in hex (`E` before a code: extended, `Wn`: wait n ms); the machine sees them
+as key events beside the real keyboard's. A grab takes about half a minute, so a moving picture comes out as a
+mix of frames; one colour plane (`"7"`) is three times faster.

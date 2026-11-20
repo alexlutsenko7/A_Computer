@@ -2,12 +2,12 @@
 /* Same block structure as lang_en.js; on-screen messages stay as the board shows them. */
 module.exports = {
   title: "L — Manual do utilizador",
-  subtitle: "Uma placa, as máquinas clássicas que escolher: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System e Sega Mega Drive. Como ligá-la, escolher as máquinas e jogar. Edição de 17 de novembro de 2026.",
+  subtitle: "Uma placa, as máquinas clássicas que escolher: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive e ZX Spectrum Next. Como ligá-la, escolher as máquinas e jogar. Edição de 20 de novembro de 2026.",
   page: "página",
   blocks: [
     /* ------------------------------------------------------------ 1 */
     ["h1", "1. O que é o L"],
-    ["p", "O L é um pequeno conjunto de placas que se transforma num de vários computadores domésticos e consolas clássicos. Ao ligá-lo mostra o **menu de máquinas**. Escolhe uma máquina e, um momento depois, a placa é essa máquina: um ZX Spectrum, um Commodore 64, um Atari, uma consola Nintendo ou uma consola Sega. Não é um programa emulador num PC; os chips da máquina antiga estão reconstruídos dentro da placa."],
+    ["p", "O L é um pequeno conjunto de placas que se transforma num de vários computadores domésticos e consolas clássicos. Ao ligá-lo mostra o **menu de máquinas**. Escolhe uma máquina e, um momento depois, a placa é essa máquina: um ZX Spectrum, um Commodore 64, um Atari, uma consola Nintendo, uma consola Sega ou um ZX Spectrum Next. Não é um programa emulador num PC; os chips da máquina antiga estão reconstruídos dentro da placa."],
     ["p", "Os jogos e programas vêm de um cartão microSD. Uma lista de ficheiros no ecrã substitui o gravador de cassetes, a unidade de disquetes e a ranhura de cartuchos. A imagem vai para um monitor VGA e o som para a tomada de áudio ou para auscultadores Bluetooth."],
     ["table", ["Máquina", "O que é", "Ficheiros que usa"], [
       ["**LSpectrum**", "ZX Spectrum 128K (corre também programas de 48K)", ".tap .tzx (cassetes), .z80 (instantâneos)"],
@@ -16,6 +16,7 @@ module.exports = {
       ["**LTari 130**", "Atari 130XE, 128 KB", "como o LTari 800"],
       ["**LNES**", "Nintendo Entertainment System", ".nes (cartuchos)"],
       ["**LMega**", "Sega Mega Drive / Genesis", ".md .gen .bin .smd (cartuchos)"],
+      ["**LNext**", "ZX Spectrum Next", "Os ficheiros próprios do Spectrum Next na pasta `ZXNEXT` (secção 14)"],
     ], [18, 36, 46]],
     ["p", "A placa guarda **três máquinas** de cada vez. Quais três, é escolha sua: cada máquina é um ficheiro no cartão SD, e pode pôr qualquer uma no lugar de outra em cerca de 15 segundos (secção 4)."],
     ["note", "O conjunto vem sem jogos nem outros programas, e sem as ROM do Commodore 64. A secção 5 diz o que cada máquina precisa."],
@@ -77,7 +78,8 @@ module.exports = {
     ["table", ["Se ...", "Então ..."], [
       ["a lista de máquinas está vazia", "A pasta tem de se chamar `MACHINES`, estar na pasta raiz do cartão, e o cartão tem de ser FAT32 ou FAT16."],
       ["falta a corrente durante a instalação", "Essa posição mostra **(empty)**. Instale a máquina de novo. O menu e as outras duas posições não são tocados."],
-      ["o LNES ou o LMega arranca mas não mostra a lista de jogos", "O ESP32 precisa do firmware mais recente: secção 14."],
+      ["o LNES ou o LMega arranca mas não mostra a lista de jogos", "O ESP32 precisa do firmware mais recente: secção 15."],
+      ["o LNext não arranca", "Os seus ficheiros têm de estar na pasta `ZXNEXT` do cartão (secção 14), e o ESP32 precisa do firmware mais recente (secção 15)."],
     ], [40, 60]],
     ["note", "Instalar uma máquina nunca altera os ficheiros do cartão SD. Instalar o L64 de novo mantém as ROM do C64 que lá pôs (secção 5)."],
 
@@ -94,6 +96,7 @@ module.exports = {
       "  Atari/       .atr .xex .car .a8s",
       "  NES/         .nes",
       "  MegaDrive/   .md .gen .bin .smd",
+      "  ZXNEXT/      os ficheiros do Spectrum Next",
     ]],
     ["p", "Por favor respeite os direitos de autor: use apenas software e ROM que esteja autorizado a usar. Um jogo não é livre só por ser antigo. Muitos programas antigos podem ser partilhados com autorização dos autores, outros não."],
     ["table", ["Máquina", "Precisa antes de arrancar", "Programas"], [
@@ -102,6 +105,7 @@ module.exports = {
       ["LTari 800 / 130", "Nada", ".atr, .xex, .car"],
       ["LNES", "Nada", ".nes"],
       ["LMega", "Nada", ".md, .gen, .bin, .smd"],
+      ["LNext", "**Os ficheiros do Spectrum Next, uma vez** (secção 14)", "Tudo o que um Spectrum Next corre, a partir da pasta `ZXNEXT`"],
     ], [22, 38, 40]],
     ["h2", "As ROM do Commodore 64 (uma vez)"],
     ["p", "Os programas internos do C64 têm direitos de autor e não fazem parte do L. Use cópias a que tenha direito: lidas de um C64 e de uma 1541 seus, ou licenciadas."],
@@ -122,6 +126,7 @@ module.exports = {
       ["**F8**", "Computadores: troca a imagem entre 60 Hz e os 50 Hz próprios da máquina. Depois de cada arranque são 60 Hz. Se o monitor não mostrar nada, carregue de novo em F8. LMega: secção 13. LNES: sem função."],
       ["**Print Screen**", "Guarda a imagem como `SCRNnnnn.BMP` na pasta em que a lista de ficheiros está (não no LMega)"],
     ], [34, 66]],
+    ["note", "O LNext tem as suas próprias teclas (secção 14). Das teclas acima, só F3, F8 e Ctrl + Alt + Del funcionam nele."],
     ["p", "Mensagens curtas (por exemplo **Speed: turbo**) aparecem durante alguns segundos na linha inferior da imagem. Enquanto um menu ou a lista de ficheiros estão abertos, a máquina não recebe teclas."],
     ["h2", "A lista de ficheiros"],
     ["p", "A lista mostra primeiro as pastas e depois os ficheiros que a máquina em funcionamento pode usar, a branco sobre azul por cima da imagem."],
@@ -164,6 +169,7 @@ module.exports = {
       ["LTari", "**DB9-1 = stick 0** (jogador 1 na maioria dos jogos), DB9-2 = stick 1 — trocados"],
       ["LNES", "Que conector é o comando 1; se o botão de disparo é **A** (predefinição) ou B"],
       ["LMega", "Que conector é o comando 1"],
+      ["LNext", "Sem menu F4: DB9-1 é o joystick esquerdo do Next, DB9-2 o direito. O seu tipo (Kempston, Sinclair, cursor ...) escolhe-se no NextZXOS."],
     ], [18, 82]],
     ["p", "Os comandos das consolas têm mais botões do que um joystick. O joystick dá as direções e um botão; os outros botões estão no teclado (secções 12 e 13). Um jogo de consola pode ser jogado com o teclado e um joystick, ou com o botão do joystick e as teclas junto da sua outra mão."],
 
@@ -263,7 +269,7 @@ module.exports = {
 
     /* ------------------------------------------------------------ 12 */
     ["h1", "12. LNES (Nintendo Entertainment System)"],
-    ["note", "O LNES e o LMega são as máquinas mais recentes. Quando esta edição foi escrita tinham passado os seus testes em simulação e ainda não tinham corrido numa placa."],
+    ["note", "O LNES e o LMega são máquinas novas. Quando esta edição foi escrita corriam na placa, mas só tinham sido experimentados com alguns jogos."],
     ["p", "A lista de jogos abre-se sozinha quando o LNES arranca. Escolha um ficheiro .nes e carregue em **Enter**: o jogo arranca. **F12** abre a lista de novo para outro jogo."],
     ["table", ["Botão", "Comando 1", "Comando 2"], [
       ["Cima, Baixo, Esquerda, Direita", "Joystick no DB9-1", "Joystick no DB9-2"],
@@ -311,14 +317,50 @@ module.exports = {
     ]],
 
     /* ------------------------------------------------------------ 14 */
-    ["h1", "14. Atualizar a placa"],
+    ["h1", "14. LNext (ZX Spectrum Next)"],
+    ["note", "O LNext é a máquina mais recente. Quando esta edição foi escrita tinha arrancado o NextZXOS e corrido programas na placa numa montagem de teste. A sua imagem num monitor, o seu som, os joysticks e o teclado USB ainda não tinham sido testados."],
+    ["p", "O LNext é o ZX Spectrum Next, o sucessor moderno do Spectrum: um processador mais rápido (até 28 MHz), 2 MB de memória, gráficos novos com sprites e três chips de som. Corre o **NextZXOS**, o sistema próprio do Next, que também oferece o Spectrum 48K e 128K."],
+    ["h2", "Os ficheiros do Spectrum Next (uma vez)"],
+    ["p", "Um Spectrum Next guarda todo o seu sistema no cartão SD. Estes ficheiros não fazem parte do L. Descarregue a distribuição do Spectrum Next de `https://www.specnext.com/latestdistro/`."],
+    ["ol", [
+      "O cartão SD tem de ser **FAT32**. Crie a pasta `ZXNEXT` na pasta principal do cartão.",
+      "Copie tudo o que vem na distribuição para `ZXNEXT`, tal como vem: o ficheiro `TBBLUE.FW`, as pastas `machines`, `nextzxos` e todo o resto.",
+      "Instale o **LNext** com F12 no menu de máquinas (secção 4) e inicie-o.",
+      "No primeiro arranque o Next testa a imagem e pergunta pelas suas definições; guarda-as no cartão. Depois o NextZXOS mostra o seu menu.",
+    ]],
+    ["p", "Para o Next, a pasta `ZXNEXT` é o cartão inteiro (a sua unidade `C:`). Ponha os jogos e programas do Next nesta pasta e inicie-os a partir do **Browser** do NextZXOS. O Next não vê os ficheiros das outras máquinas, e a lista de ficheiros das outras máquinas (F12) não é usada aqui."],
+    ["table", ["Tecla", "O que faz"], [
+      ["**F1**", "Reinício completo: o Next arranca de novo a partir do cartão"],
+      ["**F4**", "Reinício suave"],
+      ["**F6**", "Velocidade do processador: 3,5 → 7 → 14 → 28 MHz"],
+      ["**F8**", "50 / 60 Hz"],
+      ["**F9**", "O botão Multiface do Next (NMI): o menu NMI do NextZXOS"],
+      ["**F10**", "O botão Drive do Next"],
+      ["**F3**", "Menu de áudio Bluetooth (secção 7)"],
+      ["**Ctrl + Alt + Del**", "Volta ao menu de máquinas"],
+    ], [34, 66]],
+    ["p", "O teclado do PC é o teclado do Next: as letras, os dígitos, as teclas de cursor, Backspace e os sinais de pontuação atuam como num Spectrum Next."],
+    ["table", ["Botão do joystick", "Joystick esquerdo (DB9-1)", "Joystick direito (DB9-2)"], [
+      ["Direções, disparo (botão B)", "O joystick", "O joystick"],
+      ["Botão C (segundo disparo)", "**Insert**", "**Delete**"],
+      ["Botão A (terceiro disparo)", "**Home**", "**End**"],
+      ["Start", "**Page Up**", "**Page Down**"],
+    ], [34, 33, 33]],
+    ["ul", [
+      "A imagem tem a temporização própria do Next, cerca de 49 Hz ou 58 Hz (F8). Se o monitor não mostrar nada, carregue em F8.",
+      "O som é o mesmo nos dois canais.",
+      "Não disponíveis: o rato, o relógio de tempo real, Wi-Fi, a porta de expansão, Print Screen, os instantâneos com F2 e a atualização do núcleo do Next a partir do NextZXOS.",
+    ]],
+
+    /* ------------------------------------------------------------ 15 */
+    ["h1", "15. Atualizar a placa"],
     ["p", "As atualizações são ficheiros da pasta `INSTALL` da transferência do projeto. Só são precisas quando é publicada uma nova versão."],
     ["h2", "O ESP32 (lista de ficheiros, Bluetooth)"],
     ["ol", [
       "Tire `LESP32.BIN` de `ESP32_UPDATE/v1` (primeira placa de E/S: o ESP32 é uma pequena placa de encaixe) ou de `ESP32_UPDATE/v2` (segunda placa de E/S: conector USB-C na placa).",
       "Copie-o para a pasta raiz do cartão SD, ponha o cartão e ligue. A atualização corre sozinha.",
     ]],
-    ["p", "O LNES e o LMega precisam deste firmware: faça-o antes de os instalar."],
+    ["p", "O LNES, o LMega e o LNext precisam deste firmware: faça-o antes de os instalar."],
     ["h2", "O menu de máquinas"],
     ["ol", [
       "Tire `LUPDATE.BIN` de `MENU_UPDATE/10cl025`.",
@@ -329,8 +371,8 @@ module.exports = {
     ["note", "Use apenas o ficheiro de `MENU_UPDATE/10cl025`. Um ficheiro de menu feito para outra placa deixa a placa sem conseguir arrancar; tem então de ser gravada de novo com um cabo de programação."],
     ["p", "As próprias máquinas são atualizadas instalando os seus ficheiros `.LMC` mais recentes (secção 4)."],
 
-    /* ------------------------------------------------------------ 15 */
-    ["h1", "15. Se algo não funcionar"],
+    /* ------------------------------------------------------------ 16 */
+    ["h1", "16. Se algo não funcionar"],
     ["table", ["Problema", "O que fazer"], [
       ["Sem imagem depois de F8", "O monitor não aceita 50 Hz: carregue de novo em F8."],
       ["A lista de ficheiros está vazia", "O cartão tem de ser FAT32 ou FAT16, não exFAT. Carregue de novo em F12 depois de trocar o cartão. A lista só mostra os ficheiros que a máquina em funcionamento pode usar."],
@@ -343,6 +385,7 @@ module.exports = {
       ["Sem som", "A tomada de áudio precisa de um amplificador ou de colunas ativas. Para o Bluetooth verifique **Connected** no menu F3 e a sua linha Volume."],
       ["Um jogo do Spectrum não carrega", "Carregue em F6 (velocidade normal) e carregue-o de novo."],
       ["Um jogo do Atari bloqueia no arranque", "Carregue de novo o .atr e responda **F1** (No BASIC)."],
+      ["O LNext mostra um erro ao arrancar, ou não há imagem", "A pasta `ZXNEXT` tem de conter a distribuição completa do Spectrum Next, num cartão FAT32 (secção 14). Sem imagem: carregue em F8."],
       ["Um jogo de consola é recusado", "LNES: o seu tipo de cartucho não está incluído. LMega: jogos acima de 4 MB e jogos com chips adicionais no cartucho não correm."],
     ], [38, 62]],
   ],

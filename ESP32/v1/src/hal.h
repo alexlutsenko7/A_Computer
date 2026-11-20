@@ -50,6 +50,8 @@
 int32_t sd_read(uint32_t ui32_lba, uint8_t *pui8_buf);
 /* write one 512-byte sector: 0 = ok */
 int32_t sd_write(uint32_t ui32_lba, const uint8_t *pui8_buf);
+/* the card's size in 512-byte sectors, 0 without a card */
+uint32_t sd_sectors(void);
 /* free entries in the pulse FIFO */
 uint32_t fifo_free(void);
 /* one command into the pulse FIFO; only called when fifo_free() > 0 */

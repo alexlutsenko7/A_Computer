@@ -26,6 +26,8 @@ listed below; their licence texts and copyright headers are kept in the files.
 | **fx68k** 68000 CPU | LMega | **GPL-3** | no |
 | **jt12** YM2612, **jt89** SN76489 | LMega (sound) | **GPL-3** | no |
 | **Mega Drive VDP** (MiSTer Genesis core) | LMega (video chip) | BSD-style | no |
+| **ZX Spectrum Next core** (MiSTer port; includes its Z80N, sound chips, video) | LNext (the whole machine) | **GPL-3** | no; two files are rebuilt from the unchanged ones (`LNext/10cl025/tools/mk_c10_files.py`), `next_sdram.v` follows the port's SDRAM controller (GPL-2 or later) |
+| **SD card of logic** (`sd_card.sv`, MiSTer framework) | LNext | LGPL-3 | no |
 | **VIC-II Kawari** | L64 (video chip) | **GPL-3** | small, marked `// L64:` |
 | **SID** 6581 / 8580 | L64 (sound) | CERN-OHL-S v2 (`sid_dac`, `sid_filter`) + GPL-2 or later (rest) | no |
 | **CIA** 6526 (`mos6526.v`) | L64 (2 CIAs) | GPL-2 or later (MiSTer C64 core) | small, marked `// L64:` |
@@ -41,7 +43,7 @@ listed below; their licence texts and copyright headers are kept in the files.
 | KiCad library footprints | I/O board (`Extra_PCB_CycloneIV.pretty/`: D-Sub 15 HD, pin headers) | CC-BY-SA 4.0 + KiCad library exception (the board design and its Gerbers are not bound) | adapted (CONNFLY DS1038 pins, rows swapped, keyboard module) |
 
 **What GPL / CERN-OHL-S mean for the bitstreams:** the L64 image contains GPL-3 and CERN-OHL-S parts, the
-LSpectrum image contains JT49 (GPL-3) and the LMega image contains fx68k, jt12 and jt89 (GPL-3). LNES contains no GPL part.
+LSpectrum image contains JT49 (GPL-3), the LMega image contains fx68k, jt12 and jt89 (GPL-3) and the LNext image is the Spectrum Next core (GPL-3). LNES contains no GPL part.
 LMega's bus logic (`md_system.sv`) follows the MiSTer Genesis core's system module and repeats its BSD-style notice. Whoever passes on those `.sof` files or `L.jic` must make the complete
 corresponding source available, which this repository is. The MIT files stay MIT; the combined images are
 distributed under the terms of the strongest licence they contain.

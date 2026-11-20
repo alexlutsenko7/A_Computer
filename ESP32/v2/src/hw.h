@@ -164,6 +164,8 @@ extern int32_t g_i32_machine_atari;
 /* the cartridge machines */
 extern int32_t g_i32_machine_nes;
 extern int32_t g_i32_machine_md;
+/* next = 1: LNext (ZX Spectrum Next): the card's sectors go to the machine (next.cpp) */
+extern int32_t g_i32_machine_next;
 extern int32_t g_i32_machine_menu;
 /* the machine menu with three machine positions of 2 MB (core ID 4D4E_0003): machines can be */
 /* installed from the card; an older menu must be updated first (LUPDATE.BIN) */

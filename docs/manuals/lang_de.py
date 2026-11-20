@@ -3,11 +3,11 @@
 
 INSTALL = dict(
     title='L — Installationsanleitung',
-    subtitle='Die Maschinen der L-Platine von einer SD-Karte installieren und aktualisieren: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System und Sega Mega Drive. Ausgabe vom 17. November 2026.',
+    subtitle='Die Maschinen der L-Platine von einer SD-Karte installieren und aktualisieren: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive und ZX Spectrum Next. Ausgabe vom 20. November 2026.',
     blocks=[
         ('h1', '1. Inhalt dieses Ordners'),
         ('table', ['Datei', 'Was es ist'], [
-            ['`MACHINES`', 'Die Maschinen, je eine Datei (`.LMC`): LSpectrum, L64, LTari 800, LTari 130, LNES, LMega. Kopieren Sie den ganzen Ordner auf die SD-Karte.'],
+            ['`MACHINES`', 'Die Maschinen, je eine Datei (`.LMC`): LSpectrum, L64, LTari 800, LTari 130, LNES, LMega, LNext. Kopieren Sie den ganzen Ordner auf die SD-Karte.'],
             ['`ESP32_UPDATE`', 'Die Firmware des ESP32, `LESP32.BIN`: Ordner `v1` für die erste I/O-Platine, `v2` für die zweite.'],
             ['`MENU_UPDATE`', 'Das Maschinenmenü selbst: `LUPDATE.BIN` im Ordner `10cl025`.'],
             ['`EN`, `SP`, `PT`, `DE`, `UA`, `RU`, `CN`, `KR`, `JP`', 'Diese Anleitung und das Benutzerhandbuch in neun Sprachen.'],
@@ -32,6 +32,7 @@ INSTALL = dict(
             ['die Liste der Maschinen leer ist', 'Der Ordner muss `MACHINES` heißen und im obersten Ordner der Karte liegen, und die Karte muss FAT32 oder FAT16 sein.'],
             ['der Strom während der Installation ausfällt', 'Dieser Platz zeigt **(empty)**. Installieren Sie die Maschine erneut. Das Menü und die beiden anderen Plätze werden nicht berührt.'],
             ['LNES oder LMega startet, zeigt aber keine Spieleliste', 'Der ESP32 braucht seine neuere Firmware: Abschnitt 4.'],
+            ['LNext startet nicht', 'Seine Dateien müssen im Ordner `ZXNEXT` auf der Karte liegen (Abschnitt 5), und der ESP32 braucht seine neuere Firmware (Abschnitt 4).'],
         ], [40, 60]),
         ('note', 'Die Installation einer Maschine ändert nie die Dateien auf der SD-Karte. Wird L64 erneut installiert, bleiben die von Ihnen eingespielten C64-ROMs erhalten (Abschnitt 5).'),
         ('h1', '4. Aktualisieren'),
@@ -41,7 +42,7 @@ INSTALL = dict(
             'Nehmen Sie `LESP32.BIN` aus `ESP32_UPDATE/v1` (erste I/O-Platine: der ESP32 ist eine kleine Steckplatine) oder `ESP32_UPDATE/v2` (zweite I/O-Platine: USB-C-Buchse auf der Platine).',
             'Kopieren Sie die Datei in den obersten Ordner der SD-Karte, stecken Sie die Karte ein und schalten Sie ein. Die Aktualisierung läuft von selbst.',
         ]),
-        ('p', 'LNES und LMega brauchen diese Firmware: Erledigen Sie das, bevor Sie sie installieren.'),
+        ('p', 'LNES, LMega und LNext brauchen diese Firmware: Erledigen Sie das, bevor Sie sie installieren.'),
         ('h2', 'Das Maschinenmenü'),
         ('ol', [
             'Nehmen Sie `LUPDATE.BIN` aus `MENU_UPDATE/10cl025`.',
@@ -53,13 +54,14 @@ INSTALL = dict(
         ('p', 'Die Maschinen selbst werden aktualisiert, indem ihre neueren `.LMC`-Dateien installiert werden (Abschnitt 3).'),
         ('p', 'Eine Platine, die noch das frühere Menü mit vier Maschinen hat: Legen Sie die neuen Dateien `LESP32.BIN` und `LUPDATE.BIN` und den Ordner `MACHINES` zusammen auf die Karte. Zuerst wird der ESP32 aktualisiert, dann das Menü. Nach dem Aus- und Einschalten zeigt das Menü drei leere Plätze: Installieren Sie die Maschinen mit F12.'),
         ('h1', '5. Nicht enthaltene Software'),
-        ('p', 'Der Platinensatz und dieser Ordner enthalten **keine Spiele und keine anderen Programme** und **nicht die ROMs des Commodore 64**. Besorgen Sie diese selbst und kopieren Sie sie auf die SD-Karte. Bitte beachten Sie das Urheberrecht: Verwenden Sie nur Software und ROMs, die Sie verwenden dürfen; ein Spiel ist nicht frei, nur weil es alt ist. Viele alte Programme dürfen mit Erlaubnis ihrer Autoren frei weitergegeben werden, andere nicht.'),
+        ('p', 'Der Platinensatz und dieser Ordner enthalten **keine Spiele und keine anderen Programme**, **nicht die ROMs des Commodore 64** und **nicht die Systemdateien des ZX Spectrum Next**. Besorgen Sie diese selbst und kopieren Sie sie auf die SD-Karte. Bitte beachten Sie das Urheberrecht: Verwenden Sie nur Software und ROMs, die Sie verwenden dürfen; ein Spiel ist nicht frei, nur weil es alt ist. Viele alte Programme dürfen mit Erlaubnis ihrer Autoren frei weitergegeben werden, andere nicht.'),
         ('table', ['Maschine', 'Braucht vor dem Start', 'Programme'], [
             ['LSpectrum', 'Nichts', '.tap, .tzx, .z80'],
             ['L64', '**Die C64-ROMs, einmalig** (unten)', '.d64, .prg, .t64, .tap'],
             ['LTari 800 / 130', 'Nichts', '.atr, .xex, .car'],
             ['LNES', 'Nichts', '.nes'],
             ['LMega', 'Nichts', '.md, .gen, .bin, .smd'],
+            ['LNext', '**Die Dateien des Spectrum Next, einmalig** (unten)', 'Alles, was ein Spectrum Next ausführt, aus dem Ordner `ZXNEXT`'],
         ], [22, 38, 40]),
         ('h2', 'Die ROMs des Commodore 64 (einmalig)'),
         ('p', 'Die eingebauten Programme des C64 sind urheberrechtlich geschützt und gehören nicht zu L. Verwenden Sie Kopien, zu denen Sie berechtigt sind: aus einem eigenen C64 und einer eigenen 1541 ausgelesen, oder lizenzierte.'),
@@ -68,7 +70,15 @@ INSTALL = dict(
             'Starten Sie **L64** im Maschinenmenü. Die ROMs werden in die Platine kopiert (einige Sekunden, auf dem Bildschirm angezeigt), und der C64 startet.',
             'Von da an startet der C64 ohne die Karte. Fehlt eine Datei, sagt der Bildschirm, wohin sie gehört. Ohne die 1541-Datei läuft der C64, hat aber kein Diskettenlaufwerk.',
         ]),
-        ('pre', 'SD-Karte (Beispiel)\n  MACHINES/    die Maschinendateien (.LMC)\n  ROMS/C64/    die vier C64-ROM-Dateien\n  Spectrum/    .tap .tzx .z80\n  C64/         .d64 .prg .t64 .tap .a64\n  Atari/       .atr .xex .car .a8s\n  NES/         .nes\n  MegaDrive/   .md .gen .bin .smd'),
+        ('h2', 'Die Dateien des Spectrum Next (einmalig)'),
+        ('p', 'Ein Spectrum Next hält sein ganzes System auf der SD-Karte. Diese Dateien gehören nicht zu L. Laden Sie die Spectrum-Next-Distribution von `https://www.specnext.com/latestdistro/` herunter.'),
+        ('ol', [
+            'Die SD-Karte muss **FAT32** sein. Legen Sie im obersten Ordner der Karte den Ordner `ZXNEXT` an.',
+            'Kopieren Sie alles aus der Distribution unverändert nach `ZXNEXT`: die Datei `TBBLUE.FW`, die Ordner `machines`, `nextzxos` und alles Übrige.',
+            'Installieren Sie **LNext** mit F12 im Maschinenmenü (Abschnitt 3) und starten Sie ihn.',
+            'Beim ersten Start testet der Next das Bild und fragt nach seinen Einstellungen; er speichert sie auf der Karte. Danach zeigt NextZXOS sein Menü.',
+        ]),
+        ('pre', 'SD-Karte (Beispiel)\n  MACHINES/    die Maschinendateien (.LMC)\n  ROMS/C64/    die vier C64-ROM-Dateien\n  Spectrum/    .tap .tzx .z80\n  C64/         .d64 .prg .t64 .tap .a64\n  Atari/       .atr .xex .car .a8s\n  NES/         .nes\n  MegaDrive/   .md .gen .bin .smd\n  ZXNEXT/      die Dateien des Spectrum Next'),
         ('p', 'Ordner dürfen beliebige Namen haben und ineinander liegen. Ein Ordner zeigt bis zu 320 Einträge in der Dateiliste (4.096 bei der zweiten I/O-Platine); sortieren Sie eine große Sammlung also in Unterordner.'),
         ('h1', '6. Schnelltest'),
         ('table', ['Tun Sie das', 'Sie sollten sehen'], [
@@ -77,6 +87,7 @@ INSTALL = dict(
             ['**Strg + Alt + Entf**, **L64** starten', 'Den READY-Bildschirm des C64 (beim ersten Mal: die ROMs werden installiert)'],
             ['**Strg + Alt + Entf**, **LTari 130** starten', 'Altirra BASIC, READY'],
             ['**LNES** oder **LMega** starten', 'Die Spieleliste öffnet sich'],
+            ['**LNext** starten', 'NextZXOS startet aus dem Ordner `ZXNEXT`'],
             ['**F8** in einer Maschine', 'Das Bild wechselt zwischen 60 Hz und 50 Hz'],
         ], [45, 55]),
         ('p', 'Alles Weitere — Tasten, Menüs, Joysticks, Laden und Speichern — steht im **Benutzerhandbuch** im selben Ordner.'),

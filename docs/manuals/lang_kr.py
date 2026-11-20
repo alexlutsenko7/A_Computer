@@ -3,11 +3,11 @@
 
 INSTALL = dict(
     title='L — 설치 안내서',
-    subtitle='SD 카드로 L 보드의 머신을 설치하고 업데이트하기: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive. 2026년 11월 17일판.',
+    subtitle='SD 카드로 L 보드의 머신을 설치하고 업데이트하기: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive, ZX Spectrum Next. 2026년 11월 20일판.',
     blocks=[
         ('h1', '1. 이 폴더의 내용'),
         ('table', ['파일', '내용'], [
-            ['`MACHINES`', '머신, 각각 파일 하나(`.LMC`): LSpectrum, L64, LTari 800, LTari 130, LNES, LMega. 폴더 전체를 SD 카드에 복사하십시오.'],
+            ['`MACHINES`', '머신, 각각 파일 하나(`.LMC`): LSpectrum, L64, LTari 800, LTari 130, LNES, LMega, LNext. 폴더 전체를 SD 카드에 복사하십시오.'],
             ['`ESP32_UPDATE`', 'ESP32의 펌웨어 `LESP32.BIN`: 폴더 `v1`은 첫 번째 I/O 보드용, `v2`는 두 번째 I/O 보드용입니다.'],
             ['`MENU_UPDATE`', '머신 메뉴 자체: 폴더 `10cl025`의 `LUPDATE.BIN`.'],
             ['`EN`, `SP`, `PT`, `DE`, `UA`, `RU`, `CN`, `KR`, `JP`', '이 안내서와 사용자 설명서의 9개 언어판.'],
@@ -32,6 +32,7 @@ INSTALL = dict(
             ['머신 목록이 비어 있음', '폴더 이름은 `MACHINES`여야 하고 카드의 최상위 폴더에 있어야 하며, 카드는 FAT32 또는 FAT16이어야 합니다.'],
             ['설치 중에 전원이 끊김', '그 자리는 **(empty)**로 표시됩니다. 머신을 다시 설치하십시오. 메뉴와 나머지 두 자리는 건드리지 않습니다.'],
             ['LNES나 LMega가 시작되지만 게임 목록이 나오지 않음', 'ESP32에 최신 펌웨어가 필요합니다: 4절.'],
+            ['LNext가 시작되지 않음', '그 파일들이 카드의 `ZXNEXT` 폴더에 있어야 하며(5절), ESP32에 최신 펌웨어가 필요합니다(4절).'],
         ], [40, 60]),
         ('note', '머신을 설치해도 SD 카드의 파일은 절대 바뀌지 않습니다. L64를 다시 설치해도 넣어 둔 C64 ROM은 그대로 남습니다(5절).'),
         ('h1', '4. 업데이트'),
@@ -41,7 +42,7 @@ INSTALL = dict(
             '`ESP32_UPDATE/v1`(첫 번째 I/O 보드: ESP32가 꽂아 쓰는 작은 보드) 또는 `ESP32_UPDATE/v2`(두 번째 I/O 보드: 보드에 USB-C 소켓이 있음)에서 `LESP32.BIN`을 가져옵니다.',
             'SD 카드의 최상위 폴더에 복사하고, 카드를 넣고 전원을 켭니다. 업데이트는 저절로 진행됩니다.',
         ]),
-        ('p', 'LNES와 LMega에는 이 펌웨어가 필요합니다: 두 머신을 설치하기 전에 해 두십시오.'),
+        ('p', 'LNES, LMega, LNext에는 이 펌웨어가 필요합니다: 이 머신들을 설치하기 전에 해 두십시오.'),
         ('h2', '머신 메뉴'),
         ('ol', [
             '`MENU_UPDATE/10cl025`에서 `LUPDATE.BIN`을 가져옵니다.',
@@ -53,13 +54,14 @@ INSTALL = dict(
         ('p', '머신 자체는 더 새로운 `.LMC` 파일을 설치해 업데이트합니다(3절).'),
         ('p', '머신 네 개짜리 이전 메뉴가 아직 들어 있는 보드: 새 `LESP32.BIN`, `LUPDATE.BIN`과 `MACHINES` 폴더를 함께 카드에 넣으십시오. ESP32가 먼저, 그다음에 메뉴가 업데이트됩니다. 껐다가 켜면 메뉴에 빈 자리 세 개가 나옵니다: F12로 머신을 설치하십시오.'),
         ('h1', '5. 포함되지 않은 소프트웨어'),
-        ('p', '보드 세트와 이 폴더에는 **게임이나 다른 프로그램이 없으며**, **Commodore 64 ROM도 없습니다**. 직접 준비하여 SD 카드에 복사하십시오. 저작권을 존중해 주십시오: 사용할 권리가 있는 소프트웨어와 ROM만 사용하십시오. 오래된 게임이라고 해서 자유롭게 쓸 수 있는 것은 아닙니다. 많은 옛 프로그램은 저작자의 허락으로 자유롭게 공유할 수 있지만, 그렇지 않은 것도 있습니다.'),
+        ('p', '보드 세트와 이 폴더에는 **게임이나 다른 프로그램이 없으며**, **Commodore 64 ROM도**, **ZX Spectrum Next의 시스템 파일도 없습니다**. 직접 준비하여 SD 카드에 복사하십시오. 저작권을 존중해 주십시오: 사용할 권리가 있는 소프트웨어와 ROM만 사용하십시오. 오래된 게임이라고 해서 자유롭게 쓸 수 있는 것은 아닙니다. 많은 옛 프로그램은 저작자의 허락으로 자유롭게 공유할 수 있지만, 그렇지 않은 것도 있습니다.'),
         ('table', ['머신', '시작 전에 필요한 것', '프로그램'], [
             ['LSpectrum', '없음', '.tap, .tzx, .z80'],
             ['L64', '**C64 ROM, 한 번만**(아래)', '.d64, .prg, .t64, .tap'],
             ['LTari 800 / 130', '없음', '.atr, .xex, .car'],
             ['LNES', '없음', '.nes'],
             ['LMega', '없음', '.md, .gen, .bin, .smd'],
+            ['LNext', '**Spectrum Next의 파일, 한 번만**(아래)', 'Spectrum Next에서 실행되는 모든 것, `ZXNEXT` 폴더에서'],
         ], [22, 38, 40]),
         ('h2', 'Commodore 64의 ROM(한 번만)'),
         ('p', 'C64의 내장 프로그램은 저작권이 있으며 L에 포함되어 있지 않습니다. 사용할 권리가 있는 사본을 쓰십시오: 본인 소유의 C64와 1541에서 읽어 낸 것이나 라이선스를 받은 것.'),
@@ -68,7 +70,15 @@ INSTALL = dict(
             '머신 메뉴에서 **L64**를 시작합니다. ROM이 보드로 복사되고(몇 초, 화면에 표시됨) C64가 시작됩니다.',
             '그 뒤로는 카드 없이도 C64가 시작됩니다. 파일이 빠져 있으면 어디에 넣어야 하는지 화면에 나옵니다. 1541 파일이 없으면 C64는 동작하지만 디스크 드라이브가 없습니다.',
         ]),
-        ('pre', 'SD 카드(예)\n  MACHINES/    머신 파일(.LMC)\n  ROMS/C64/    C64 ROM 파일 네 개\n  Spectrum/    .tap .tzx .z80\n  C64/         .d64 .prg .t64 .tap .a64\n  Atari/       .atr .xex .car .a8s\n  NES/         .nes\n  MegaDrive/   .md .gen .bin .smd'),
+        ('h2', 'Spectrum Next의 파일(한 번만)'),
+        ('p', 'Spectrum Next는 시스템 전체를 SD 카드에 둡니다. 이 파일들은 L에 포함되어 있지 않습니다. Spectrum Next 배포판을 `https://www.specnext.com/latestdistro/`에서 내려받으십시오.'),
+        ('ol', [
+            'SD 카드는 **FAT32**여야 합니다. 카드의 최상위 폴더에 `ZXNEXT` 폴더를 만듭니다.',
+            '배포판의 모든 것을 그대로 `ZXNEXT`에 복사합니다: `TBBLUE.FW` 파일, `machines`, `nextzxos` 폴더와 나머지 전부.',
+            '머신 메뉴에서 F12로 **LNext**를 설치하고(3절) 시작합니다.',
+            '처음 시작할 때 Next는 화면을 시험하고 설정을 묻습니다. 설정은 카드에 저장됩니다. 그 뒤 NextZXOS가 메뉴를 보여 줍니다.',
+        ]),
+        ('pre', 'SD 카드(예)\n  MACHINES/    머신 파일(.LMC)\n  ROMS/C64/    C64 ROM 파일 네 개\n  Spectrum/    .tap .tzx .z80\n  C64/         .d64 .prg .t64 .tap .a64\n  Atari/       .atr .xex .car .a8s\n  NES/         .nes\n  MegaDrive/   .md .gen .bin .smd\n  ZXNEXT/      Spectrum Next의 파일'),
         ('p', '폴더 이름은 자유롭게 정할 수 있고 폴더 안에 폴더를 둘 수 있습니다. 파일 목록은 폴더당 최대 320개 항목을 보여 주므로(두 번째 I/O 보드에서는 4,096개), 많은 파일은 하위 폴더로 나누어 두십시오.'),
         ('h1', '6. 빠른 확인'),
         ('table', ['할 일', '보여야 하는 것'], [
@@ -77,6 +87,7 @@ INSTALL = dict(
             ['**Ctrl + Alt + Del**, **L64** 시작', 'C64의 READY 화면(처음에는 ROM이 설치됨)'],
             ['**Ctrl + Alt + Del**, **LTari 130** 시작', 'Altirra BASIC, READY'],
             ['**LNES** 또는 **LMega** 시작', '게임 목록이 열림'],
+            ['**LNext** 시작', 'NextZXOS가 `ZXNEXT` 폴더에서 시작됨'],
             ['머신에서 **F8**', '화면이 60 Hz와 50 Hz 사이에서 전환됩니다'],
         ], [45, 55]),
         ('p', '그 밖의 모든 내용(키, 메뉴, 조이스틱, 불러오기와 저장)은 같은 폴더의 **사용자 설명서**에 있습니다.'),

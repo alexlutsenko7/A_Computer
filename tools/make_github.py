@@ -11,13 +11,14 @@ import os, re, shutil, sys, fnmatch
 ROOT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else '.')
 DST = os.path.join(ROOT, 'github')
 
-TOP = ['AMenu', 'LSpectrum', 'L64', 'LTari', 'LNES', 'LMega', 'FX68K', 'JT12', 'JT89', 'ESP32', 'ESP32_test', 'T65', 'T80', 'DDR_TEST', 'VGA_TEST', 'FirstLight', 'docs', 'tests', 'tools',
+TOP = ['AMenu', 'LSpectrum', 'L64', 'LTari', 'LNES', 'LMega', 'LNext', 'ZXNEXT', 'FX68K', 'JT12', 'JT89', 'ESP32', 'ESP32_test', 'T65', 'T80', 'DDR_TEST', 'VGA_TEST', 'FirstLight', 'docs', 'tests', 'tools',
        'Extra_PCB_CycloneIV', 'Extra_PCB_CycloneIV_R2', '3D_case', 'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md', 'IP_BLOCKS.txt']
 
 SKIP_DIRS = {'db', 'incremental_db', 'greybox_tmp', '.qsys_edit', '__pycache__', 'node_modules', '.git',
              'roms_local',          # C64 ROMs (copyright)
              'ref',                 # LTari/ep4_ce15/ref: Altirra manual PDF + files from atari800
              'syn_check',           # LTari scratch synthesis check
+             'a7g_scratch',         # scratch builds for the 10CL025YU256A7G (docs/SINGLE_BOARD.md)
              '.history', 'Extra_PCB_CycloneIV-backups', 'Extra_PCB_CycloneIV_R2-backups',   # KiCad history / backups
              'archive',             # Extra_PCB_CycloneIV_R2/archive: earlier local states (the repository has the history)
              'old',                 # Extra_PCB_CycloneIV/old: a superseded routing
@@ -185,12 +186,16 @@ The board's flash holds the machine menu and three machines at a time. You choos
    the position (1 to 3) it goes into. Wait for "Installed." (about 15 seconds). Repeat for the other positions.
 
 Machines: LSpectrum (ZX Spectrum 128K), L64 (Commodore 64), LTari 800 / LTari 130 (Atari 800XL / 130XE),
-LNES (Nintendo Entertainment System), LMega (Sega Mega Drive / Genesis; 10CL025 board only).
-LNES and LMega are new and were tested in simulation only when this file was written.
+LNES (Nintendo Entertainment System), LMega (Sega Mega Drive / Genesis; 10CL025 board only),
+LNext (ZX Spectrum Next; 10CL025 board only).
+LNES and LMega are new: they run on the board, but were tried with only a few games when this file was written.
+LNext is the newest: it started NextZXOS on the board in a test set-up; its picture on a monitor, its sound,
+the joysticks and the USB keyboard were not tested yet. LNext needs the Spectrum Next distribution
+(https://www.specnext.com/latestdistro/) copied into a folder ZXNEXT in the root folder of a FAT32 card.
 
 ESP32_UPDATE/<v1 or v2>/LESP32.BIN updates the ESP32's firmware (v1 = I/O board revision 1, v2 = revision 2):
-copy the file of your I/O board to the root folder of the card and switch the board on. LNES and LMega need this
-firmware; do this before installing them.
+copy the file of your I/O board to the root folder of the card and switch the board on. LNES, LMega and LNext need
+this firmware; do this before installing them.
 
 MENU_UPDATE/<board>/LUPDATE.BIN updates the machine menu itself: copy the file of YOUR board to the root
 folder of the card and switch the board on. A menu file for the other board leaves the board unable to start
@@ -201,8 +206,8 @@ Keys, menus, joysticks: <language>/L_User_Manual_<language>.pdf.
 Languages: EN English, SP Espanol, PT Portugues, DE Deutsch, UA Ukrainska, RU Russkiy, CN Zhongwen, KR Hangugeo,
 JP Nihongo.
 
-Not included: games and other programs, and the Commodore 64 ROMs (copyrighted). Get them yourself; see section 5
-of the installation guide.
+Not included: games and other programs, the Commodore 64 ROMs (copyrighted) and the Spectrum Next's system files.
+Get them yourself; see section 5 of the installation guide.
 """)
 
 print('INSTALL/ built: %d languages' % len(os.listdir(man)))

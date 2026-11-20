@@ -137,4 +137,15 @@ ${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/cart/cart_test.exe cart_test.cpp \
 echo "Cartridge machines:"
 (cd $W/cart && ./cart_test.exe card.img tree > cart.log) || fail=1
 sed 's/^/  /' $W/cart/cart.log
+# LNext's sector server (next.cpp): a model of the FPGA's SD card port and a card in memory
+rm -rf $W/next && mkdir -p $W/next/tree/ZXNEXT/machines/next
+# a card with the Next's files in the folder ZXNEXT (shown to the machine as its root directory)
+echo firmware > $W/next/tree/ZXNEXT/TBBLUE.FW; echo ini > $W/next/tree/ZXNEXT/machines/next/menu.ini
+echo ours > $W/next/tree/OUTSIDE.TXT; mkdir -p $W/next/tree/MACHINES
+python3 -I ../tools/mkimg.py $W/next/card.img $W/next/tree --fat 32 --mbr --spc 1 --mb 64 > /dev/null
+${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/next/next_test.exe next_test.cpp \
+    ../../../ESP32/v1/src/next.cpp ../../../ESP32/v1/src/util.cpp
+echo "LNext sector server:"
+(cd $W/next && ./next_test.exe card.img > next.log) || fail=1
+sed 's/^/  /' $W/next/next.log
 [ $fail = 0 ] && echo "HOST TEST PASSED" || { echo "HOST TEST FAILED"; exit 1; }

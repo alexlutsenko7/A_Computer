@@ -45,6 +45,9 @@
 #define UART2_RX 27
 #define UART2_TX 21
 #define UART_BAUD 115200
+/* test option NEXT_SERIAL_CARD (src/pccard.h): the USB port's speed and receive buffer */
+#define PCCARD_BAUD 921600
+#define PCCARD_RX_BUF 2048
 /* the I2S pins */
 #define I2S_BCLK 26
 #define I2S_LRCK 25
@@ -2352,7 +2355,13 @@ static LineIn g_s_uart_in{ Serial2, { 0 }, 0, false };
 
 void setup()
 {
+#ifdef NEXT_SERIAL_CARD
+/* test option (src/pccard.h): the USB port carries LNext's card sectors at 921600 baud */
+    Serial.setRxBufferSize(PCCARD_RX_BUF);
+    Serial.begin(PCCARD_BAUD);
+#else
     Serial.begin(UART_BAUD);
+#endif
     Serial2.begin(UART_BAUD, SERIAL_8N1, UART2_RX, UART2_TX);
 /* idle-high when the FPGA is not connected */
     gpio_pullup_en((gpio_num_t)UART2_RX);
@@ -2705,7 +2714,9 @@ void loop()
     loader_poll();
     loader_check();
 /* commands from USB and from the FPGA */
+#ifndef NEXT_SERIAL_CARD
     g_s_usb_in.poll();
+#endif
     g_s_uart_in.poll();
     report_devices();
 /* Report connection / discovery changes. */
