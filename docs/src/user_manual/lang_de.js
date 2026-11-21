@@ -2,7 +2,7 @@
 /* Same block structure as lang_en.js; on-screen messages stay as the board shows them. */
 module.exports = {
   title: "L — Benutzerhandbuch",
-  subtitle: "Eine Platine, klassische Maschinen nach Ihrer Wahl: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive und ZX Spectrum Next. Anschließen, Maschinen auswählen und spielen. Ausgabe vom 20. November 2026.",
+  subtitle: "Eine Platine, klassische Maschinen nach Ihrer Wahl: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive und ZX Spectrum Next. Anschließen, Maschinen auswählen und spielen. Ausgabe vom 21. November 2026.",
   page: "Seite",
   blocks: [
     /* ------------------------------------------------------------ 1 */
@@ -126,7 +126,7 @@ module.exports = {
       ["**F8**", "Computer: wechselt das Bild zwischen 60 Hz und den eigenen 50 Hz der Maschine. Nach jedem Start sind es 60 Hz. Zeigt der Monitor nichts, drücken Sie F8 noch einmal. LMega: Abschnitt 13. LNES: ohne Funktion."],
       ["**Druck**", "Speichert das Bild als `SCRNnnnn.BMP` in dem Ordner, in dem die Dateiliste steht (nicht in LMega)"],
     ], [34, 66]],
-    ["note", "LNext hat eigene Tasten (Abschnitt 14). Von den Tasten oben gelten dort nur F3, F8 und Strg + Alt + Entf."],
+    ["note", "LNext hat eigene Tasten (Abschnitt 14). Von den Tasten oben gelten dort nur F12, F3, F8 und Strg + Alt + Entf."],
     ["p", "Kurze Meldungen (zum Beispiel **Speed: turbo**) erscheinen einige Sekunden in der untersten Bildzeile. Solange ein Menü oder die Dateiliste offen ist, bekommt die Maschine selbst keine Tasten."],
     ["h2", "Die Dateiliste"],
     ["p", "Die Liste zeigt zuerst die Ordner, dann die Dateien, die die laufende Maschine verwenden kann, weiß auf blau über dem Bild."],
@@ -318,7 +318,7 @@ module.exports = {
 
     /* ------------------------------------------------------------ 14 */
     ["h1", "14. LNext (ZX Spectrum Next)"],
-    ["note", "LNext ist die neueste Maschine. Als diese Ausgabe geschrieben wurde, hatte sie in einem Testaufbau auf der Platine NextZXOS gestartet und Programme ausgeführt. Ihr Bild auf einem Monitor, ihr Ton, die Joysticks und die USB-Tastatur waren noch nicht getestet."],
+    ["note", "LNext ist die neueste Maschine. Das Laden aus Kassettendateien und das WLAN kamen zuletzt hinzu und sind wenig getestet."],
     ["p", "LNext ist der ZX Spectrum Next, der moderne Nachfolger des Spectrum: ein schnellerer Prozessor (bis 28 MHz), 2 MB Speicher, neue Grafik mit Sprites und drei Soundchips. Er läuft mit **NextZXOS**, dem eigenen System des Next, das auch den 48K- und den 128K-Spectrum bietet."],
     ["h2", "Die Dateien des Spectrum Next (einmalig)"],
     ["p", "Ein Spectrum Next hält sein ganzes System auf der SD-Karte. Diese Dateien gehören nicht zu L. Laden Sie die Spectrum-Next-Distribution von `https://www.specnext.com/latestdistro/` herunter."],
@@ -328,7 +328,7 @@ module.exports = {
       "Installieren Sie **LNext** mit F12 im Maschinenmenü (Abschnitt 4) und starten Sie ihn.",
       "Beim ersten Start testet der Next das Bild und fragt nach seinen Einstellungen; er speichert sie auf der Karte. Danach zeigt NextZXOS sein Menü.",
     ]],
-    ["p", "Für den Next ist der Ordner `ZXNEXT` die ganze Karte (sein Laufwerk `C:`). Legen Sie die Spiele und Programme des Next in diesen Ordner und starten Sie sie aus dem **Browser** von NextZXOS. Der Next sieht die Dateien der anderen Maschinen nicht, und die Dateiliste der anderen Maschinen (F12) wird hier nicht verwendet."],
+    ["p", "Für den Next ist der Ordner `ZXNEXT` die ganze Karte (sein Laufwerk `C:`). Legen Sie die Spiele und Programme des Next in diesen Ordner und starten Sie sie aus dem **Browser** von NextZXOS. Der Next sieht die Dateien der anderen Maschinen nicht."],
     ["table", ["Taste", "Was sie tut"], [
       ["**F1**", "Harter Reset: Der Next startet neu von der Karte"],
       ["**F4**", "Weicher Reset"],
@@ -337,9 +337,12 @@ module.exports = {
       ["**F9**", "Der Multiface-Knopf des Next (NMI): das NMI-Menü von NextZXOS"],
       ["**F10**", "Der Drive-Knopf des Next"],
       ["**F3**", "Bluetooth-Audio-Menü (Abschnitt 7)"],
+      ["**F12**", "Liste der Kassettendateien (.tap, .tzx) auf der Karte, für den Spectrum 48K und 128K (siehe unten)"],
+      ["**F7**", "Hält die Kassette an"],
+      ["**F11**", "Pause / weiter"],
       ["**Strg + Alt + Entf**", "Zurück zum Maschinenmenü"],
     ], [34, 66]],
-    ["p", "Die PC-Tastatur ist die Tastatur des Next: Buchstaben, Ziffern, Pfeiltasten, Rücktaste und Satzzeichen wirken wie auf einem Spectrum Next."],
+    ["p", "Die PC-Tastatur ist die Tastatur des Next: Buchstaben, Ziffern, Pfeiltasten, Rücktaste und Satzzeichen wirken wie auf einem Spectrum Next. Strg ist Symbol Shift des Spectrum und die Umschalttaste sein Caps Shift: Strg + 0 schreibt zum Beispiel einen Unterstrich."],
     ["table", ["Joystick-Knopf", "Linker Joystick (DB9-1)", "Rechter Joystick (DB9-2)"], [
       ["Richtungen, Feuer (Knopf B)", "Der Joystick", "Der Joystick"],
       ["Knopf C (zweiter Feuerknopf)", "**Einfg**", "**Entf**"],
@@ -349,7 +352,26 @@ module.exports = {
     ["ul", [
       "Das Bild hat das eigene Timing des Next, etwa 49 Hz oder 58 Hz (F8). Zeigt der Monitor nichts, drücken Sie F8.",
       "Der Ton ist auf beiden Kanälen derselbe.",
-      "Nicht vorhanden: die Maus, die Echtzeituhr, WLAN, der Erweiterungsport, Druck, Schnappschüsse mit F2 und das Aktualisieren des Next-Cores aus NextZXOS.",
+      "Nicht vorhanden: die Maus, die Echtzeituhr, der Erweiterungsport, das Speichern auf Kassette, Druck, Schnappschüsse mit F2 und das Aktualisieren des Next-Cores aus NextZXOS.",
+    ]],
+    ["h2", "Kassetten für den Spectrum 48K und 128K"],
+    ["p", "Die eigenen Dateien des Next (.nex, Schnappschüsse, .tap) werden aus seinem Browser gestartet. Außerdem kann die Platine Kassettendateien in den Kassetteneingang des Next spielen, wie in einen echten Spectrum. Das ist für den Spectrum 48K und 128K gedacht, die NextZXOS anbietet, und für .tzx-Dateien mit eigenen Ladern."],
+    ["ol", [
+      "Starten Sie den Spectrum 48K oder 128K aus NextZXOS und tippen Sie `LOAD \"\"` (128K: **Tape Loader** wählen).",
+      "Drücken Sie **F12**, wählen Sie die .tap- oder .tzx-Datei und drücken Sie **Enter**. Die Datei darf irgendwo auf der Karte liegen, nicht nur in `ZXNEXT`.",
+      "**F11** hält die Kassette an und setzt sie fort, **F7** stoppt sie. Wenn in der untersten Zeile **Tape stopped (F11=go on)** steht und das Spiel den nächsten Teil verlangt, drücken Sie F11.",
+    ]],
+    ["p", "Die Kassette folgt der Prozessorgeschwindigkeit (F6): Bei 7 MHz lädt sie doppelt so schnell, bei 14 MHz viermal so schnell (nicht jeder Lader arbeitet bei 14 MHz). Bei 28 MHz laden Kassetten nicht."],
+    ["h2", "WLAN"],
+    ["p", "Mit der zweiten E/A-Platine (USB-C-Buchse auf der Platine) ist die Platine auch das WLAN-Modul des Next. Die Netzwerkprogramme des Next arbeiten wie auf einem Spectrum Next, zum Beispiel `.http`, `.nxtp` und NXtel."],
+    ["ol", [
+      "Einmalig: Starten Sie in NextZXOS `WIFI.BAS` aus dem Ordner `apps/WIFI/SETUP` und geben Sie den Namen und das Passwort Ihres Netzes ein. Die Platine merkt sie sich.",
+      "Danach benutzen Sie die Netzwerkprogramme. Starten Sie den Next nach `WIFI.BAS` mit F1 neu, bevor Sie NXtel starten.",
+    ]],
+    ["ul", [
+      "**Der Bluetooth-Ton läuft weiter, während das WLAN benutzt wird.** Beim Start eines Netzwerkprogramms kann eine kurze Lücke im Ton zu hören sein.",
+      "Es gehen nur unverschlüsselte Verbindungen: Webadressen, die mit `https` beginnen, gehen nicht.",
+      "NXtel braucht seine Datei `NXtel.cfg` im selben Ordner wie `NXtel.nex`. Fehlt sie, nehmen Sie sie aus dem Download von NXtel.",
     ]],
 
     /* ------------------------------------------------------------ 15 */

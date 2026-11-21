@@ -49,11 +49,12 @@ yourself): [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md).**
   Drive / Genesis from open cores (fx68k, jt12, jt89, the MiSTer Genesis video processor, T80) with our memory, video
   output (line doubler) and bus. Games (`.md`, `.gen`, `.bin`, `.smd`, up to 4 MB) load from the SD card. F8 steps through
   the video modes of a game made for 50 Hz.
-- **LNext** (`LNext/10cl025/README.md`, Cyclone 10 LP 10CL025 board only; **new: first run on hardware, not yet installed
-  from the menu**): the ZX Spectrum Next. The open Spectrum Next core in its MiSTer port (`ZXNEXT/`, unchanged) with our
+- **LNext** (`LNext/10cl025/README.md`, Cyclone 10 LP 10CL025 board only): the ZX Spectrum Next. The open Spectrum Next core in its MiSTer port (`ZXNEXT/`, unchanged) with our
   memories for this FPGA, SDRAM controller, video output (line doubler) and keyboard. It starts from the SD card as a
   real Next does: the card must hold the Spectrum Next distribution (`TBBLUE.FW`, `machines`, `nextzxos` ...; not part
   of this project). The card is on the ESP32, which moves its sectors to an SD card made of logic inside the FPGA.
+  The ESP32 also plays tape files (F12) into the Next's tape input for the 48K / 128K machines and, with I/O board
+  revision 2, is the Next's Wi-Fi module (it answers the ESP8266 AT commands; Bluetooth audio keeps playing).
 - **Machine menu** (`AMenu/ep4_ce15/`): the factory image at flash 0 starts a machine through the Cyclone IV remote update
   block; KEY1 in a machine returns to it.
 - **Fully constrained timing**: every clock and I/O constrained, timing met at all corners.

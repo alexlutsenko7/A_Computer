@@ -1,8 +1,10 @@
 # L — licences, own work, and how to build it
 
-L is a set of 8-bit home computers on one FPGA board (QMTECH Cyclone IV EP4CE15 core board plus an I/O board
-with an ESP32): a machine menu and three machines, **LSpectrum** (ZX Spectrum 128K), **L64** (Commodore 64 with
-1541 drive) and **LTari** (Atari 800XL / 130XE). This document says what in the repository comes from elsewhere
+L is a set of home computers and consoles on one FPGA board (QMTECH Cyclone IV EP4CE15 or Cyclone 10 LP 10CL025 core
+board plus an I/O board with an ESP32): a machine menu and three machines at a time. This document covers the first
+three machines, **LSpectrum** (ZX Spectrum 128K), **L64** (Commodore 64 with 1541 drive) and **LTari** (Atari 800XL /
+130XE); the later ones (LNES, LMega, LNext) and every external core and library are listed in `IP_BLOCKS.txt` and in
+the machines' own READMEs. This document says what in the repository comes from elsewhere
 and under which licence, what was written or changed for this project, and how to build and install everything.
 
 Contents: [1 Licences](#1-licences) · [2 Own work and local changes](#2-own-work-and-local-changes) ·

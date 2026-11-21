@@ -72,6 +72,8 @@
 
 /* bits and values of the registers */
 #define FIFO_DEPTH 512u
+/* LNext: its command FIFO is smaller (next_loader.v) */
+#define FIFO_DEPTH_NEXT 128u
 #define FIFO_IDLE 0x10000u
 /* TAPE */
 #define TAPE_ON 1u

@@ -25,7 +25,7 @@ system ROM.
 ## Status (2026-11-17)
 
 Built: 17,335 logic elements (70 %), timing met (worst setup +1.1 ns in the 107.4 MHz domain, +2.75 ns in the
-53.7 MHz domain). **Not on hardware yet.** Simulation: `sim/run_sim.sh` (a small test cartridge: VDP setup, a tile
+53.7 MHz domain). **First run on hardware 2026-11-18** (with I/O board revision 2): works at first glance, more testing to come. Simulation: `sim/run_sim.sh` (a small test cartridge: VDP setup, a tile
 on plane A, RAM check); result in `../../docs/PLAN.md`.
 
 - **Memory:** cartridge ROM up to 4 MB, the 68000's 64 KB RAM, the VDP's 64 KB video RAM and 64 KB of cartridge

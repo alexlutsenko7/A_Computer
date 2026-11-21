@@ -1614,3 +1614,141 @@ card. A card without the folder (or FAT16) is given as it is. `status` on the co
   Keyboard sim PASS; build 18,347 LEs, 66 block RAMs, timing clean (worst + 0.08 ns); machine file remade; flash
   programmed again with the one-off image (menu + LSpectrum, L64, LNext). Not tried on hardware yet.
   mk_flash.py stamps the day into the info sectors: L.jic differs from day to day in those bytes only.
+
+## 2026-11-21: LNext plays tapes from the SD card
+
+User: the older machines in the Next have only the tape input; connect our loader to it. Tape loading up to 14 MHz
+is enough (the Next's own browser and loader, which are what runs at 28 MHz, do not use the tape input).
+
+- **Hardware** (`LNext/10cl025/rtl/next_loader.v`): the pulse player's command memory is 128 commands instead of 16
+  registers. No block RAM was free (66 of 66), so it is the upper half of the block RAM that held the Bluetooth
+  UART's 512 received bytes: one true dual-port M9K, port A 1024 x 8 (the UART's bytes), port B 512 x 16 (a
+  command is two halves, read in two clocks, written in two clocks without a read). A 256 x 32 second port does
+  not fit: a block RAM whose two ports both write is 18 bits wide at most ("Can't place all RAM cells").
+  Refill mark 64. `next_keyboard.v`: F7 and F11 are loader keys now (F12 already was). The player's output was on
+  the core's EAR input before; its T-state clock follows the CPU speed up to 14 MHz and stays there at 28 MHz.
+- **Firmware** (`ESP32/vN/src/main.cpp`, `hw.h`, v1 and v2 the same): `next_main()` runs the browser, the tape
+  player and the status bar besides the sector server and the F3 menu; `fifo_free()` takes 128 for this machine
+  (`FIFO_DEPTH_NEXT`); the browser lists folders and TAP / TZX only (no snapshots: the Next loads its own), title
+  "LNext tape loader", "(F11=go on)" in the status bar (the keypad is the machine's), no tape saving.
+- **Checked:** `sim/run_loader_sim.sh` (new, `tb_next_loader.sv`: both FIFOs at once through the link, arrays and
+  altsyncram) PASS; keyboard sim PASS; build 17,937 LEs, 66 block RAMs, timing clean (setup + 1.11 ns, worst of
+  all + 0.11 ns hold); host tests PASS (v1, v2); both firmwares compile (v1 90 % of its flash, v2 38 %).
+  Machine files remade; `tmp/L_Spectrum_64_Next_10cl025.jic` remade with the new LNext.
+- **Not on hardware yet:** nothing is programmed (board flash and ESP32 as on 2026-11-20). To try: whether 128
+  commands are enough (turbo loaders' short pulses, the ESP32 busy with a sector for the Next at the same time),
+  the browser while the Next uses the card (both read the card; the browser does not write here), 7 and 14 MHz.
+- **Open:** the user manual (9 languages) and `docs/SD_TAPE_LOADER.md` do not know LNext's tape player; `github/`.
+
+## 2026-11-21 (later): the ESP32 is LNext's Wi-Fi module
+
+User: the Next has Wi-Fi; make it work, radio on demand (Wi-Fi and Bluetooth sound hardly ever at the same time).
+
+- **What the Next expects:** an ESP8266 with the AT firmware on the machine's ESP UART, 115200 baud. The
+  distribution's programs use: AT, ATE0, AT+GMR, AT+RST, AT+UART*, AT+CWMODE, AT+CWJAP, AT+CWLAP, AT+CIPDNS*,
+  AT+CIPSTA?, AT+CIFSR, AT+CIPMUX, AT+CIPSTART "TCP", AT+CIPSEND=n, AT+CIPCLOSE, +IPD (strings of `.http`, `.nxtp`,
+  `.tcpping`, `.uart`, `.espbaud`, NXtel, ZXDB-DL, ESPAT.SYS, WIFI.BAS).
+- **FPGA** (`LNext.v` only): no free pins and no free block RAM, so the Next's ESP UART shares the two UART pins
+  the loader uses for the F3 Bluetooth menu (BT_TX / BT_RX = ESP32 IO27 / IO21): machine word bit 2 = 1 gives the
+  pins to the Next's UART, the other side sees an idle line. The Next's UART has its own FIFOs (core).
+  18,789 LEs (the UART is not optimised away any more), 66 block RAMs, timing clean.
+- **Firmware, v2 only** (v1 is at 90 % of its flash; its `next.cpp` got the same `next_uart()` and stays identical):
+  `src/espat.cpp` = the AT commands (portable, PC test `espat_test.cpp`), `src/espnet.cpp` = Arduino WiFi, the
+  remembered network (NVS "wifi"), the UART's use; `v2.ino`: the loop feeds the module while the UART is the
+  machine's and the Bluetooth part's command reader and events keep off it; `main.cpp` `next_main()`: UART to the
+  machine except while the F3 menu is open (the ESP32's side changes first, then the FPGA's bit).
+  Console: `wifi`, `wifi trace on|off`, `at <line>`, `wifi bt off|on`. 56 % of the 3 MB application space.
+- **Memory decides the design:** with Bluetooth up about 50 KB of internal RAM are free and starting Wi-Fi then
+  crashes the ESP32 (Bluedroid: `hash_map_set` assert). So `btaudio_pause()` shuts Bluetooth down before the radio
+  goes on (link ended first and 1 s for late events: an A2DP event after the profile's shutdown crashed in
+  `btc_a2dp_cb_handler`; then the library's `end(false)`, Bluedroid and the controller off, no memory release)
+  and `btaudio_resume()` starts it again when the radio goes off (60 s without a command and without a link).
+  Measured on the board, Fosi BT10A connected and streaming: 40 KB free before; 137 KB with Bluetooth off; 90 KB
+  with Wi-Fi on; **22 KB after the first Wi-Fi use with Bluetooth back** (lwIP and the network tasks stay: about
+  18 KB, once, not per use: the second cycle ends at 22 KB too). Linking Wi-Fi costs 23 KB of static memory
+  besides (75 KB -> 52 KB free without a Bluetooth link). On v2 allocations above 4 KB (the A2DP media packets)
+  come from the PSRAM, so the 20 KB rule of v1 is not hit the same way, but the margin is small.
+- **On hardware** (10CL025 + rev 2 board): console: `at AT+CWLAP` lists the networks in reach, Bluetooth goes off
+  and comes back connected, twice. The Next itself (rig build, keys and picture over JTAG, the card's 128K
+  machine): a BASIC program sent `AT` + CR LF to port 0x133B and printed the bytes read from 0x143B: 65 84 13 10
+  13 10 79 75 13 10 = the echo and `OK`; the ESP32 counted 4 bytes in, 10 out, 1 command.
+- **Works from the Next (user, 2026-11-21):** network joined with `WIFI.BAS` (underscore = Ctrl + 0), then
+  `.http get -h info.cern.ch -u / -f test.htm` and `.more test.htm` show the page. (`.http` needs a
+  Content-Length: example.com answers chunked and gives "N content-length missing", not our fault.)
+- **NXtel** (rig, keys and picture over JTAG, the user's card): connects to nx.nxtel.org, welcome page, page
+  index after Enter (single keys sent with AT+CIPSEND=1), Network Settings screen with our addresses. Two things
+  had to be put right first, both found in NXtel's source (github.com/Threetwosevensixseven/NXtel):
+  1. The distribution on the card has no `NXtel.cfg` (NXtel's own release has one). NXtel then creates one
+     (F_OPEN with mode 0x0C, no write bit, then F_WRITE), which fails under NextZXOS 2.09 with "Error reading
+     file: NXTEL.CFG Device busy" and leaves an empty file; with an empty file the service list is empty and
+     key 1 ends in a red border and a halt with interrupts off. Not our SD path: `.http ... -f` writes into the
+     same folder. A two-service file was put on the user's card from the Next (`.http` from httpbin.org's
+     base64 page); the complete file from NXtel's release is now in `Games/ESP_32/ZXNext/apps/WIFI/NXtel/`.
+  2. AT+GMR must be the real firmware's text line for line: NXtel copies each version up to a "(" with no
+     length limit, and our own text without it made the Network Settings screen run away. Fixed in `espat.cpp`.
+  Seen there: "DNS 1" is shown as "-" (our `+CIPDNS_CUR:` line is not taken; not looked into).
+  One ESP32 restart during the user's NXtel tries is not explained (nothing was recording the console).
+- Three more radio cycles from the console with Bluetooth searching (speaker off): no crash; the free internal
+  heap with Bluetooth back went 32,764 -> 32,584 -> 32,420 -> 32,212 bytes: about 180 bytes are lost per
+  cycle (not found where). Open.
+- **Not tested:** the F3 menu while LNext runs (the rig's keys do not reach the loader's keys),
+  other baud rates, long downloads (the Next's UART has a 512-byte receive FIFO and no flow control, as with
+  the real module).
+- **Open:** the internal memory after a Wi-Fi use (ideas: a lower PSRAM threshold for malloc, which changes
+  where every machine's allocations go; not done without the user's word); UDP, SSL, server mode; the module's
+  reset line (`.espreset`); manuals; `github/`.
+- The board: flash programmed with the one-off image (menu + LSpectrum, L64, LNext with tape player and Wi-Fi
+  UART; C64 ROMs to be installed again), ESP32 with this v2 firmware. `tmp/next_tape_card/` = `LESP32.BIN` +
+  `MACHINES/LNext_10cl025.LMC` for the card route.
+
+## 2026-11-21 (evening): documents and the public folder brought up to date
+
+User: "update everything including github but do not commit".
+
+- User manual, 9 languages (`docs/src/user_manual/lang_*.js` -> Word files and PDFs): section 14 has the tape
+  loader (F12 / F7 / F11, speeds) and Wi-Fi (`WIFI.BAS` once, Bluetooth off meanwhile, no `https`, NXtel's
+  `NXtel.cfg`), Ctrl = Symbol Shift (Ctrl + 0 = underscore); edition of 21 November 2026. Installation guide:
+  rebuilt, text unchanged.
+- `L_Build_and_Install.docx` (section 6.5: tapes, Wi-Fi; LNext 18,800 LEs), `L_Third_Party.docx` (the `WiFi` library,
+  LNext's figures from the new fit report), `IP_BLOCKS.txt`, `README.md`, `docs/SD_TAPE_LOADER.md`,
+  `ESP32/v1|v2/README.md` (LNext section; core ID list, compile folder, v2 supply), READMEs of LNES / LMega (first
+  run on hardware), AMenu (tag 7E), `BUILDING_AND_LICENSES.md` (its scope). Not touched: the book (published),
+  `ZXNEXT/LICENSE` (the port's own file).
+- Firmware binaries exported (`ESP32/vN/build/esp32.esp32.esp32/`); `python3 tools/make_github.py`: `github/`
+  rebuilt (897 files), machine files, `L.jic`, `LUPDATE.BIN`, `INSTALL/`. Not committed (103 changed, 28 new files,
+  among them the 3D hand stands of 2026-11-20).
+
+## 2026-11-21 (night): Bluetooth and Wi-Fi together (v2 firmware)
+
+User: another design of theirs (ESP32-S3, BLE + HTTP) runs both; why not ours? Tried the small change first:
+`heap_caps_malloc_extmem_enable(PSRAM_MALLOC_MIN)` at the start of `setup()` (`ESP32/v2/v2.ino`, 256 bytes; the
+core's default is 4096): all but the small memory blocks come from the PSRAM. `net_on()` / `net_off()`
+(`src/espnet.cpp`) no longer shut Bluetooth down; `btaudio_pause()` / `btaudio_resume()` remain as the console
+test `wifi bt off|on`.
+
+Measured on the board (10CL025 + rev 2 I/O, headphones connected, audio streaming), internal heap free:
+
+| Threshold | Bluetooth up, idle | streaming | streaming + Wi-Fi joined | + TCP download |
+|---|---|---|---|---|
+| 4096 (before) | 51 KB | 40 KB | restart (`hash_map_set`) | - |
+| 1024 | 69 KB | | | |
+| 256 (chosen) | 78 KB | 69 KB | 26-27 KB | 24.6-25.5 KB, lowest ever 23.3 KB |
+| 64 | 82 KB | | | |
+
+- A page (info.cern.ch) and a download of 48 KB of a 100 KB file (httpbin.org, cut by the test's end) arrived over
+  the console's `at` lines while audio streamed: 67 packets/s throughout, no write errors, no dropped packets.
+- When the radio starts and joins, one audio step of about 200 ms is counted each time (`late`, 201 / 206 ms):
+  a short gap in the sound is expected at that moment. None during the downloads.
+- Radio off after 60 s idle: 51 KB free with audio streaming (was 69 KB before the first Wi-Fi use: the
+  network stack's one-time memory); about 0.5 KB less after the second cycle.
+- PC tests PASS. Not done: listening test (user), from the Next itself (NXtel, `.http`), F3 menu in LNext.
+- Not updated yet: manuals (9 languages), READMEs, Build_and_Install and `github/` still say that Bluetooth is off
+  while Wi-Fi is in use; the exported firmware binaries and `LESP32.BIN` are the earlier build. Waiting for the
+  user's listening test.
+
+Later the same night (user: update all manuals and github, make sure the ESP32 and the FPGA are up to date):
+user manual in 9 languages (Word + PDF: "Bluetooth sound keeps playing while Wi-Fi is in use", a short gap when a
+network program starts), `L_Build_and_Install.docx`, `README.md`, READMEs of LNext and `ESP32/v2`; v2 firmware
+exported (`ESP32/v2/build/`) and uploaded (the same file); 10CL025 flash programmed again and verified with
+`tmp/L_Spectrum_64_Next_10cl025.jic` (menu + LSpectrum, L64, LNext; no FPGA source changed); `github/` rebuilt
+with `tools/make_github.py`, not committed. The listening test is still the user's.

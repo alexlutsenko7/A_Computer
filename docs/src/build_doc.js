@@ -92,7 +92,7 @@ C.push(table([1500, 2700, 1560, 3600], ["Machine", "What it is", "Core boards", 
   ["**LNext**", "ZX Spectrum Next", "**10CL025 only**", "None in the flash: the Next starts from its own files on the SD card (folder `ZXNEXT`)"],
 ]));
 C.push(gap());
-C.push(p("LMega (about 17,600 logic elements) and LNext (about 18,300, and every block RAM of the FPGA) do not fit the EP4CE15 (15,408 logic elements): they exist for the 10CL025 board only."));
+C.push(p("LMega (about 17,600 logic elements) and LNext (about 18,800, and every block RAM of the FPGA) do not fit the EP4CE15 (15,408 logic elements): they exist for the 10CL025 board only."));
 
 C.push(h2("Flash layout"));
 C.push(table([1700, 1700, 5960], ["Address", "Size", "Contents"], [
@@ -203,7 +203,7 @@ C.push(b("LNext: after a change in `ZXNEXT/`, run `python3 tools/mk_c10_files.py
 C.push(b("The board has one user key (KEY0). KEY1 is on header U7 pin 7 (ball G1) with a weak pull-up, where a button to ground can be wired; the board's nCONFIG button also returns to the machine menu."));
 C.push(b("**An `L.jic` or `LUPDATE.BIN` is for one core board only.** The update file has no board mark: the file of the other board would leave the FPGA without a valid image, and the board would need the USB-Blaster and its own `L.jic`. Machine files carry their board: the menu lists only the ones made for its own board."));
 C.push(b("Pins: `docs/BOARD_PINOUT.md`. Flash layout and addresses are the same on both boards."));
-C.push(b("**State of 20 November 2026:** the 10CL025 board with I/O board revision 2 runs the menu, LSpectrum, L64 and LTari; LNES and LMega had their first runs on it (18 November). LNext started NextZXOS on the board with its bitstream loaded over JTAG (19 November); it was not yet installed from its machine file."));
+C.push(b("**State of 21 November 2026:** the 10CL025 board with I/O board revision 2 runs the menu, LSpectrum, L64 and LTari; LNES and LMega had their first runs on it (18 November). LNext runs from its position in the flash with NextZXOS from the card's folder `ZXNEXT`; its tape player and its Wi-Fi (section 6.5) are new and little tested."));
 
 // ------------------------------------------------------------------ 4
 C.push(h1("4. The ESP32 firmware"));
@@ -298,6 +298,8 @@ C.push(b("The consoles have no system ROM: their ROM areas hold only the info se
 C.push(h2("6.5 LNext"));
 C.push(b("A Spectrum Next has no ROMs of its own: a small boot ROM inside the core loads `TBBLUE.FW` from the SD card, which loads the ROMs and NextZXOS from the card too. They come from the Spectrum Next distribution in the card's folder `ZXNEXT` (section 5)."));
 C.push(b("The card is on the ESP32. The core talks to an SD card made of logic, and the ESP32 moves the 512-byte sectors between it and the real card (`ESP32/vN/src/next.cpp`). It shows the Next the folder `ZXNEXT` as the card's root directory, so the Next's `C:/` is that folder. The machine is held in reset until the ESP32 has found the card."));
+C.push(b("**Tapes:** for the 48K and 128K machines inside the Next the ESP32 plays TAP and TZX files into the core's EAR input (F12 list, F7 stop, F11 pause), as on LSpectrum. LNext has no block RAM left, so the player's command memory (128 commands) shares one block with the UART's receive memory (`LNext/10cl025/rtl/next_loader.v`). The player follows the CPU speed up to 14 MHz; at 28 MHz tapes do not load."));
+C.push(b("**Wi-Fi (I/O board revision 2, `ESP32/v2` only):** the Next's programs expect an ESP8266 module with the AT firmware on the machine's ESP UART. The ESP32 answers those commands (`ESP32/v2/src/espat.cpp`: join a network, TCP connections, `+IPD` data) and does the network with its own radio (`espnet.cpp`). The Next's UART uses the two UART pins of the F3 Bluetooth menu: the firmware switches them with bit 2 of the machine word (`LNext.v`). Bluetooth audio and Wi-Fi run together: the firmware takes all memory blocks of 256 bytes and above from the module's PSRAM (`PSRAM_MALLOC_MIN` in `v2.ino`), which leaves the ESP32's internal memory for the two radio stacks. The Wi-Fi radio goes on with the first network command and off a minute after the last use. The network's name and password are entered once on the Next (`WIFI.BAS`) and kept in the ESP32."));
 
 // ------------------------------------------------------------------ 7, 8
 C.push(h1("7. Installing and updating from the SD card"));

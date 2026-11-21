@@ -438,9 +438,17 @@ static uint32_t turbo_bit(void)
 uint32_t fifo_free(void)
 {
 /* local variables */
+    uint32_t ui32_depth;
     uint32_t ui32_free;
 
-    ui32_free = FIFO_DEPTH - (FIFO & FIFO_COUNT_MASK);
+/* start values */
+    ui32_depth = FIFO_DEPTH;
+    if (g_i32_machine_next != 0)
+    {
+/* LNext's FIFO */
+        ui32_depth = FIFO_DEPTH_NEXT;
+    }
+    ui32_free = ui32_depth - (FIFO & FIFO_COUNT_MASK);
     return ui32_free;
 }
 
@@ -559,8 +567,8 @@ static int32_t list_cb(const DIRENT *ps_entry, void *p_ctx)
     {
         b_snap = has_ext(ps_entry, "A8S");
     }
-/* LNES, LMega: no snapshots */
-    else if ((g_i32_machine_nes != 0) || (g_i32_machine_md != 0))
+/* LNES, LMega: no snapshots; LNext loads its snapshots itself */
+    else if ((g_i32_machine_nes != 0) || (g_i32_machine_md != 0) || (g_i32_machine_next != 0))
     {
         b_snap = false;
     }
@@ -940,12 +948,26 @@ static int32_t status_text(char *pc_text)
     case P_PAUSED:
         pc_end = u_strcpy(pc_end, "Paused, block ");
         pc_end = u_utoa(pc_end, g_ui32_p_block);
-/* the key that continues */
-        pc_end = u_strcpy(pc_end, " (5=go)");
+/* the key that continues: F11 on LNext, whose keypad is the machine's */
+        if (g_i32_machine_next != 0)
+        {
+            pc_end = u_strcpy(pc_end, " (F11=go)");
+        }
+        else
+        {
+            pc_end = u_strcpy(pc_end, " (5=go)");
+        }
         break;
     case P_STOPPED:
 /* the same key */
-        pc_end = u_strcpy(pc_end, "Tape stopped (5=go on)");
+        if (g_i32_machine_next != 0)
+        {
+            pc_end = u_strcpy(pc_end, "Tape stopped (F11=go on)");
+        }
+        else
+        {
+            pc_end = u_strcpy(pc_end, "Tape stopped (5=go on)");
+        }
         break;
     case P_END:
 /* the tape's end; an error */
@@ -993,6 +1015,11 @@ static const char *loader_title(void)
     else if (g_i32_machine_md != 0)
     {
         pc_title = " LMega cartridges";
+    }
+/* LNext */
+    else if (g_i32_machine_next != 0)
+    {
+        pc_title = " LNext tape loader";
     }
     else
     {
@@ -2118,6 +2145,11 @@ static void enter_save(void)
     if (g_i32_machine_atari != 0)
     {
         note("No tape saving on LTari", "");
+    }
+/* LNext: the tape output is not connected */
+    else if (g_i32_machine_next != 0)
+    {
+        note("No tape saving on LNext", "");
     }
 /* LNES: games save by themselves (battery RAM) */
     else if ((g_i32_machine_nes != 0) || (g_i32_machine_md != 0))
@@ -4205,17 +4237,21 @@ static void machine_main(void)
     }
 }
 
-/* LNext: the Spectrum Next works from the card by itself (its own browser, its own settings), */
-/* so there is no file list here: the loader moves the card's sectors (next.cpp) and offers the */
-/* Bluetooth menu (F3). Runs until the machine leaves the link (esp_hw.cpp ends the task). */
+/* LNext: the Spectrum Next works from the card by itself (its own browser, its own settings): */
+/* the loader moves the card's sectors (next.cpp). Besides that it plays tape files (TAP, TZX) */
+/* into the machine's EAR input for the older Spectrums' loaders: F12 the browser, F7 stop, */
+/* F11 pause / go on; and it offers the Bluetooth menu (F3). Runs until the machine leaves the */
+/* link (esp_hw.cpp ends the task). */
 static void next_main(void)
 {
 /* local variables */
     uint32_t ui32_keys;
     uint32_t ui32_draw_time;
     uint32_t ui32_card_time;
-/* the card is in the machine; Bluetooth: a line came, the keys' result; redraw */
+/* the card is in the machine; the player's state when the screen was drawn */
     int32_t i32_card;
+    int32_t i32_last_state;
+/* Bluetooth: a line came, the keys' result; redraw */
     int32_t i32_bt_line;
     int32_t i32_bt_result;
     bool b_draw;
@@ -4224,8 +4260,9 @@ static void next_main(void)
     ui32_keys = 0;
     ui32_draw_time = TIMER;
     ui32_card_time = TIMER;
-/* no card yet, nothing from Bluetooth */
+/* no card yet, nothing drawn, nothing from Bluetooth */
     i32_card = NEXT_ENOCARD;
+    i32_last_state = NO_STATE;
     i32_bt_line = 0;
     i32_bt_result = 0;
     b_draw = false;
@@ -4235,11 +4272,6 @@ static void next_main(void)
     osd_clear();
 /* the card goes into the machine, which starts from it */
     i32_card = next_start();
-    if (i32_card != NEXT_OK)
-    {
-        osd_text(OSD_ROWS - YES, 0, " No SD card", OSD_COLS, YES);
-        osd_show(0);
-    }
 /* the main loop */
     while (true)
     {
@@ -4251,10 +4283,9 @@ static void next_main(void)
                 ui32_card_time = TIMER;
                 i32_card = next_start();
 /* found: the message goes */
-                if ((i32_card == NEXT_OK) && (g_i32_bt_on == 0))
+                if (i32_card == NEXT_OK)
                 {
-                    osd_clear();
-                    osd_hide();
+                    i32_last_state = NO_STATE;
                 }
             }
         }
@@ -4264,22 +4295,22 @@ static void next_main(void)
             next_service();
         }
         ui32_keys = key_events();
-/* the Bluetooth menu closes when the key that closed it is released */
+/* a menu closes when the key that closed it is released */
         if (g_i32_closing != 0)
         {
             if ((KEYS & (CLOSE_KEYS | K_BT)) == 0)
             {
                 g_i32_closing = 0;
-                g_i32_bt_on = 0;
-                bt_close();
-/* an empty screen again, or the card message */
-                osd_clear();
-                osd_hide();
-                if (i32_card != NEXT_OK)
+                g_i32_menu = 0;
+/* the Bluetooth menu */
+                if (g_i32_bt_on != 0)
                 {
-                    osd_text(OSD_ROWS - YES, 0, " No SD card", OSD_COLS, YES);
-                    osd_show(0);
+                    g_i32_bt_on = 0;
+                    bt_close();
                 }
+/* an empty screen; redraw: status bar, card message or nothing */
+                osd_clear();
+                i32_last_state = NO_STATE;
             }
         }
 /* the Bluetooth menu's keys */
@@ -4291,31 +4322,62 @@ static void next_main(void)
                 g_i32_closing = YES;
             }
         }
-/* F3 opens the Bluetooth menu */
-        else if ((ui32_keys & K_BT) != 0)
+/* the browser's keys */
+        else if (g_i32_menu != 0)
         {
-            bt_menu();
+            menu_keys(ui32_keys);
         }
         else
         {
-/* no other keys here: the keyboard is the machine's */
+/* no menu: F12, F3 and the player's keys (the keyboard sends no others, next_keyboard.v) */
+            play_keys(ui32_keys);
         }
-/* lines from the ESP32's Bluetooth part */
+/* the tape; lines from the ESP32's Bluetooth part */
+        player_service();
         i32_bt_line = bt_service();
-/* the Bluetooth menu is drawn on a key, on news, and 5 times a second */
-        if (g_i32_bt_on != 0)
+/* redraw on a key, on a player state change, on news for the Bluetooth menu, */
+/* and 5 times a second */
+        b_draw = ui32_keys != 0;
+        if (!b_draw)
         {
-            b_draw = (ui32_keys != 0) || (i32_bt_line != 0) || (i32_bt_result == BT_KEYS_REDRAW);
-            if (!b_draw)
-            {
-                b_draw = (TIMER - ui32_draw_time) > (DRAW_MS * CLK_PER_MS);
-            }
-/* drawn now */
-            if (b_draw)
+            b_draw = g_i32_p_state != i32_last_state;
+        }
+/* news for the Bluetooth menu */
+        if (!b_draw)
+        {
+            b_draw = (g_i32_bt_on != 0) && ((i32_bt_line != 0) || (i32_bt_result == BT_KEYS_REDRAW));
+        }
+/* the clock */
+        if (!b_draw)
+        {
+            b_draw = (TIMER - ui32_draw_time) > (DRAW_MS * CLK_PER_MS);
+        }
+/* what is on the screen */
+        if (b_draw)
+        {
+            if (g_i32_bt_on != 0)
             {
                 bt_draw();
-                ui32_draw_time = TIMER;
             }
+/* the browser */
+            else if (g_i32_menu != 0)
+            {
+                draw_menu();
+            }
+/* no card: the machine cannot start */
+            else if (i32_card != NEXT_OK)
+            {
+                osd_text(OSD_ROWS - YES, 0, " No SD card", OSD_COLS, YES);
+                osd_show(0);
+            }
+            else
+            {
+/* the status bar, or nothing */
+                draw_bar();
+            }
+/* drawn now */
+            i32_last_state = g_i32_p_state;
+            ui32_draw_time = TIMER;
         }
     }
 }

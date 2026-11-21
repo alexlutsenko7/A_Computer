@@ -4,7 +4,8 @@
 /* real card (LNext/10cl025/rtl/LNext.v): */
 /*   MCTL read (MSTAT): [31] a sector waits to be written, [30] a sector is wanted, [29:0] its number */
 /*   MCLR written:      the card's size in sectors */
-/*   MCTL written:      [0] the ESP32 has the sector buffer, [1] a card is in (0: the machine is held in reset) */
+/*   MCTL written:      [0] the ESP32 has the sector buffer, [1] a card is in (0: the machine is held in reset), */
+/*                      [2] the UART pins are the Next's ESP UART (0: the loader's UART for the Bluetooth menu) */
 /* The buffer's bytes go through the memory commands (addresses 0 to 511), which esp_hw.cpp sends */
 /* as bursts. A request ends when bit 0 is cleared again; the machine then takes the sector (read) */
 /* or goes on (write: its CPU waits until then). */
@@ -32,6 +33,8 @@
 /* MCTL: the buffer is ours, a card is in */
 #define MC_ACK 1u
 #define MC_IN 2u
+/* MCTL: the UART pins are the Next's ESP UART */
+#define MC_UART 4u
 /* a sector's bytes */
 #define SECTOR 512u
 /* memory commands: read, write, and one that only empties esp_hw.cpp's read cache */
@@ -102,6 +105,8 @@ static const char g_ac_folder[NAME_LEN + YES] = "ZXNEXT     ";
 static uint8_t g_aui8_sector[SECTOR];
 /* the card is in the machine */
 static int32_t g_i32_in;
+/* the machine word's UART bit as it is now (MC_UART or 0) */
+static uint32_t g_ui32_uart;
 /* its size in sectors */
 static uint32_t g_ui32_sectors;
 /* sectors moved */
@@ -384,13 +389,13 @@ static void give_sector(uint32_t ui32_lba)
         u_memset(g_aui8_sector, FILL, SECTOR);
     }
     to_machine(ui32_lba);
-    MCTL = MC_IN | MC_ACK;
+    MCTL = MC_IN | MC_ACK | g_ui32_uart;
 /* the bytes; the write of MCTL that follows sends the collected ones first */
     for (ui32_index = 0; ui32_index < SECTOR; ui32_index++)
     {
         snap_cmd(C_MWR, ui32_index, g_aui8_sector[ui32_index]);
     }
-    MCTL = MC_IN;
+    MCTL = MC_IN | g_ui32_uart;
     g_ui32_reads++;
 }
 
@@ -402,7 +407,7 @@ static void take_sector(uint32_t ui32_lba)
 
 /* start values */
     ui32_index = 0;
-    MCTL = MC_IN | MC_ACK;
+    MCTL = MC_IN | MC_ACK | g_ui32_uart;
 /* nothing of an earlier sector may come from the read cache */
     snap_cmd(C_NONE, 0, 0);
     for (ui32_index = 0; ui32_index < SECTOR; ui32_index++)
@@ -410,7 +415,7 @@ static void take_sector(uint32_t ui32_lba)
         g_aui8_sector[ui32_index] = (uint8_t)snap_cmd(C_MRD, ui32_index, 0);
     }
 /* the machine goes on; the card is written meanwhile */
-    MCTL = MC_IN;
+    MCTL = MC_IN | g_ui32_uart;
     from_machine(ui32_lba);
     sd_write(ui32_lba, g_aui8_sector);
     g_ui32_writes++;
@@ -435,7 +440,7 @@ int32_t next_start(void)
 /* the folder with the Next's files, before the machine reads anything */
         find_folder();
         MCLR = ui32_sectors;
-        MCTL = MC_IN;
+        MCTL = MC_IN | g_ui32_uart;
         g_i32_in = YES;
         i32_result = NEXT_OK;
     }
@@ -500,11 +505,32 @@ int32_t next_in_folder(void)
     return (g_ui32_folder != 0) ? YES : 0;
 }
 
+/* The UART pins between the FPGA and the ESP32: 1 = the Next's ESP UART (the ESP32 is its Wi-Fi */
+/* module), 0 = the loader's UART (the Bluetooth menu). Not during a sector request. */
+void next_uart(int32_t i32_machine)
+{
+    g_ui32_uart = 0;
+    if (i32_machine != 0)
+    {
+        g_ui32_uart = MC_UART;
+    }
+/* the machine word, with the card as it is */
+    if (g_i32_in != 0)
+    {
+        MCTL = MC_IN | g_ui32_uart;
+    }
+    else
+    {
+        MCTL = g_ui32_uart;
+    }
+}
+
 /* back to the state after a start: the next machine starts the loader again without an ESP32 */
 /* restart (esp_hw.cpp; the Bluetooth connection stays) */
 void next_reset(void)
 {
     g_i32_in = 0;
+    g_ui32_uart = 0;
     g_ui32_sectors = 0;
     g_ui32_folder = 0;
     g_ui32_reads = 0;

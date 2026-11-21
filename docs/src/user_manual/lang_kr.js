@@ -2,7 +2,7 @@
 /* Same block structure as lang_en.js; on-screen messages stay as the board shows them. */
 module.exports = {
   title: "L — 사용자 설명서",
-  subtitle: "보드 하나로 원하는 클래식 머신을: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive, ZX Spectrum Next. 연결하고, 머신을 고르고, 즐기는 방법. 2026년 11월 20일판.",
+  subtitle: "보드 하나로 원하는 클래식 머신을: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive, ZX Spectrum Next. 연결하고, 머신을 고르고, 즐기는 방법. 2026년 11월 21일판.",
   page: "페이지",
   blocks: [
     /* ------------------------------------------------------------ 1 */
@@ -126,7 +126,7 @@ module.exports = {
       ["**F8**", "컴퓨터: 화면을 60 Hz와 머신 고유의 50 Hz 사이에서 바꿉니다. 시작할 때마다 60 Hz입니다. 모니터에 아무것도 나오지 않으면 F8을 다시 누르십시오. LMega: 13절. LNES: 기능 없음."],
       ["**Print Screen**", "화면을 `SCRNnnnn.BMP`로 파일 목록이 있는 폴더에 저장(LMega 제외)"],
     ], [34, 66]],
-    ["note", "LNext에는 고유의 키가 있습니다(14절). 위의 키 가운데 F3, F8, Ctrl + Alt + Del만 LNext에서 동작합니다."],
+    ["note", "LNext에는 고유의 키가 있습니다(14절). 위의 키 가운데 F12, F3, F8, Ctrl + Alt + Del만 LNext에서 동작합니다."],
     ["p", "짧은 메시지(예: **Speed: turbo**)는 화면 맨 아래 줄에 몇 초 동안 표시됩니다. 메뉴나 파일 목록이 열려 있는 동안 머신 자체는 키 입력을 받지 않습니다."],
     ["h2", "파일 목록"],
     ["p", "목록에는 폴더가 먼저, 그다음에 실행 중인 머신이 쓸 수 있는 파일이 화면 위에 파란 바탕의 흰 글씨로 나옵니다."],
@@ -318,7 +318,7 @@ module.exports = {
 
     /* ------------------------------------------------------------ 14 */
     ["h1", "14. LNext(ZX Spectrum Next)"],
-    ["note", "LNext는 가장 새로운 머신입니다. 이 판을 쓸 때 LNext는 시험 환경의 보드에서 NextZXOS를 시작하고 프로그램을 실행했습니다. 모니터의 화면, 소리, 조이스틱, USB 키보드는 아직 시험하지 않았습니다."],
+    ["note", "LNext는 가장 새로운 머신입니다. 테이프 파일 로딩과 Wi-Fi는 마지막에 추가되어 시험이 많지 않습니다."],
     ["p", "LNext는 Spectrum의 현대적인 후속 기종인 ZX Spectrum Next입니다: 더 빠른 프로세서(최대 28 MHz), 2 MB 메모리, 스프라이트가 있는 새 그래픽, 사운드 칩 세 개. Next 고유의 시스템인 **NextZXOS**가 돌아가며, 48K와 128K Spectrum도 제공합니다."],
     ["h2", "Spectrum Next의 파일(한 번만)"],
     ["p", "Spectrum Next는 시스템 전체를 SD 카드에 둡니다. 이 파일들은 L에 포함되어 있지 않습니다. Spectrum Next 배포판을 `https://www.specnext.com/latestdistro/`에서 내려받으십시오."],
@@ -328,7 +328,7 @@ module.exports = {
       "머신 메뉴에서 F12로 **LNext**를 설치하고(4절) 시작합니다.",
       "처음 시작할 때 Next는 화면을 시험하고 설정을 묻습니다. 설정은 카드에 저장됩니다. 그 뒤 NextZXOS가 메뉴를 보여 줍니다.",
     ]],
-    ["p", "Next에게는 `ZXNEXT` 폴더가 카드 전체(`C:` 드라이브)입니다. Next의 게임과 프로그램을 이 폴더에 넣고 NextZXOS의 **Browser**에서 시작하십시오. Next는 다른 머신의 파일을 보지 못하며, 다른 머신의 파일 목록(F12)은 여기서 쓰지 않습니다."],
+    ["p", "Next에게는 `ZXNEXT` 폴더가 카드 전체(`C:` 드라이브)입니다. Next의 게임과 프로그램을 이 폴더에 넣고 NextZXOS의 **Browser**에서 시작하십시오. Next는 다른 머신의 파일을 보지 못하며."],
     ["table", ["키", "기능"], [
       ["**F1**", "하드 리셋: Next가 카드에서 다시 시작합니다"],
       ["**F4**", "소프트 리셋"],
@@ -337,9 +337,12 @@ module.exports = {
       ["**F9**", "Next의 Multiface 버튼(NMI): NextZXOS의 NMI 메뉴"],
       ["**F10**", "Next의 Drive 버튼"],
       ["**F3**", "블루투스 오디오 메뉴(7절)"],
+      ["**F12**", "카드에 있는 테이프 파일(.tap, .tzx)의 목록, 48K와 128K Spectrum용(아래 참조)"],
+      ["**F7**", "테이프를 정지합니다"],
+      ["**F11**", "테이프 일시 정지 / 계속"],
       ["**Ctrl + Alt + Del**", "머신 메뉴로 돌아가기"],
     ], [34, 66]],
-    ["p", "PC 키보드가 Next의 키보드입니다: 글자, 숫자, 방향키, Backspace, 문장 부호는 Spectrum Next에서와 같이 동작합니다."],
+    ["p", "PC 키보드가 Next의 키보드입니다: 글자, 숫자, 방향키, Backspace, 문장 부호는 Spectrum Next에서와 같이 동작합니다. Ctrl은 Spectrum의 Symbol Shift이고 Shift는 Caps Shift입니다. 예를 들어 Ctrl + 0은 밑줄을 입력합니다."],
     ["table", ["조이스틱 버튼", "왼쪽 조이스틱(DB9-1)", "오른쪽 조이스틱(DB9-2)"], [
       ["방향, 발사(버튼 B)", "조이스틱", "조이스틱"],
       ["버튼 C(두 번째 발사)", "**Insert**", "**Delete**"],
@@ -349,7 +352,26 @@ module.exports = {
     ["ul", [
       "화면은 Next 고유의 타이밍으로, 약 49 Hz 또는 58 Hz입니다(F8). 모니터에 아무것도 나오지 않으면 F8을 누르십시오.",
       "소리는 두 채널이 같습니다.",
-      "지원하지 않는 것: 마우스, 실시간 시계, Wi-Fi, 확장 포트, Print Screen, F2 스냅샷, NextZXOS에서 Next의 코어를 업데이트하는 기능.",
+      "지원하지 않는 것: 마우스, 실시간 시계, 확장 포트, 테이프에 저장, Print Screen, F2 스냅샷, NextZXOS에서 Next의 코어를 업데이트하는 기능.",
+    ]],
+    ["h2", "48K와 128K Spectrum용 테이프"],
+    ["p", "Next 자체의 파일(.nex, 스냅샷, .tap)은 Next의 Browser에서 시작합니다. 그 밖에 보드는 실제 Spectrum에 하듯이 테이프 파일을 Next의 테이프 입력으로 재생할 수 있습니다. NextZXOS가 제공하는 48K와 128K Spectrum, 그리고 자체 로더가 있는 .tzx 파일을 위한 것입니다."],
+    ["ol", [
+      "NextZXOS에서 48K 또는 128K Spectrum을 시작하고 `LOAD \"\"`를 입력하십시오(128K: **Tape Loader** 선택).",
+      "**F12**를 누르고 .tap 또는 .tzx 파일을 고른 뒤 **Enter**를 누르십시오. 파일은 `ZXNEXT`뿐 아니라 카드의 어디에 있어도 됩니다.",
+      "**F11**은 테이프를 일시 정지하고 계속하며, **F7**은 정지합니다. 맨 아래 줄에 **Tape stopped (F11=go on)**이 표시되고 게임이 다음 부분을 요구하면 F11을 누르십시오.",
+    ]],
+    ["p", "테이프는 프로세서 속도(F6)를 따릅니다. 7 MHz에서는 두 배, 14 MHz에서는 네 배 빠르게 로딩됩니다(모든 로더가 14 MHz에서 동작하지는 않습니다). 28 MHz에서는 테이프가 로딩되지 않습니다."],
+    ["h2", "Wi-Fi"],
+    ["p", "두 번째 I/O 보드(보드에 USB-C 소켓)를 쓰면 보드는 Next의 Wi-Fi 모듈이기도 합니다. Next의 네트워크 프로그램은 Spectrum Next에서와 같이 동작합니다. 예: `.http`, `.nxtp`, NXtel."],
+    ["ol", [
+      "한 번만: NextZXOS에서 `apps/WIFI/SETUP` 폴더의 `WIFI.BAS`를 실행하고 네트워크의 이름과 비밀번호를 입력하십시오. 보드가 기억합니다.",
+      "그다음 네트워크 프로그램을 사용하십시오. `WIFI.BAS`를 실행한 뒤에는 NXtel을 시작하기 전에 F1로 Next를 다시 시작하십시오.",
+    ]],
+    ["ul", [
+      "**Wi-Fi를 쓰는 동안에도 Bluetooth 소리는 계속 납니다.** 네트워크 프로그램을 시작할 때 소리가 잠깐 끊길 수 있습니다.",
+      "일반 연결만 동작합니다. `https`로 시작하는 웹 주소는 동작하지 않습니다.",
+      "NXtel에는 `NXtel.nex`와 같은 폴더에 `NXtel.cfg` 파일이 필요합니다. 없으면 NXtel 자체의 다운로드에서 가져오십시오.",
     ]],
 
     /* ------------------------------------------------------------ 15 */

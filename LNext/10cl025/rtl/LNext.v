@@ -113,6 +113,8 @@ localparam integer PAD_END = 4;
 localparam integer PAD_PAGE_DOWN = 5;
 
 localparam integer CLK56_HZ = 56000000;
+/* the machine word's bit that gives the UART pins to the Next's ESP UART */
+localparam integer C_UART_NEXT = 2;
 
 /* Clocks and resets */
 wire clk28, clk14, clk7, clk_sd, clk_sdo, locked1;
@@ -383,6 +385,14 @@ wire        vs_n, hs_n, vb_n, hb_n;
 /* the tape player's level, the CPU held for the card */
 wire        tape_on, tape_lvl, sd_wait;
 
+/* The UART pins to the ESP32 carry one of two things, chosen by the ESP32 in the machine word's */
+/* bit 2: 0 = the loader's UART (the F3 Bluetooth menu talks to the ESP32's Bluetooth part), */
+/* 1 = the Next's ESP UART (the ESP32 answers as the Next's Wi-Fi module, ESP32/v2/src/espat.cpp). */
+/* The side that is not chosen sees an idle line. */
+wire        uart_next;
+wire        next_uart_tx;
+wire        l_bt_tx;
+
 zxnext_top u_next (
     .g_machine_id  (MACHINE_ID),
     .g_board_issue (BOARD_ISSUE),
@@ -426,8 +436,8 @@ zxnext_top u_next (
     .i2c_scl_o     (),
     .i2c_sda_o     (),
     .i2c_sda_i     (1'b1),
-    .uart_rx_i     (1'b1),
-    .uart_tx_o     (),
+    .uart_rx_i     (BT_RX | !uart_next),
+    .uart_tx_o     (next_uart_tx),
     .esp_reset_o   ()
 );
 
@@ -549,6 +559,10 @@ assign AUDIO_AY   = audio;
 /* no beeper pin */
 assign AUDIO_BEEP = 1'b0;
 
+/* the UART pins' use (static while bytes run; the Next's side has its own synchroniser) */
+assign uart_next = l_mctl[C_UART_NEXT];
+assign BT_TX     = uart_next ? next_uart_tx : l_bt_tx;
+
 /* Loader hardware + ESP32 link (clk56; next_loader.v, LNext's copy of the tape loader): OSD, keys, */
 /* Bluetooth UART, the machine word and the memory commands. Core ID 4E58_0001 ("NX"). */
 wire       osd_we;
@@ -592,8 +606,8 @@ next_loader #(.CORE_ID(32'h4E58_0001)) u_tape (
     .snap_frozen (1'b0),
     .snap_ack    (snap_ack),
     .snap_rdata  (snap_rdata),
-    .bt_tx       (BT_TX),
-    .bt_rx       (BT_RX),
+    .bt_tx       (l_bt_tx),
+    .bt_rx       (BT_RX | uart_next),
     .esp_sck     (ESP_SCK),
     .esp_mosi    (ESP_MOSI),
     .esp_cs_n    (ESP_CS_N),

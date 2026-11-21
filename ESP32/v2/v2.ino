@@ -32,6 +32,7 @@
 /* the sine of the test tone; the loader */
 #include <math.h>
 #include "src/loader.h"
+#include "src/espat.h"
 
 /* I/O board revision 2: ESP32-WROVER-E-N16R8, its PSRAM on GPIO16 / GPIO17, so the control UART */
 /* is on GPIO27 (RX2 <- FPGA BT_TX) / GPIO21 (TX2 -> FPGA BT_RX). Revision 1 (DevKit) = ESP32/v1. */
@@ -45,6 +46,15 @@
 #define UART2_RX 27
 #define UART2_TX 21
 #define UART_BAUD 115200
+/* UART2's receive buffer: LNext's Wi-Fi module takes a send's data (up to 2048 bytes) through it */
+#define UART2_RX_BUF 1024
+/* Bluetooth off for Wi-Fi: the longest wait for the link's end, its step, the time for late events */
+#define BT_PAUSE_WAIT_MS 5000u
+#define BT_PAUSE_STEP_MS 50u
+#define BT_PAUSE_SETTLE_MS 1000u
+/* memory blocks of this size and above come from the PSRAM, smaller ones from the internal RAM */
+/* (the core's default is 4096): Bluetooth and LNext's Wi-Fi fit into the internal RAM together */
+#define PSRAM_MALLOC_MIN 256u
 /* test option NEXT_SERIAL_CARD (src/pccard.h): the USB port's speed and receive buffer */
 #define PCCARD_BAUD 921600
 #define PCCARD_RX_BUF 2048
@@ -667,9 +677,12 @@ static void event(const char *pc_fmt, ...)
     va_start(s_args, pc_fmt);
     vsnprintf(ac_buf, sizeof ac_buf, pc_fmt, s_args);
     va_end(s_args);
-/* USB and the FPGA's UART */
+/* USB and the FPGA's UART, unless that is LNext's Wi-Fi module's just now (src/espnet.cpp) */
     Serial.printf("EV %s\r\n", ac_buf);
-    Serial2.printf("EV %s\r\n", ac_buf);
+    if (espnet_machine() == 0)
+    {
+        Serial2.printf("EV %s\r\n", ac_buf);
+    }
 }
 
 /* a MAC address as text */
@@ -1561,6 +1574,62 @@ protected:
 
 /* the A2DP source */
 ZxA2DP g_s_a2dp;
+/* Bluetooth is switched off (console test "wifi bt off", see btaudio_pause) */
+static bool g_b_bt_paused;
+
+/* Console test "wifi bt off": Bluetooth is shut down while the ESP32 runs. The link ends, the */
+/* profiles, the host stack and the controller are shut down (the library's end() without its */
+/* memory release, which could not be undone). Bluetooth and LNext's Wi-Fi module run together */
+/* (PSRAM_MALLOC_MIN); this shows what Bluetooth takes of the internal memory. */
+void btaudio_pause(void)
+{
+/* local variables */
+    uint32_t ui32_start;
+
+/* start values */
+    ui32_start = millis();
+    if (!g_b_bt_paused)
+    {
+        g_b_bt_paused = true;
+/* A search and the link end first, and the stack gets time for the events that follow: an A2DP */
+/* event that arrives after the profile is shut down crashes the stack (btc_a2dp_cb_handler). */
+        if (g_s_a2dp.is_discovery_active())
+        {
+            esp_bt_gap_cancel_discovery();
+        }
+        if (g_s_a2dp.get_connection_state() != ESP_A2D_CONNECTION_STATE_DISCONNECTED)
+        {
+            g_s_a2dp.disconnect();
+        }
+        while (((g_s_a2dp.get_connection_state() != ESP_A2D_CONNECTION_STATE_DISCONNECTED) || g_s_a2dp.is_discovery_active()) &&
+               ((millis() - ui32_start) < BT_PAUSE_WAIT_MS))
+        {
+            delay(BT_PAUSE_STEP_MS);
+        }
+        delay(BT_PAUSE_SETTLE_MS);
+        g_s_a2dp.end(false);
+/* the host stack and the controller */
+        esp_bluedroid_disable();
+        esp_bluedroid_deinit();
+        btStop();
+        Serial.print("EV bluetooth off\r\n");
+    }
+}
+
+/* console test "wifi bt on": Bluetooth starts as at power-up and reconnects */
+void btaudio_resume(void)
+{
+    if (g_b_bt_paused)
+    {
+/* the BLE memory was given to the heap at the first start and is not given again */
+        g_s_a2dp.set_reset_ble(false);
+        g_s_a2dp.start();
+        g_ui32_last_kick = millis();
+/* the loop looks after the link again */
+        g_b_bt_paused = false;
+        Serial.print("EV bluetooth on\r\n");
+    }
+}
 esp_err_t ZxA2DP::s_e_tx_power_err = ESP_FAIL;
 
 /* status */
@@ -1793,6 +1862,9 @@ static void help(Print &r_out)
         "OK commands:\r\n"
         "  status                  connection, target, audio (i2s peak since last status)\r\n"
         "  loader                  SD loader task: state, last link frame, code addresses on its stack\r\n"
+        "  wifi [trace on|off]     LNext's Wi-Fi module: state; trace = its answers on this port too\r\n"
+        "  at <line>               a line for the Wi-Fi module as if the Next had sent it (AT+CWLAP ...)\r\n"
+        "  wifi bt off|on          test: Bluetooth shut down / started again\r\n"
         "  info                    one line: OK info <state> <scan> <MAC> <vol> <pin> <src> <name>\r\n"
         "  scan                    drop the link, search for speakers (EV found ... lines)\r\n"
         "  list                    devices found so far (index MAC rssi name)\r\n"
@@ -2195,6 +2267,21 @@ static void command(char *pc_line, Print &r_out)
     pc_cmd = strtok(pc_line, " \t");
     pc_arg = nullptr;
     pc_end = nullptr;
+/* while Bluetooth is off only the commands that do not touch it are taken */
+    if ((pc_cmd != nullptr) && g_b_bt_paused && (strcasecmp(pc_cmd, "wifi") != 0) && (strcasecmp(pc_cmd, "at") != 0) &&
+        (strcasecmp(pc_cmd, "loader") != 0) && (strcasecmp(pc_cmd, "help") != 0))
+    {
+        if (strcasecmp(pc_cmd, "status") == 0)
+        {
+            r_out.print("OK state=off: Bluetooth is off (wifi bt on starts it)\r\n");
+            espnet_status(r_out);
+        }
+        else
+        {
+            r_out.print("ERR Bluetooth is off (wifi bt on starts it)\r\n");
+        }
+        pc_cmd = nullptr;
+    }
 /* an empty line is no command */
     if (pc_cmd != nullptr)
     {
@@ -2228,12 +2315,43 @@ static void command(char *pc_line, Print &r_out)
         }
         else if (strcasecmp(pc_cmd, "status") == 0)
         {
-/* the Bluetooth part's status, then the loader's */
+/* the Bluetooth part's status, the Wi-Fi module's, then the loader's */
             status(r_out);
+            espnet_status(r_out);
         }
         else if (strcasecmp(pc_cmd, "loader") == 0)
         {
             loader_info(r_out);
+        }
+/* LNext's Wi-Fi module: its state, its answers on this port too, a command line for it */
+        else if (strcasecmp(pc_cmd, "wifi") == 0)
+        {
+            if ((pc_arg != nullptr) && (strcasecmp(pc_arg, "trace on") == 0))
+            {
+                espnet_trace(YES);
+            }
+            else if ((pc_arg != nullptr) && (strcasecmp(pc_arg, "trace off") == 0))
+            {
+                espnet_trace(0);
+            }
+/* tests: Bluetooth off and on without the radio */
+            else if ((pc_arg != nullptr) && (strcasecmp(pc_arg, "bt off") == 0))
+            {
+                btaudio_pause();
+            }
+            else if ((pc_arg != nullptr) && (strcasecmp(pc_arg, "bt on") == 0))
+            {
+                btaudio_resume();
+            }
+            else
+            {
+/* only the state */
+            }
+            espnet_status(r_out);
+        }
+        else if (strcasecmp(pc_cmd, "at") == 0)
+        {
+            espnet_console((pc_arg != nullptr) ? pc_arg : "");
         }
 /* the rate history */
         else if (strcasecmp(pc_cmd, "rates") == 0)
@@ -2355,6 +2473,8 @@ static LineIn g_s_uart_in{ Serial2, { 0 }, 0, false };
 
 void setup()
 {
+/* before anything is allocated: all but the small memory blocks come from the PSRAM */
+    heap_caps_malloc_extmem_enable(PSRAM_MALLOC_MIN);
 #ifdef NEXT_SERIAL_CARD
 /* test option (src/pccard.h): the USB port carries LNext's card sectors at 921600 baud */
     Serial.setRxBufferSize(PCCARD_RX_BUF);
@@ -2362,6 +2482,7 @@ void setup()
 #else
     Serial.begin(UART_BAUD);
 #endif
+    Serial2.setRxBufferSize(UART2_RX_BUF);
     Serial2.begin(UART_BAUD, SERIAL_8N1, UART2_RX, UART2_TX);
 /* idle-high when the FPGA is not connected */
     gpio_pullup_en((gpio_num_t)UART2_RX);
@@ -2706,18 +2827,34 @@ static void rate_check(esp_a2d_connection_state_t e_conn)
 /* the main loop: the loader, the command ports, then the Bluetooth link's state */
 void loop()
 {
-    char ac_mac[MAC_BUF];
-    esp_a2d_connection_state_t e_conn;
-/* a search is running; the loader's link and its watchdog */
-    bool b_disc;
-
+/* the loader's link and its watchdog */
     loader_poll();
     loader_check();
 /* commands from USB and from the FPGA */
 #ifndef NEXT_SERIAL_CARD
     g_s_usb_in.poll();
 #endif
-    g_s_uart_in.poll();
+/* the FPGA's UART: LNext's Wi-Fi module (src/espnet.cpp) or the Bluetooth part's commands */
+    espnet_poll();
+    if (espnet_machine() == 0)
+    {
+        g_s_uart_in.poll();
+    }
+    if (!g_b_bt_paused)
+    {
+        bt_loop();
+    }
+    delay(LOOP_DELAY_MS);
+}
+
+/* the loop's Bluetooth part: found devices, the link's state, the stream, reconnecting */
+static void bt_loop(void)
+{
+    char ac_mac[MAC_BUF];
+    esp_a2d_connection_state_t e_conn;
+/* a search is running */
+    bool b_disc;
+
     report_devices();
 /* Report connection / discovery changes. */
     e_conn = g_s_a2dp.get_connection_state();
@@ -2767,5 +2904,4 @@ void loop()
     {
         start_discovery();
     }
-    delay(LOOP_DELAY_MS);
 }

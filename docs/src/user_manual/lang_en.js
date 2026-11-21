@@ -4,7 +4,7 @@
 /* ['table', header, rows, column widths in percent] */
 module.exports = {
   title: "L — User Manual",
-  subtitle: "One board, your choice of classic machines: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive and ZX Spectrum Next. How to connect it, choose the machines and play. Edition of 20 November 2026.",
+  subtitle: "One board, your choice of classic machines: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive and ZX Spectrum Next. How to connect it, choose the machines and play. Edition of 21 November 2026.",
   page: "page",
   blocks: [
     /* ------------------------------------------------------------ 1 */
@@ -128,7 +128,7 @@ module.exports = {
       ["**F8**", "Computers: swaps the picture between 60 Hz and the machine's own 50 Hz. It is 60 Hz after every start. If the monitor shows nothing, press F8 again. LMega: section 13. LNES: no function."],
       ["**Print Screen**", "Saves the picture as `SCRNnnnn.BMP` in the folder the file list is in (not in LMega)"],
     ], [34, 66]],
-    ["note", "LNext has its own keys (section 14). Of the keys above only F3, F8 and Ctrl + Alt + Del work there."],
+    ["note", "LNext has its own keys (section 14). Of the keys above only F12, F3, F8 and Ctrl + Alt + Del work there."],
     ["p", "Short messages (for example **Speed: turbo**) appear for a few seconds on the bottom line of the picture. While a menu or the file list is open, the machine itself sees no keys."],
     ["h2", "The file list"],
     ["p", "The list shows folders first, then the files the running machine can use, white on blue over the picture."],
@@ -320,7 +320,7 @@ module.exports = {
 
     /* ------------------------------------------------------------ 14 */
     ["h1", "14. LNext (ZX Spectrum Next)"],
-    ["note", "LNext is the newest machine. When this edition was written it had started NextZXOS and run programs on the board in a test set-up. Its picture on a monitor, its sound, the joysticks and the USB keyboard had not yet been tested."],
+    ["note", "LNext is the newest machine. Loading from tape files and Wi-Fi were added last and have had little testing."],
     ["p", "LNext is the ZX Spectrum Next, the modern successor of the Spectrum: a faster processor (up to 28 MHz), 2 MB of memory, new graphics with sprites, and three sound chips. It runs **NextZXOS**, the Next's own system, which also offers the 48K and 128K Spectrum."],
     ["h2", "The Spectrum Next's files (once)"],
     ["p", "A Spectrum Next keeps its whole system on the SD card. These files are not part of L. Download the Spectrum Next distribution from `https://www.specnext.com/latestdistro/`."],
@@ -330,7 +330,7 @@ module.exports = {
       "Install **LNext** with F12 in the machine menu (section 4) and start it.",
       "At the first start the Next tests the picture and asks for its settings; it stores them on the card. Then NextZXOS shows its menu.",
     ]],
-    ["p", "For the Next the folder `ZXNEXT` is the whole card (its drive `C:`). Put the Next's games and programs into this folder and start them from the **Browser** of NextZXOS. The Next does not see the other machines' files, and the file list of the other machines (F12) is not used here."],
+    ["p", "For the Next the folder `ZXNEXT` is the whole card (its drive `C:`). Put the Next's games and programs into this folder and start them from the **Browser** of NextZXOS. The Next does not see the other machines' files."],
     ["table", ["Key", "What it does"], [
       ["**F1**", "Hard reset: the Next starts again from the card"],
       ["**F4**", "Soft reset"],
@@ -339,9 +339,12 @@ module.exports = {
       ["**F9**", "The Next's Multiface button (NMI): the NMI menu of NextZXOS"],
       ["**F10**", "The Next's Drive button"],
       ["**F3**", "Bluetooth audio menu (section 7)"],
+      ["**F12**", "List of tape files (.tap, .tzx) on the card, for the 48K and 128K Spectrum (see below)"],
+      ["**F7**", "Stops the tape"],
+      ["**F11**", "Pauses / continues the tape"],
       ["**Ctrl + Alt + Del**", "Back to the machine menu"],
     ], [34, 66]],
-    ["p", "The PC keyboard is the Next's keyboard: letters, digits, cursor keys, Backspace and punctuation act as on a Spectrum Next."],
+    ["p", "The PC keyboard is the Next's keyboard: letters, digits, cursor keys, Backspace and punctuation act as on a Spectrum Next. Ctrl is the Spectrum's Symbol Shift and Shift its Caps Shift: for example, Ctrl + 0 types an underscore."],
     ["table", ["Joystick button", "Left joystick (DB9-1)", "Right joystick (DB9-2)"], [
       ["Directions, fire (button B)", "The joystick", "The joystick"],
       ["Button C (second fire)", "**Insert**", "**Delete**"],
@@ -351,7 +354,26 @@ module.exports = {
     ["ul", [
       "The picture has the Next's own timing, about 49 Hz or 58 Hz (F8). If the monitor shows nothing, press F8.",
       "The sound is the same on both channels.",
-      "Not available: the mouse, the real-time clock, Wi-Fi, the expansion port, Print Screen, snapshots with F2, and updating the Next's core from NextZXOS.",
+      "Not available: the mouse, the real-time clock, the expansion port, saving to tape, Print Screen, snapshots with F2, and updating the Next's core from NextZXOS.",
+    ]],
+    ["h2", "Tapes for the 48K and 128K Spectrum"],
+    ["p", "The Next's own files (.nex, snapshots, .tap) are started from its Browser. Besides that, the board can play tape files into the Next's tape input, as into a real Spectrum. This is for the 48K and 128K Spectrum that NextZXOS offers, and for .tzx files with their own loaders."],
+    ["ol", [
+      "Start the 48K or 128K Spectrum from NextZXOS and type `LOAD \"\"` (128K: choose **Tape Loader**).",
+      "Press **F12**, choose the .tap or .tzx file and press **Enter**. The file may be anywhere on the card, not only in `ZXNEXT`.",
+      "**F11** pauses and continues the tape, **F7** stops it. When the bottom line says **Tape stopped (F11=go on)** and the game asks for the next part, press F11.",
+    ]],
+    ["p", "The tape follows the processor speed (F6): at 7 MHz it loads twice as fast, at 14 MHz four times as fast (not every loader works at 14 MHz). At 28 MHz tapes do not load."],
+    ["h2", "Wi-Fi"],
+    ["p", "With the second I/O board (USB-C socket on the board) the board is also the Next's Wi-Fi module. The Next's network programs work as on a Spectrum Next, for example `.http`, `.nxtp` and NXtel."],
+    ["ol", [
+      "Once: in NextZXOS run `WIFI.BAS` from the folder `apps/WIFI/SETUP` and enter the name and the password of your network. The board remembers them.",
+      "Then use the network programs. After `WIFI.BAS`, restart the Next with F1 before you start NXtel.",
+    ]],
+    ["ul", [
+      "**Bluetooth sound keeps playing while Wi-Fi is in use.** A short gap in the sound may be heard when a network program starts.",
+      "Only plain connections work: web addresses that begin with `https` do not.",
+      "NXtel needs its file `NXtel.cfg` in the same folder as `NXtel.nex`. If it is missing, take it from NXtel's own download.",
     ]],
 
     /* ------------------------------------------------------------ 15 */

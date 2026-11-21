@@ -21,6 +21,9 @@ void next_counts(uint32_t *pui32_read, uint32_t *pui32_written);
 /* 1 = the machine works in the card's folder ZXNEXT (shown to it as the root directory), */
 /* 0 = in the card's root directory (a card without the folder, or not FAT32) */
 int32_t next_in_folder(void);
+/* the UART pins between the FPGA and the ESP32: 1 = the Next's ESP UART (the ESP32 is its Wi-Fi */
+/* module, I/O board revision 2 only), 0 = the loader's UART (the Bluetooth menu) */
+void next_uart(int32_t i32_machine);
 /* back to the state after a start (esp_hw.cpp, when the machine was left) */
 void next_reset(void);
 

@@ -148,4 +148,10 @@ ${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/next/next_test.exe next_test.cpp \
 echo "LNext sector server:"
 (cd $W/next && ./next_test.exe card.img > next.log) || fail=1
 sed 's/^/  /' $W/next/next.log
+# LNext's Wi-Fi module (espat.cpp): a model of the UART, the clock and the network
+rm -rf $W/espat && mkdir -p $W/espat
+${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/espat/espat_test.exe espat_test.cpp ../../../ESP32/v2/src/espat.cpp
+echo "LNext Wi-Fi module:"
+(cd $W/espat && ./espat_test.exe > espat.log) || fail=1
+sed 's/^/  /' $W/espat/espat.log
 [ $fail = 0 ] && echo "HOST TEST PASSED" || { echo "HOST TEST FAILED"; exit 1; }

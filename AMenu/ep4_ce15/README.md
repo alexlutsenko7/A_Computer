@@ -56,7 +56,7 @@ A ROM area starts with the machine's **info sector** (4 KB); the ROM image follo
 
 | Offset | Contents |
 |---|---|
-| 0x00 | tag `A5 5A <machine byte> <its complement>`: 18 = LSpectrum, 24 = L64, 42 = LTari (both models), 66 = LNES, 3C = LMega |
+| 0x00 | tag `A5 5A <machine byte> <its complement>`: 18 = LSpectrum, 24 = L64, 42 = LTari (both models), 66 = LNES, 3C = LMega, 7E = LNext |
 | 0x04 | core ID, 4 bytes, high byte first |
 | 0x08 | board (1 = EP4CE15, 2 = 10CL025); 0x09 flags (bit 0: the ROMs are the user's own, installed by the ESP32) |
 | 0x10 | the menu line, 29 characters |

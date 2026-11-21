@@ -37,6 +37,11 @@ It is split between the two chips:
 - Link and Bluetooth wiring: `ESP32/v2/README.md`, `docs/LSpectrum_Connection.docx`.
 - Turbo and EAR come from the loader.
 
+LNext (the ZX Spectrum Next) uses the same player for the 48K / 128K machines inside the Next: F12 lists folders
+and TAP / TZX files, F7 stops, F11 pauses and goes on; no recording, no snapshots (the Next loads its own). Its
+loader (`LNext/10cl025/rtl/next_loader.v`) holds 128 commands instead of 512; the player follows the Next's CPU
+speed up to 14 MHz. Details: `LNext/10cl025/README.md`.
+
 ## Using it
 
 Card: FAT32 or FAT16 (MBR-partitioned or not), 512-byte sectors. **Not exFAT** (most cards > 32 GB come exFAT:

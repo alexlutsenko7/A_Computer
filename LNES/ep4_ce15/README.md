@@ -12,7 +12,7 @@ a game is a `.nes` file that the ESP32 writes into the SDRAM (`../../ESP32/vN/sr
 ## Status (2026-11-17)
 
 Built for both boards, timing met. In simulation the CPU test `01-basics` (instr_test-v5) passes and the PPU test
-`vram_access` shows its "passed" screen. **Not on hardware yet.** Other test programs were still being run when
+`vram_access` shows its "passed" screen. **First run on hardware 2026-11-18** (10CL025 board with I/O board revision 2): works at first glance, more testing to come. Other test programs were still being run when
 this was written: see `../../docs/PLAN.md`.
 
 | | EP4CE15 | 10CL025 |

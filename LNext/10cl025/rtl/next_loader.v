@@ -1,10 +1,12 @@
 /* next_loader -- LNext's copy of the tape loader (LSpectrum/ep4_ce15/rtl/tape_loader.v: the */
 /* shared file must not change, the other machines' images are built from it). */
-/* One difference: the pulse player's command FIFO holds 16 commands in registers instead of */
-/* 512 in block RAM, because LNext has no block RAM left. The ESP32 does not play tapes into */
-/* this machine (the Spectrum Next loads its files from the card itself); everything else, the */
-/* register bus, the OSD port, the keys, the Bluetooth UART, the machine word and the memory */
-/* commands, is the shared loader's and is described there. */
+/* One difference: LNext has no block RAM left, so the pulse player's command FIFO (128 */
+/* commands instead of 512) and the UART's receive FIFO (512 bytes) are the two halves of one */
+/* block RAM (see "One block RAM for both FIFOs"). The ESP32 plays tapes into the machine's EAR */
+/* input for the older Spectrums' loaders (TAP / TZX; the Next's own files come from the card */
+/* through next_sd.v); the recorder is not used (mic is 0). Everything else, the register bus, */
+/* the OSD port, the keys, the Bluetooth UART, the machine word and the memory commands, is the */
+/* shared loader's and is described there. */
 `default_nettype none
 
 module next_loader #(
@@ -94,7 +96,17 @@ localparam [3:0] REG_FIFO = 4'd3;
 /* entries of the command FIFO and of the UART receive FIFO */
 localparam [9:0] FIFO_SIZE = 10'd512;
 /* entries of the pulse player's command FIFO in this copy */
-localparam [9:0] CMD_FIFO_SIZE = 10'd16;
+localparam [9:0] CMD_FIFO_SIZE = 10'd128;
+/* its refill mark: half full */
+localparam [9:0] CMD_FIFO_HALF = 10'd64;
+/* the shared block RAM: bytes on port A (address bits), half commands on port B (address bits) */
+localparam integer RAM_BYTES = 1024;
+localparam integer RAM_BYTE_BITS = 10;
+localparam integer RAM_HALVES = 512;
+localparam integer RAM_HALF_BITS = 9;
+/* a byte, half a command (a block RAM with two ports that both write is 18 bits wide at most) */
+localparam integer RAM_BYTE = 8;
+localparam integer RAM_HALF = 16;
 /* player command 10: DATA */
 localparam [1:0] CMD_DATA = 2'd2;
 /* T-states of a pulse of a 0 bit (standard ROM loader) */
@@ -113,8 +125,6 @@ localparam [3:0] TX_SLOTS = 4'd11;
 localparam [3:0] RX_SLOTS = 4'd10;
 /* receiver: the slots from here up carry data bits */
 localparam [3:0] RX_DATA_END = 4'd2;
-/* the FIFO's refill mark: half full */
-localparam [9:0] FIFO_HALF = 10'd256;
 /* register 0x40: flash pass-through */
 localparam [4:0] REG_FLASH = 5'd16;
 /* register 0x44: reload the ROMs */
@@ -193,9 +203,20 @@ end
 /* one CPU T-state */
 wire tick = cen_s[2] ^ cen_s[1];
 
-/* Command FIFO (16 x 32, registers) with a one-command look-ahead (nxt) */
-(* ramstyle = "logic" *) reg  [31:0] fifo [0:15];
-reg  [31:0] fq;
+/* Command FIFO (128 x 32, the upper half of the shared block RAM, port B) with a one-command */
+/* look-ahead (nxt). The port is 16 bits wide and has one address, so a command is two halves: */
+/* a read takes the port for two clocks (fetch: upper half, loading: lower half; the command is */
+/* in nxt after loading2); a pushed command waits in w_data and is written in the first two */
+/* clocks without a read (pushes are a link word apart). No read starts while a write waits. */
+wire [15:0] fq;
+/* a pushed command: its data, its place, the halves still to write */
+reg  [31:0] w_data;
+reg  [6:0]  w_idx;
+reg         w_hi, w_lo;
+/* a read: its place, the upper half, the clock after loading */
+reg  [6:0]  rd_idx;
+reg  [15:0] fq_hi;
+reg         loading2;
 reg  [8:0]  wp, rp;
 /* entries used; a read under way; the look-ahead */
 reg  [9:0]  used;
@@ -204,18 +225,14 @@ reg  [31:0] nxt;
 /* the player takes nxt this clock */
 wire        consume;
 wire        push  = wr && sel_io && reg_a == REG_FIFO && used != CMD_FIFO_SIZE;
-wire        fetch = !loading && (!nxt_valid || consume) && used != 10'd0;
-
-/* the FIFO's memory */
-always @(posedge clk)
-begin
-    if (push)
-    begin
-        fifo[wp[3:0]] <= mem_wdata;
-    end
-/* registered read */
-    fq <= fifo[rp[3:0]];
-end
+/* no read while a command is pushed or waits to be written, or while one is read */
+wire        fetch = !loading && !loading2 && (!nxt_valid || consume) && used != 10'd0 && !push && !w_hi && !w_lo;
+/* port B is not reading: a waiting half is written */
+wire        b_free = !fetch && !loading;
+wire        b_we   = (w_hi || w_lo) && b_free;
+/* its address: the upper halves at odd places */
+wire [8:0]  b_addr = fetch ? {1'b1, rp[6:0], 1'b1} : (loading ? {1'b1, rd_idx, 1'b0} : {1'b1, w_idx, w_hi});
+wire [15:0] b_data = w_hi ? w_data[31:16] : w_data[15:0];
 
 /* the FIFO's pointers and the look-ahead */
 always @(posedge clk or negedge rst_n)
@@ -229,6 +246,15 @@ always @(posedge clk or negedge rst_n)
 /* no look-ahead */
         nxt_valid <= 1'b0;
         nxt       <= 32'd0;
+/* nothing to write, nothing read */
+        w_data    <= 32'd0;
+        w_idx     <= 7'd0;
+        w_hi      <= 1'b0;
+        w_lo      <= 1'b0;
+/* the read's registers */
+        rd_idx    <= 7'd0;
+        fq_hi     <= 16'd0;
+        loading2  <= 1'b0;
     end
     else if (flush)
     begin
@@ -239,6 +265,10 @@ always @(posedge clk or negedge rst_n)
 /* no read, no look-ahead */
         loading   <= 1'b0;
         nxt_valid <= 1'b0;
+/* no write waits */
+        loading2  <= 1'b0;
+        w_hi      <= 1'b0;
+        w_lo      <= 1'b0;
     end
     else
     begin
@@ -253,11 +283,38 @@ always @(posedge clk or negedge rst_n)
         end
 /* entries used */
         used <= used + (push ? 10'd1 : 10'd0) - (fetch ? 10'd1 : 10'd0);
-        loading <= fetch;
+        loading  <= fetch;
+        loading2 <= loading;
+/* the read's place; its upper half */
+        if (fetch)
+        begin
+            rd_idx <= rp[6:0];
+        end
         if (loading)
         begin
+            fq_hi <= fq;
+        end
+/* a pushed command waits for its two writes: the upper half first */
+        if (push)
+        begin
+            w_data <= mem_wdata;
+            w_idx  <= wp[6:0];
+            w_hi   <= 1'b1;
+            w_lo   <= 1'b1;
+        end
+        else if (b_we && w_hi)
+        begin
+            w_hi <= 1'b0;
+        end
+        else if (b_we)
+        begin
+/* the lower half */
+            w_lo <= 1'b0;
+        end
+        if (loading2)
+        begin
 /* the entry read becomes the look-ahead */
-            nxt       <= fq;
+            nxt       <= {fq_hi, fq};
             nxt_valid <= 1'b1;
         end
         else if (consume)
@@ -302,7 +359,7 @@ reg  [7:0]  pend;
 /* a command ended and the stream goes on */
 reg         credit_en;
 
-wire        chain     = used != 10'd0 || loading || nxt_valid;
+wire        chain     = used != 10'd0 || loading || loading2 || nxt_valid;
 wire        idle      = !act_q && !chain;
 /* the next command takes time */
 wire        n_timed   = nxt[31:30] == 2'd0 || nxt[31:30] == CMD_DATA || (nxt[31:30] == 2'd1 && nxt[23:0] != 24'd0);
@@ -594,8 +651,9 @@ always @(posedge clk or negedge rst_n)
         end
     end
 
-/* UART to the ESP32 Bluetooth part (ESP32/v2/v2.ino): 8N1, 512-byte receive FIFO (one M9K, ~45 ms of */
-/* continuous data: the firmware may be busy for a few ms, e.g. redrawing the OSD) */
+/* UART to the ESP32 Bluetooth part (ESP32/v2/v2.ino): 8N1, 512-byte receive FIFO (the lower half of */
+/* the shared block RAM, ~45 ms of continuous data: the firmware may be busy for a few ms, e.g. */
+/* redrawing the OSD) */
 wire       uart_wr = wr && sel_io && reg_a == 4'd15;
 /* {stop, data, start}, LSB first */
 reg  [9:0] tx_sh;
@@ -647,9 +705,8 @@ reg  [9:0] rx_cnt;
 /* 0 = idle, else bits still to sample (start, 8 data, stop) */
 reg  [3:0] rx_n;
 reg  [7:0] rx_sh;
-reg  [7:0] rx_fifo [0:511];
-/* rx_fifo[rx_rp], 1 clock behind rx_rp */
-reg  [7:0] rx_q;
+/* the block RAM's port A: the byte at rx_rp, 1 clock behind it, except in the clock after a store */
+wire [7:0] ram_qa;
 reg  [8:0] rx_wp, rx_rp;
 reg  [9:0] rx_used;
 /* rx_used != 0 for 2 clocks: rx_q is valid */
@@ -659,18 +716,76 @@ wire       rx_valid = rx_used != 10'd0 && rx_seen[1];
 /* the ESP32 takes a byte; a byte to store */
 wire       rx_pop   = uart_wr && mem_wdata[9] && rx_valid;
 reg        rx_push;
+/* the clock after a store: port A wrote and read nothing, the byte seen before it is kept */
+reg        rx_push_d;
+reg  [7:0] rx_hold;
+/* the oldest byte */
+wire [7:0] rx_q = rx_push_d ? rx_hold : ram_qa;
 
 always @(posedge clk)
 begin
-/* the receive line; the FIFO's memory */
-    rx_s <= {rx_s[1:0], bt_rx};
+/* the receive line; the byte kept over a store */
+    rx_s      <= {rx_s[1:0], bt_rx};
+    rx_push_d <= rx_push;
+    rx_hold   <= rx_q;
+end
+
+/* One block RAM for both FIFOs: 1024 bytes on port A, of which the lower 512 are the UART's */
+/* receive FIFO, and the same memory as 512 halves of 16 bits on port B, of which the upper 256 */
+/* are the player's 128 commands (bytes 512 to 1023). Each FIFO has one port, so it writes or */
+/* reads in a clock. The UART: a store has the address, the read at the read pointer goes on in */
+/* every other clock; stores are 4861 clocks apart at least. The commands: see the command FIFO. */
+`ifdef ALTERA_RESERVED_QIS
+altsyncram #(
+    .operation_mode ("BIDIR_DUAL_PORT"), .intended_device_family ("Cyclone 10 LP"), .ram_block_type ("M9K"),
+    .width_a (RAM_BYTE), .widthad_a (RAM_BYTE_BITS), .numwords_a (RAM_BYTES),
+    .width_b (RAM_HALF), .widthad_b (RAM_HALF_BITS), .numwords_b (RAM_HALVES),
+/* both ports in the one clock, outputs not registered */
+    .outdata_reg_a ("UNREGISTERED"), .outdata_reg_b ("UNREGISTERED"), .address_reg_b ("CLOCK0"),
+    .indata_reg_b ("CLOCK0"), .wrcontrol_wraddress_reg_b ("CLOCK0"),
+    .read_during_write_mode_mixed_ports ("DONT_CARE"), .power_up_uninitialized ("FALSE"),
+    .lpm_type ("altsyncram")
+) u_fifos (
+    .clock0 (clk),
+/* port A: the UART's bytes */
+    .address_a ({1'b0, rx_push ? rx_wp : rx_rp}), .data_a (rx_sh), .wren_a (rx_push), .q_a (ram_qa),
+/* port B: the player's commands */
+    .address_b (b_addr), .data_b (b_data), .wren_b (b_we), .q_b (fq)
+);
+`else
+/* for simulation: two arrays; a port that writes reads nothing (x) */
+reg [7:0]  sim_rx [0:511];
+reg [15:0] sim_cmd [0:255];
+reg [7:0]  sim_qa;
+reg [15:0] sim_qb;
+/* the ports' outputs */
+assign ram_qa = sim_qa;
+assign fq     = sim_qb;
+
+always @(posedge clk)
+begin
+/* port A */
     if (rx_push)
     begin
-        rx_fifo[rx_wp] <= rx_sh;
+        sim_rx[rx_wp] <= rx_sh;
+        sim_qa        <= {RAM_BYTE{1'bx}};
     end
-/* registered read */
-    rx_q <= rx_fifo[rx_rp];
+    else
+    begin
+        sim_qa <= sim_rx[rx_rp];
+    end
+/* port B */
+    if (b_we)
+    begin
+        sim_cmd[b_addr[7:0]] <= b_data;
+        sim_qb               <= {RAM_HALF{1'bx}};
+    end
+    else
+    begin
+        sim_qb <= sim_cmd[b_addr[7:0]];
+    end
 end
+`endif
 
 /* the receiver */
 always @(posedge clk or negedge rst_n)
@@ -765,7 +880,7 @@ reg         key_chg;
 reg  [17:0] keys_p;
 /* causes: snapshot answer, recorder event, key change, FIFO half empty */
 reg  [31:0] raw_p;
-wire [3:0]  irq_cause = {snap_req == sack_s[1], rec_pend, key_chg, used <= FIFO_HALF};
+wire [3:0]  irq_cause = {snap_req == sack_s[1], rec_pend, key_chg, used <= CMD_FIFO_HALF};
 always @(posedge clk or negedge rst_n)
 /* reset */
     if (!rst_n)

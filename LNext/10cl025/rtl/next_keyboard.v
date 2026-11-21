@@ -13,7 +13,8 @@
 /* */
 /* Function keys (one function per key; the core's own numbering where it does not collide with */
 /* the board's): F1 hard reset, F4 soft reset, F6 CPU speed, F8 50 / 60 Hz, F9 Multiface NMI, */
-/* F10 DivMMC NMI. F3 is the Bluetooth menu (ESP32); F2, F5, F7, F11 and F12 do nothing. */
+/* F10 DivMMC NMI. The ESP32's keys: F3 Bluetooth menu, F12 tape browser, F7 tape stop, F11 tape */
+/* pause / go on; F2 and F5 do nothing. */
 /* */
 /* The six keys above the cursor keys are the joysticks' extra buttons and no keys of the machine: */
 /* pad = {Page Down, End, Delete, Page Up, Home, Insert}, 1 = held (Delete not with Ctrl + Alt; */
@@ -22,7 +23,7 @@
 /* */
 /* lkeys (bit meanings as the other machines, read by the ESP32 firmware): */
 /* 0 F12   1 keypad 8 / Up   2 keypad 2 / Down   3 keypad 4 / Left   4 keypad 6 / Right */
-/* 5 keypad Enter / Enter   9 Esc / Backspace   16 F3;   the others are 0 here. */
+/* 5 keypad Enter / Enter   6 F11   9 Esc / Backspace   10 F7   16 F3;   the others are 0 here. */
 /* cad = Ctrl + Alt + Del, seen = a packet arrived, raw = {modifiers, key 1, key 2, key 3}. */
 /* Reset by power-on only. */
 `default_nettype none
@@ -68,6 +69,9 @@ localparam [3:0] PKT_LAST = 4'd15;
 /* USB key codes of the loader keys */
 localparam [7:0] KEY_F3 = 8'h3C;
 localparam [7:0] KEY_F12 = 8'h45;
+/* the tape player's keys */
+localparam [7:0] KEY_F7 = 8'h40;
+localparam [7:0] KEY_F11 = 8'h44;
 localparam [7:0] KEY_ESC = 8'h29;
 /* Backspace, the two Enter keys */
 localparam [7:0] KEY_BACKSPACE = 8'h2A;
@@ -433,12 +437,16 @@ always @(posedge clk or negedge rst_n)
 /* the last key: the whole report is there */
                     PKT_DONE:
                     begin
-/* 17 .. 10: F3 only */
-                        lkeys <= {1'b0, has(KEY_F3) && !alt_held, 6'd0,
+/* 17 .. 11: F3 only */
+                        lkeys <= {1'b0, has(KEY_F3) && !alt_held, 5'd0,
+/* 10 F7 */
+                                  has(KEY_F7) && !alt_held,
 /* 9 Esc / Backspace */
                                   has(KEY_ESC) | has(KEY_BACKSPACE),
-/* 8 .. 6 */
-                                  3'd0,
+/* 8, 7 */
+                                  2'd0,
+/* 6 F11 */
+                                  has(KEY_F11) && !alt_held,
 /* 5 keypad Enter / Enter */
                                   has(KEY_KP_ENTER) | has(KEY_ENTER),
 /* 4 keypad 6 / Right */

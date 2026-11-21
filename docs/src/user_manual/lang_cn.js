@@ -2,7 +2,7 @@
 /* Same block structure as lang_en.js; on-screen messages stay as the board shows them. */
 module.exports = {
   title: "L — 用户手册",
-  subtitle: "一块板卡，经典机器任您选择：ZX Spectrum 128K、Commodore 64、Atari 800XL / 130XE、Nintendo Entertainment System、Sega Mega Drive 和 ZX Spectrum Next。如何连接、选择机器并开始游戏。2026 年 11 月 20 日版。",
+  subtitle: "一块板卡，经典机器任您选择：ZX Spectrum 128K、Commodore 64、Atari 800XL / 130XE、Nintendo Entertainment System、Sega Mega Drive 和 ZX Spectrum Next。如何连接、选择机器并开始游戏。2026 年 11 月 21 日版。",
   page: "页码",
   blocks: [
     /* ------------------------------------------------------------ 1 */
@@ -126,7 +126,7 @@ module.exports = {
       ["**F8**", "电脑：在 60 Hz 和机器原本的 50 Hz 之间切换画面。每次启动后都是 60 Hz。如果显示器没有画面，再按一次 F8。LMega：见第 13 节。LNES：无作用。"],
       ["**Print Screen**", "把画面保存为 `SCRNnnnn.BMP`，放在文件列表当前所在的文件夹中（LMega 不支持）"],
     ], [34, 66]],
-    ["note", "LNext 有自己的按键（第 14 节）。以上按键中只有 F3、F8 和 Ctrl + Alt + Del 在其中有效。"],
+    ["note", "LNext 有自己的按键（第 14 节）。以上按键中只有 F12、F3、F8 和 Ctrl + Alt + Del 在其中有效。"],
     ["p", "简短提示（例如 **Speed: turbo**）会在画面最下面一行显示几秒钟。菜单或文件列表打开时，机器本身收不到按键。"],
     ["h2", "文件列表"],
     ["p", "列表先显示文件夹，再显示当前机器可以使用的文件，以蓝底白字叠加在画面上。"],
@@ -318,7 +318,7 @@ module.exports = {
 
     /* ------------------------------------------------------------ 14 */
     ["h1", "14. LNext（ZX Spectrum Next）"],
-    ["note", "LNext 是最新的机器。本版手册编写时，它已在测试环境中于板卡上启动 NextZXOS 并运行过程序。它在显示器上的画面、声音、摇杆和 USB 键盘尚未测试。"],
+    ["note", "LNext 是最新的机器。从磁带文件加载和 Wi-Fi 是最后加入的功能，测试还很少。"],
     ["p", "LNext 就是 ZX Spectrum Next，Spectrum 的现代后继机型：更快的处理器（最高 28 MHz）、2 MB 内存、带精灵的新图形功能以及三个音频芯片。它运行 **NextZXOS**，即 Next 自己的系统，其中也提供 48K 和 128K 的 Spectrum。"],
     ["h2", "Spectrum Next 的文件（只需一次）"],
     ["p", "Spectrum Next 把整个系统保存在 SD 卡上。这些文件不属于 L 的一部分。请从 `https://www.specnext.com/latestdistro/` 下载 Spectrum Next 发行包。"],
@@ -328,7 +328,7 @@ module.exports = {
       "在机器菜单中用 F12 安装 **LNext**（第 4 节）并启动它。",
       "首次启动时，Next 会测试画面并询问设置；设置保存在卡上。随后 NextZXOS 显示其菜单。",
     ]],
-    ["p", "对 Next 来说，`ZXNEXT` 文件夹就是整张卡（它的 `C:` 驱动器）。请把 Next 的游戏和程序放进这个文件夹，并从 NextZXOS 的 **Browser** 启动它们。Next 看不到其他机器的文件，其他机器的文件列表（F12）在这里不使用。"],
+    ["p", "对 Next 来说，`ZXNEXT` 文件夹就是整张卡（它的 `C:` 驱动器）。请把 Next 的游戏和程序放进这个文件夹，并从 NextZXOS 的 **Browser** 启动它们。Next 看不到其他机器的文件。"],
     ["table", ["按键", "作用"], [
       ["**F1**", "硬复位：Next 从卡上重新启动"],
       ["**F4**", "软复位"],
@@ -337,9 +337,12 @@ module.exports = {
       ["**F9**", "Next 的 Multiface 按钮（NMI）：NextZXOS 的 NMI 菜单"],
       ["**F10**", "Next 的 Drive 按钮"],
       ["**F3**", "蓝牙音频菜单（第 7 节）"],
+      ["**F12**", "卡上磁带文件（.tap、.tzx）的列表，用于 48K 和 128K Spectrum（见下文）"],
+      ["**F7**", "停止磁带"],
+      ["**F11**", "暂停 / 继续磁带"],
       ["**Ctrl + Alt + Del**", "返回机器菜单"],
     ], [34, 66]],
-    ["p", "电脑键盘就是 Next 的键盘：字母、数字、方向键、Backspace 和标点符号的作用与 Spectrum Next 上相同。"],
+    ["p", "电脑键盘就是 Next 的键盘：字母、数字、方向键、Backspace 和标点符号的作用与 Spectrum Next 上相同。Ctrl 是 Spectrum 的 Symbol Shift，Shift 是它的 Caps Shift：例如 Ctrl + 0 输入下划线。"],
     ["table", ["摇杆按键", "左摇杆（DB9-1）", "右摇杆（DB9-2）"], [
       ["方向、开火（按键 B）", "摇杆", "摇杆"],
       ["按键 C（第二开火键）", "**Insert**", "**Delete**"],
@@ -349,7 +352,26 @@ module.exports = {
     ["ul", [
       "画面采用 Next 自己的时序，约 49 Hz 或 58 Hz（F8）。如果显示器没有画面，请按 F8。",
       "两个声道的声音相同。",
-      "不支持：鼠标、实时时钟、Wi-Fi、扩展端口、Print Screen、用 F2 保存快照，以及从 NextZXOS 更新 Next 的核心。",
+      "不支持：鼠标、实时时钟、扩展端口、保存到磁带、Print Screen、用 F2 保存快照，以及从 NextZXOS 更新 Next 的核心。",
+    ]],
+    ["h2", "48K 和 128K Spectrum 的磁带"],
+    ["p", "Next 自己的文件（.nex、快照、.tap）从它的 Browser 启动。此外，板卡可以把磁带文件播放到 Next 的磁带输入，就像播放给真正的 Spectrum 一样。这用于 NextZXOS 提供的 48K 和 128K Spectrum，以及带有自己加载器的 .tzx 文件。"],
+    ["ol", [
+      "从 NextZXOS 启动 48K 或 128K Spectrum，输入 `LOAD \"\"`（128K：选择 **Tape Loader**）。",
+      "按 **F12**，选择 .tap 或 .tzx 文件，再按 **Enter**。文件可以放在卡上的任何位置，不限于 `ZXNEXT`。",
+      "**F11** 暂停和继续磁带，**F7** 停止磁带。当底行显示 **Tape stopped (F11=go on)** 而游戏要求下一部分时，按 F11。",
+    ]],
+    ["p", "磁带跟随处理器速度（F6）：7 MHz 时加载快一倍，14 MHz 时快三倍（并非所有加载器都能在 14 MHz 下工作）。28 MHz 时磁带无法加载。"],
+    ["h2", "Wi-Fi"],
+    ["p", "使用第二种 I/O 板（板上有 USB-C 插座）时，板卡同时是 Next 的 Wi-Fi 模块。Next 的网络程序像在 Spectrum Next 上一样工作，例如 `.http`、`.nxtp` 和 NXtel。"],
+    ["ol", [
+      "只需一次：在 NextZXOS 中运行 `apps/WIFI/SETUP` 文件夹里的 `WIFI.BAS`，输入网络的名称和密码。板卡会记住它们。",
+      "然后使用网络程序。运行 `WIFI.BAS` 之后，先用 F1 重启 Next，再启动 NXtel。",
+    ]],
+    ["ul", [
+      "**使用 Wi-Fi 时 Bluetooth 声音继续播放。** 网络程序启动时，声音可能会有短暂的中断。",
+      "只支持普通连接：以 `https` 开头的网址不能用。",
+      "NXtel 需要它的文件 `NXtel.cfg` 与 `NXtel.nex` 放在同一文件夹。如果没有，请从 NXtel 自己的下载包中取得。",
     ]],
 
     /* ------------------------------------------------------------ 15 */

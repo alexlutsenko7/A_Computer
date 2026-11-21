@@ -1,4 +1,4 @@
-# ESP32/v1 — the system controller (ESP32) for LSpectrum and L64
+# ESP32/v1 — the system controller (ESP32) for all machines
 
 **Version 1: for I/O board revision 1** (`Extra_PCB_CycloneIV/`, ESP32-WROOM-32 DevKit on sockets). Kept as it is
 apart from fixes; new work goes into `../v2/` (I/O board revision 2).
@@ -44,7 +44,7 @@ Sound sent: AY + beeper, the same as the analog outputs, mono in both channels, 
   GitHub tag into the Arduino sketchbook's `libraries\ESP32-A2DP` folder.
 - Library **AAudioLinkFix** (in this folder, `libraries/AAudioLinkFix`): copy it into the sketchbook `libraries`
   folder too. It holds no code; it only makes the linker wrap an ESP-IDF function (see Notes).
-- CLI (in `LSpectrum/ep4_ce15/`): `arduino-cli compile -b esp32:esp32:esp32 -u -p COM10 ESP32/v1`
+- CLI (in the project's top folder): `arduino-cli compile -b esp32:esp32:esp32 -u -p COM10 ESP32/v1`
 - PC tests of the loader code (FAT, TAP/TZX, saving, .z80, C64 ROM install): `test/run_host_test.sh` (w64devkit
   gcc / g++; card images made by `tools/`; the ROM install test `test/c64rom_test.cpp` needs `L64/ep4_ce15/roms_local/`).
 
@@ -55,7 +55,7 @@ Sound sent: AY + beeper, the same as the analog outputs, mono in both channels, 
   C++ here, as C for the PC tests). `src/hw.h` gives the FPGA's registers as proxy objects; `src/esp_hw.cpp`
   implements them over the link, plus SD sectors, the OSD and the loader task.
 - At start the ESP32 looks for a known core ID on the link for 3 s, then every 2 s: 5A580001 = LSpectrum,
-  43360003 = L64, 41540001 = LTari, 4D4E0003 = the machine menu. In the menu the firmware updates the menu from
+  43360003 = L64, 41540001 = LTari, 4E450001 = LNES, 4D440001 = LMega, 4E580001 = LNext, 4D4E0003 = the machine menu. In the menu the firmware updates the menu from
   `LUPDATE.BIN`, opens the Bluetooth menu (F3) and installs machines (F12: a machine file of the card's `MACHINES`
   folder into one of the flash's three positions; `mch_*` in `src/update.cpp`, `AMenu/ep4_ce15/README.md`). Found: the loader runs as a task on
   core 1 (`loader: ... running` on USB); a different ID later (KEY1 / Ctrl+Alt+Del -> menu) restarts the ESP32. Leaving the menu does not: the menu's task ends
@@ -71,6 +71,13 @@ Sound sent: AY + beeper, the same as the analog outputs, mono in both channels, 
 - The F3 menu talks to the Bluetooth part through the FPGA's UART (BT_TX / BT_RX), with the commands below.
 - KEY0 resets the FPGA's loader hardware; the ESP32 notices it within 0.5 s and restarts itself (Bluetooth reconnects
   by itself a few seconds later).
+
+## LNext: tapes
+
+In LNext the firmware moves the SD card's sectors for the machine (`src/next.cpp`) and plays tapes for the 48K /
+128K machines inside the Next: F12 opens the browser (folders and TAP / TZX files only), F7 stops, F11 pauses and
+goes on. The FPGA's command FIFO holds 128 commands here (`FIFO_DEPTH_NEXT`). The Next's Wi-Fi module is in
+`../v2/` only (this version has no room for it).
 
 ## Control
 

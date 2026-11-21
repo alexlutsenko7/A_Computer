@@ -54,7 +54,7 @@ const LE = {
   alex: 6989, t65a: 1096,
   nes: 6852, t65n: 1045,
   mega: 17569, fx68k: 5153, jt12: 2468, jt89: 318, vdp: 3001, t80m: 2528,
-  next: 18347, zxnext: 14192, sdcard: 415,
+  next: 18789, zxnext: 15017, sdcard: 408,
 };
 const pct = (a, t) => Math.round(100 * a / t) + " %";
 const n = v => v.toLocaleString("en-US");
@@ -63,7 +63,7 @@ const C = [];
 // ---------------------------------------------------------------- title
 C.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: "L", bold: true, size: 52, font: FONT, color: "1F3864" })] }));
 C.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: "Third-party cores, libraries and data: origin, licence, how much is used", size: 28, font: FONT, color: "2F5496" })] }));
-C.push(new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "State of 20 November 2026: machine menu (AMenu), LSpectrum (ZX Spectrum 128K), L64 (Commodore 64), LTari (Atari 800XL / 130XE), LNES (Nintendo Entertainment System), LMega (Sega Mega Drive), LNext (ZX Spectrum Next), ESP32 system controller", size: 20, font: FONT, color: "595959" })] }));
+C.push(new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "State of 21 November 2026: machine menu (AMenu), LSpectrum (ZX Spectrum 128K), L64 (Commodore 64), LTari (Atari 800XL / 130XE), LNES (Nintendo Entertainment System), LMega (Sega Mega Drive), LNext (ZX Spectrum Next), ESP32 system controller", size: 20, font: FONT, color: "595959" })] }));
 
 C.push(p("The project's own files are under the MIT licence. This document lists everything in it that comes from elsewhere. **Lines** are the source lines of the files a build compiles (comments included). **LEs** are the logic elements the Quartus fitter reports for that part in the builds of 16 to 20 November 2026, against the whole design (EP4CE15 builds; LMega and LNext exist for the 10CL025 only). The project's own HDL is about **31,000 lines** in 67 files (FPGA, all seven machines and the menu), and its own ESP32 firmware about **24,100 lines** in 46 files (one of its two versions, `ESP32/v2`). The same list in short form is `IP_BLOCKS.txt` in the repository root."));
 
@@ -178,7 +178,7 @@ C.push(p("Megafunctions that Quartus generates from parameters: `altpll` (all cl
 // ---------------------------------------------------------------- 3 ESP32
 C.push(h1("3. ESP32 firmware libraries"));
 C.push(table([2600, 2300, 4460], ["Library", "Licence", "What is used"], [
-  ["**Arduino-ESP32** core 3.3.2 (Espressif)", "core: LGPL-2.1 or later; SD, Preferences and ESP-IDF: Apache-2.0", "`SPI` (link to the FPGA, SD card), `SD` (raw sector access only; the FAT code is ours), `Preferences` (Bluetooth settings), the I2S driver, GPIO and FreeRTOS from ESP-IDF, the Bluedroid Bluetooth stack. Linked, not copied."],
+  ["**Arduino-ESP32** core 3.3.2 (Espressif)", "core: LGPL-2.1 or later; SD, Preferences and ESP-IDF: Apache-2.0", "`SPI` (link to the FPGA, SD card), `SD` (raw sector access only; the FAT code is ours), `Preferences` (Bluetooth settings, the Wi-Fi network of LNext), `WiFi` with lwIP (LNext's Wi-Fi module, v2 only), the I2S driver, GPIO and FreeRTOS from ESP-IDF, the Bluedroid Bluetooth stack. Linked, not copied."],
   ["**ESP32-A2DP** 1.8.11 (Phil Schatzmann)", "Apache-2.0", "The A2DP source (`BluetoothA2DPSource`, `BluetoothA2DPCommon`, volume control): about 2,700 of its 5,900 lines; the sink part is not used. Installed separately, not in the repository."],
   ["AAudioLinkFix (in `ESP32/v2/libraries/`)", "ours (MIT)", "A small library that wraps one function of the Bluetooth stack (codec set-up fix); ours, listed here because it sits in a libraries folder."],
 ]));

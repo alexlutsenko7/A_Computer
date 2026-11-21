@@ -120,7 +120,8 @@ LNext                 memories for the Cyclone 10 LP, SD card link to the ESP32,
                       next_sdram.v follows the MiSTer port's (Alexey Melnikov, GPL-2 or later)
                       and carries that notice.
 ESP32 firmware        SD card browser, FAT, tape player and recorder, snapshots, disk and
-                      cartridge loaders, installers, menus
+                      cartridge loaders, installers, menus, LNext's Wi-Fi module (the ESP8266
+                      AT commands, v2)
 I/O boards            Extra_PCB_CycloneIV (revision 1), Extra_PCB_CycloneIV_R2 (revision 2)
 
 
