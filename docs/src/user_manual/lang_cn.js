@@ -340,6 +340,7 @@ module.exports = {
       ["**F12**", "卡上磁带文件（.tap、.tzx）的列表，用于 48K 和 128K Spectrum（见下文）"],
       ["**F7**", "停止磁带"],
       ["**F11**", "暂停 / 继续磁带"],
+      ["**Print Screen**", "把画面保存为 `SCRNnnnn.BMP`。屏幕会黑约一秒，Next 在此期间等待"],
       ["**Ctrl + Alt + Del**", "返回机器菜单"],
     ], [34, 66]],
     ["p", "电脑键盘就是 Next 的键盘：字母、数字、方向键、Backspace 和标点符号的作用与 Spectrum Next 上相同。Ctrl 是 Spectrum 的 Symbol Shift，Shift 是它的 Caps Shift：例如 Ctrl + 0 输入下划线。"],
@@ -352,7 +353,7 @@ module.exports = {
     ["ul", [
       "画面采用 Next 自己的时序，约 49 Hz 或 58 Hz（F8）。如果显示器没有画面，请按 F8。",
       "两个声道的声音相同。",
-      "不支持：鼠标、实时时钟、扩展端口、保存到磁带、Print Screen、用 F2 保存快照，以及从 NextZXOS 更新 Next 的核心。",
+      "不支持：鼠标、实时时钟、扩展端口、保存到磁带、用 F2 保存快照，以及从 NextZXOS 更新 Next 的核心。",
     ]],
     ["h2", "48K 和 128K Spectrum 的磁带"],
     ["p", "Next 自己的文件（.nex、快照、.tap）从它的 Browser 启动。此外，板卡可以把磁带文件播放到 Next 的磁带输入，就像播放给真正的 Spectrum 一样。这用于 NextZXOS 提供的 48K 和 128K Spectrum，以及带有自己加载器的 .tzx 文件。"],

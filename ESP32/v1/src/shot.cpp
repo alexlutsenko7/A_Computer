@@ -1,13 +1,17 @@
 /* shot.c -- screenshots as 16-colour BMP files (Windows bitmap, 4 bits per pixel, */
 /* uncompressed, bottom-up rows): every PC viewer opens them, and the machines' 16 */
-/* colours are stored exactly. LTari's 256 colours: 8 bits per pixel. The file goes */
-/* through fat.c's file writer (g_s_fw_file). */
+/* colours are stored exactly. LTari's 256 colours: 8 bits per pixel. LNext's 512 */
+/* colours: 24 bits per pixel, no palette. The file goes through fat.c's file writer */
+/* (g_s_fw_file). */
 #include "shot.h"
 #include "util.h"
 
 /* bits per pixel of the two formats */
 #define BPP_4 4
 #define BPP_8 8
+/* and of the format without a palette; its bytes per pixel */
+#define BPP_24 24
+#define BYTES_PER_PIXEL_24BPP 3
 /* one nibble: a pixel of the 4-bit format */
 #define NIBBLE_MASK 15
 #define NIBBLE_SHIFT 4
@@ -164,6 +168,12 @@ static int32_t begin(uint32_t ui32_dir, const char ac_name11[SHOT_NAME11_LEN], i
         ui32_colours = SHOT_COLOURS_8BPP;
         ui32_row_pixels_bytes = (uint32_t)i32_width;
     }
+/* 24 bits per pixel: no palette, three bytes each */
+    if (i32_bpp == BPP_24)
+    {
+        ui32_colours = 0;
+        ui32_row_pixels_bytes = (uint32_t)i32_width * BYTES_PER_PIXEL_24BPP;
+    }
 /* both headers and the palette come before the pixels */
     ui32_headers_len = BMP_FILE_HEADER_LEN + BMP_INFO_HEADER_LEN + (BMP_PALETTE_ENTRY_LEN * ui32_colours);
     i32_index = 0;
@@ -238,7 +248,17 @@ int32_t shot_begin8(uint32_t ui32_dir, const char ac_name11[SHOT_NAME11_LEN], in
     return i32_result;
 }
 
-/* one row of pixels (colour indices), padded to the stored row length */
+/* a new file with 24 bits per pixel */
+int32_t shot_begin24(uint32_t ui32_dir, const char ac_name11[SHOT_NAME11_LEN], int32_t i32_width, int32_t i32_height)
+{
+/* local variables */
+    int32_t i32_result;
+
+    i32_result = begin(ui32_dir, ac_name11, i32_width, i32_height, (const uint8_t (*)[SHOT_RGB_LEN])0, BPP_24);
+    return i32_result;
+}
+
+/* one row of pixels (colour indices, or colours), padded to the stored row length */
 int32_t shot_row(const uint8_t *pui8_pixels)
 {
 /* local variables */
@@ -250,8 +270,19 @@ int32_t shot_row(const uint8_t *pui8_pixels)
     ui32_written = 0;
     i32_x = 0;
     ui8_right = 0;
+/* three bytes per pixel, stored blue, green, red */
+    if (g_i32_bpp == BPP_24)
+    {
+        for (i32_x = 0; i32_x < g_i32_width; i32_x++)
+        {
+            put(pui8_pixels[(i32_x * BYTES_PER_PIXEL_24BPP) + RGB_BLUE]);
+            put(pui8_pixels[(i32_x * BYTES_PER_PIXEL_24BPP) + RGB_GREEN]);
+            put(pui8_pixels[(i32_x * BYTES_PER_PIXEL_24BPP) + RGB_RED]);
+        }
+        ui32_written = (uint32_t)g_i32_width * BYTES_PER_PIXEL_24BPP;
+    }
 /* one byte per pixel, or two pixels per byte */
-    if (g_i32_bpp == BPP_8)
+    else if (g_i32_bpp == BPP_8)
     {
         for (i32_x = 0; i32_x < g_i32_width; i32_x++)
         {

@@ -340,6 +340,7 @@ module.exports = {
       ["**F12**", "Lista de ficheiros de cassete (.tap, .tzx) do cartão, para o Spectrum 48K e 128K (ver abaixo)"],
       ["**F7**", "Para a cassete"],
       ["**F11**", "Pausa / continua a cassete"],
+      ["**Print Screen**", "Guarda a imagem como `SCRNnnnn.BMP`. O ecrã fica preto cerca de um segundo e o Next espera entretanto"],
       ["**Ctrl + Alt + Del**", "Volta ao menu de máquinas"],
     ], [34, 66]],
     ["p", "O teclado do PC é o teclado do Next: as letras, os dígitos, as teclas de cursor, Backspace e os sinais de pontuação atuam como num Spectrum Next. Ctrl é o Symbol Shift do Spectrum e Shift o seu Caps Shift: por exemplo, Ctrl + 0 escreve um sublinhado."],
@@ -352,7 +353,7 @@ module.exports = {
     ["ul", [
       "A imagem tem a temporização própria do Next, cerca de 49 Hz ou 58 Hz (F8). Se o monitor não mostrar nada, carregue em F8.",
       "O som é o mesmo nos dois canais.",
-      "Não disponíveis: o rato, o relógio de tempo real, a porta de expansão, a gravação em cassete, Print Screen, os instantâneos com F2 e a atualização do núcleo do Next a partir do NextZXOS.",
+      "Não disponíveis: o rato, o relógio de tempo real, a porta de expansão, a gravação em cassete, os instantâneos com F2 e a atualização do núcleo do Next a partir do NextZXOS.",
     ]],
     ["h2", "Cassetes para o Spectrum 48K e 128K"],
     ["p", "Os ficheiros próprios do Next (.nex, instantâneos, .tap) iniciam-se a partir do seu Browser. Além disso, a placa pode reproduzir ficheiros de cassete na entrada de cassete do Next, como num Spectrum real. Isto serve para o Spectrum 48K e 128K que o NextZXOS oferece e para os ficheiros .tzx com carregadores próprios."],

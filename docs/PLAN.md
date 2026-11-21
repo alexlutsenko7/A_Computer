@@ -1752,3 +1752,39 @@ network program starts), `L_Build_and_Install.docx`, `README.md`, READMEs of LNe
 exported (`ESP32/v2/build/`) and uploaded (the same file); 10CL025 flash programmed again and verified with
 `tmp/L_Spectrum_64_Next_10cl025.jic` (menu + LSpectrum, L64, LNext; no FPGA source changed); `github/` rebuilt
 with `tools/make_github.py`, not committed. The listening test is still the user's.
+
+## 2026-11-21 (late): Print Screen in LNext
+
+User: "Can prt scr functionality be added to Next?" - yes, built and tried on the board the same evening.
+
+- The Next's finished picture is in no memory (layers mixed live), and LNext has no block RAM left. It is taken
+  line by line from the line doubler's buffer: `rtl/next_video.v` counts the lines from the vertical sync and
+  stops writing the buffer at the end of the line asked for; while the grabber is on, the buffer's read address is
+  the grabber's and the monitor gets black (the OSD stays). `rtl/next_grab.v` (new): memory commands 3 GRAB
+  (on, wait for line n) and 4 STATE (held, in the vertical blanking, lines of a frame, the picture's first / last
+  pixel), pixel reads as memory reads with address bit 17 (two bytes per 9-bit pixel); `rtl/next_sd.v` answers the
+  commands and passes these on (`ext_sel` / `ext_rdata` / `ext_stb`). `CPU_WAIT` also from the grabber.
+  The first plan (pixels caught in registers as the read side sweeps by, one line per frame, 6 to 12 s) was
+  dropped for this one: with the monitor black the read side is free.
+- Firmware `ESP32/v2/src/nextshot.cpp` (new): picture into the PSRAM, machine released, 24-bit BMP
+  (`shot_begin24`). First version with a fixed step of 48 lines: 6.6 s (a line's reading took longer than 48
+  lines); now the next line asked for is the first missing one ahead of where the picture is by the clock:
+  1.2 s for 311 lines (303 of picture, 720 pixels). 360 x 303 when all pixels come in pairs, else 720 x 606.
+  `next.cpp`'s no-operation command moved from 3 to 15 (3 is GRAB now). Console `shot`, test option
+  `-DNEXT_SHOT_DUMP` (pixels to the console; `tmp/shot/dump2png.py`, `pairs.py`, `shot.sh`).
+- The card is also NextZXOS's: before a picture the file system is mounted again and `fat_alloc_high()` makes the
+  file's clusters come from the card's last eighth. Not proven safe against every case (NextZXOS keeps parts of
+  the FAT and of directories in its memory); after ten pictures on the user's card the Browser and a game load
+  were right.
+- Build: 18,826 LEs, 66 M9K, timing clean (worst +0.137 ns). `sim/run_video_sim.sh` extended (lines held and read
+  back, black monitor): PASS. PC tests PASS (new `nextshot_test.cpp`; v1 gets the shared files only: no PSRAM, no
+  Print Screen in LNext there).
+- On the board (key rig build for the keys, `shot` on the console, pictures read back): welcome screen (720
+  wide, fine pixels), menu, Browser, Warhawk title and play; the game ran on after each. Not done: the real
+  Print Screen key (the rig has no loader keys), 60 Hz, flashing characters (expected in stripes), sound during
+  the wait.
+- Machine file and `tmp/L_Spectrum_64_Next_10cl025.jic` remade, flash programmed, v2 firmware uploaded and
+  exported; manuals (9 languages: Print Screen row in LNext's key table, taken out of "not available"),
+  Build_and_Install, Third_Party (LNext 18,826), READMEs; `github/` rebuilt, not committed.
+- Later: the Print Screen key on the real keyboard saves the picture properly (user).
+- User, same evening: Bluetooth sound with Wi-Fi in use is tested (works). Flashing characters in a screenshot: the user does not mind which state is saved; left as it is (a flashing cell can hold lines of both states).

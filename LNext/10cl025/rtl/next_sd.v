@@ -8,6 +8,9 @@
 /*   memory commands:            1 MRD read the buffer's byte addr[8:0] -> rdata[7:0] */
 /*                               2 MWR write wdata[7:0] there (only while mctl[0] is set) */
 /*                               others: done at once, rdata 0 */
+/* Commands with ext_sel set are another device's (the screenshot grabber, next_grab.v): they */
+/* are answered with ext_rdata, a read after the same two clocks; ext_stb marks one that is */
+/* not a read. */
 /* A request ends when the ESP32 clears mctl[0]: the card of logic then has the sector for the */
 /* core (read) or takes the next one (write). The CPU waits from the request until then (sd_wait). */
 /* */
@@ -31,6 +34,10 @@ module next_sd (
     input  wire [7:0]  snap_wdata,
     output reg         snap_ack,
     output reg  [31:0] snap_rdata,
+/* the command is the other device's; its answer; a command for it that is not a read */
+    input  wire        ext_sel,
+    input  wire [31:0] ext_rdata,
+    output reg         ext_stb,
 
 /* the core's SD card port */
     input  wire        sd_cs_n,
@@ -130,12 +137,14 @@ always @(posedge clk)
 /* no read runs */
         rd_cnt       <= 2'd0;
         rd_run       <= 1'b0;
+        ext_stb      <= 1'b0;
     end
     else
     begin
 /* the request, synchronised */
         sreq_s     <= {sreq_s[0], snap_req};
         sd_buff_wr <= 1'b0;
+        ext_stb    <= 1'b0;
         if (rd_run)
         begin
 /* a read: the buffer's byte two clocks after its address */
@@ -146,16 +155,24 @@ always @(posedge clk)
             else
             begin
                 rd_run     <= 1'b0;
-                snap_rdata <= {24'd0, sd_buff_din};
+                snap_rdata <= ext_sel ? ext_rdata : {24'd0, sd_buff_din};
                 snap_ack   <= sreq_s[1];
             end
         end
 /* a new command */
+        else if (sreq_s[1] != snap_ack && ext_sel && snap_cmd != SNAP_MRD)
+        begin
+/* the other device's command */
+            ext_stb    <= 1'b1;
+            snap_rdata <= ext_rdata;
+            snap_ack   <= sreq_s[1];
+        end
         else if (sreq_s[1] != snap_ack)
         begin
             case (snap_cmd)
                 SNAP_MRD:
                 begin
+/* (a read of the other device waits as long; the buffer's address does not matter then) */
                     sd_buff_addr <= snap_addr;
                     rd_cnt       <= RD_WAIT;
                     rd_run       <= 1'b1;

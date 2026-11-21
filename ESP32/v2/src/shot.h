@@ -1,4 +1,5 @@
-/* shot.h -- screenshots: 16-colour BMP files (Print Screen, all machines; LTari: 256 colours) */
+/* shot.h -- screenshots: 16-colour BMP files (Print Screen, all machines; LTari: 256 colours, */
+/* LNext: 24 bits per pixel) */
 #ifndef SHOT_H
 #define SHOT_H
 
@@ -27,7 +28,10 @@ int32_t shot_begin(uint32_t ui32_dir, const char ac_name11[SHOT_NAME11_LEN], int
 /* the same with 8 bits per pixel, palette aui8_pal[256] (LTari) */
 int32_t shot_begin8(uint32_t ui32_dir, const char ac_name11[SHOT_NAME11_LEN], int32_t i32_width, int32_t i32_height,
                     const uint8_t aui8_pal[SHOT_COLOURS_8BPP][SHOT_RGB_LEN]);
-/* one row of pixels, as colour indices */
+/* the same with 24 bits per pixel and no palette (LNext): a row is i32_width times */
+/* red, green, blue */
+int32_t shot_begin24(uint32_t ui32_dir, const char ac_name11[SHOT_NAME11_LEN], int32_t i32_width, int32_t i32_height);
+/* one row of pixels, as colour indices (24 bits per pixel: as colours) */
 int32_t shot_row(const uint8_t *pui8_pixels);
 /* close the file, or delete it after an error */
 int32_t shot_end(void);

@@ -384,6 +384,8 @@ wire [8:0]  rgb;
 wire        vs_n, hs_n, vb_n, hb_n;
 /* the tape player's level, the CPU held for the card */
 wire        tape_on, tape_lvl, sd_wait;
+/* a screenshot is taken: the CPU waits, the monitor shows black (next_grab.v) */
+wire        g_on;
 
 /* The UART pins to the ESP32 carry one of two things, chosen by the ESP32 in the machine word's */
 /* bit 2: 0 = the loader's UART (the F3 Bluetooth menu talks to the ESP32's Bluetooth part), */
@@ -403,7 +405,7 @@ zxnext_top u_next (
     .SW_RESET      (rst_m),
     .CPU_SPEED     (cpu_speed),
     .CPU_SPEED_SW  (1'b0),
-    .CPU_WAIT      (ram_a_wait | sd_wait),
+    .CPU_WAIT      (ram_a_wait | sd_wait | g_on),
     .RAM_A_ADDR    (ram_a_addr),
     .RAM_A_REQ     (ram_a_req),
     .RAM_A_RD_n    (ram_a_rd_n),
@@ -485,6 +487,36 @@ wire [17:0] snap_addr;
 /* its data and answers */
 wire [31:0] snap_wdata, snap_rdata;
 
+/* the screenshot grabber: its memory commands, its wires to the video output */
+wire        ext_sel, ext_stb;
+wire [31:0] ext_rdata;
+wire        g_req, g_arm, g_held, g_vbl;
+/* a line's number, a pixel's place and colour, the picture's place, the frame's lines */
+wire [9:0]  g_line, g_x, g_first, g_end, g_lines;
+wire [8:0]  g_q;
+
+next_grab u_grab (
+    .clk        (clk28),
+    .rst        (rst28),
+    .snap_cmd   (snap_cmd),
+    .snap_addr  (snap_addr),
+    .snap_wdata (snap_wdata[15:0]),
+    .ext_sel    (ext_sel),
+    .ext_rdata  (ext_rdata),
+    .ext_stb    (ext_stb),
+    .g_on       (g_on),
+    .g_req      (g_req),
+    .g_arm      (g_arm),
+    .g_line     (g_line),
+    .g_x        (g_x),
+    .g_q        (g_q),
+    .g_held     (g_held),
+    .g_vbl      (g_vbl),
+    .g_first    (g_first),
+    .g_end      (g_end),
+    .g_lines    (g_lines)
+);
+
 next_sd u_sd (
     .clk        (clk28),
     .rst        (rst28),
@@ -497,6 +529,9 @@ next_sd u_sd (
     .snap_wdata (snap_wdata[7:0]),
     .snap_ack   (snap_ack),
     .snap_rdata (snap_rdata),
+    .ext_sel    (ext_sel),
+    .ext_rdata  (ext_rdata),
+    .ext_stb    (ext_stb),
     .sd_cs_n    (sd_cs0_n),
     .sd_sck     (sd_sck),
     .sd_mosi    (sd_mosi),
@@ -633,6 +668,17 @@ next_video #(.FONT_HEX("../../AMenu/ep4_ce15/rtl/menu_font.hex")) u_video (
     .osd_wdata (osd_data),
     .osd_on    (l_osd_on),
     .osd_full  (l_osd_full),
+    .g_on      (g_on),
+    .g_req     (g_req),
+    .g_arm     (g_arm),
+    .g_line    (g_line),
+    .g_x       (g_x),
+    .g_q       (g_q),
+    .g_held    (g_held),
+    .g_vbl     (g_vbl),
+    .g_first   (g_first),
+    .g_end     (g_end),
+    .g_lines   (g_lines),
     .vga_r     (vr),
     .vga_g     (vg),
     .vga_b     (vb),

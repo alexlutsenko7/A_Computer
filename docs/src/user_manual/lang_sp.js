@@ -340,6 +340,7 @@ module.exports = {
       ["**F12**", "Lista de archivos de cinta (.tap, .tzx) de la tarjeta, para el Spectrum 48K y 128K (véase más abajo)"],
       ["**F7**", "Detiene la cinta"],
       ["**F11**", "Pausa / continúa la cinta"],
+      ["**Impr Pant**", "Guarda la imagen como `SCRNnnnn.BMP`. La pantalla queda en negro alrededor de un segundo y el Next espera mientras tanto"],
       ["**Ctrl + Alt + Supr**", "Vuelve al menú de máquinas"],
     ], [34, 66]],
     ["p", "El teclado del PC es el teclado del Next: las letras, los dígitos, las teclas de cursor, Retroceso y los signos de puntuación actúan como en un Spectrum Next. Ctrl es el Symbol Shift del Spectrum y Mayús su Caps Shift: por ejemplo, Ctrl + 0 escribe un guion bajo."],
@@ -352,7 +353,7 @@ module.exports = {
     ["ul", [
       "La imagen tiene la temporización propia del Next, unos 49 Hz o 58 Hz (F8). Si el monitor no muestra nada, pulse F8.",
       "El sonido es el mismo en ambos canales.",
-      "No disponibles: el ratón, el reloj de tiempo real, el puerto de expansión, la grabación en cinta, Impr Pant, las instantáneas con F2 y la actualización del núcleo del Next desde NextZXOS.",
+      "No disponibles: el ratón, el reloj de tiempo real, el puerto de expansión, la grabación en cinta, las instantáneas con F2 y la actualización del núcleo del Next desde NextZXOS.",
     ]],
     ["h2", "Cintas para el Spectrum 48K y 128K"],
     ["p", "Los archivos propios del Next (.nex, instantáneas, .tap) se inician desde su Browser. Además, la placa puede reproducir archivos de cinta en la entrada de cinta del Next, como en un Spectrum real. Esto sirve para el Spectrum 48K y 128K que ofrece NextZXOS y para los archivos .tzx con cargadores propios."],

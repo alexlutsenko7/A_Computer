@@ -76,8 +76,8 @@ Sound sent: AY + beeper, the same as the analog outputs, mono in both channels, 
 
 In LNext the firmware moves the SD card's sectors for the machine (`src/next.cpp`) and plays tapes for the 48K /
 128K machines inside the Next: F12 opens the browser (folders and TAP / TZX files only), F7 stops, F11 pauses and
-goes on. The FPGA's command FIFO holds 128 commands here (`FIFO_DEPTH_NEXT`). The Next's Wi-Fi module is in
-`../v2/` only (this version has no room for it).
+goes on. The FPGA's command FIFO holds 128 commands here (`FIFO_DEPTH_NEXT`). The Next's Wi-Fi module and its
+Print Screen are in `../v2/` only (this version has no room for the one and no PSRAM for the other's picture).
 
 ## Control
 

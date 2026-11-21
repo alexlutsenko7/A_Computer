@@ -27,6 +27,7 @@ set_global_assignment -name VERILOG_FILE rtl/next_sdram.v
 set_global_assignment -name VERILOG_FILE rtl/next_keyboard.v
 set_global_assignment -name VERILOG_FILE rtl/next_video.v
 set_global_assignment -name VERILOG_FILE rtl/next_sd.v
+set_global_assignment -name VERILOG_FILE rtl/next_grab.v
 set_global_assignment -name VHDL_FILE rtl/next_bram.vhd
 set_global_assignment -name SYSTEMVERILOG_FILE ../../ZXNEXT/sys/sd_card.sv
 set_global_assignment -name VHDL_FILE ../../ZXNEXT/rtl/mister/ps2_keyb.vhd

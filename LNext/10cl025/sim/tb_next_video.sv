@@ -4,6 +4,10 @@
 /* The OSD is on, full screen, with a text in its first and last rows. Checks: lines per frame */
 /* (622), pixel times per line (912), and that the input's colours come out twice (two output */
 /* lines per input line; looked at left of the OSD). The OSD is for the eye: video.png. */
+/* Then the screenshot grabber's side: lines are held in the buffer (two of the picture, one */
+/* of the vertical blanking) and read pixel by pixel; the line's green must be the line's own, */
+/* its red must step as the columns do, a second reading must give the same, the monitor must */
+/* get black meanwhile, and the picture's place and the frame's lines must be reported. */
 /* RESULT: PASS / FAIL. */
 `timescale 1ns/1ps
 
@@ -33,6 +37,16 @@ localparam integer C4_TO_8 = 17;
 /* the columns of the picture looked at for the doubling: left of the OSD (its lines differ) */
 localparam integer CHECK_FIRST = 4;
 localparam integer CHECK_END = 60;
+/* the grabber's test: lines taken, pixels read of each, the columns' step of one red level, */
+/* clocks from a pixel's place to its colour, clocks the black picture is looked at */
+localparam integer G_LINE_A = 37;
+localparam integer G_LINE_B = 200;
+localparam integer G_LINE_VBL = 10;
+localparam integer G_PIXELS = 16;
+localparam integer G_STEP = 32;
+localparam integer G_RD_CLOCKS = 3;
+localparam integer G_BLACK_CLOCKS = 4000;
+localparam integer RED_LEVELS = 8;
 
 reg clk28 = 0, clk14 = 0, clk7 = 0;
 /* all clocks from one process: their edges fall together as from one PLL */
@@ -78,12 +92,73 @@ always #9 osd_clk = ~osd_clk;
 
 wire [3:0] vr, vg, vb;
 wire       vhs, vvs;
+/* the OSD on; the grabber's wires */
+reg        osd_on = 1;
+reg        g_on = 0, g_req = 0, g_arm = 0;
+reg  [9:0] g_line = 0, g_x = 0;
+wire [8:0] g_q;
+wire       g_held, g_vbl;
+wire [9:0] g_first, g_end, g_lines;
+/* what was read of a line, twice */
+reg  [8:0] g_got [0:G_PIXELS-1];
+reg  [8:0] g_again;
+integer    g_bad = 0, gi;
+
+/* take a line and look at its pixels */
+task grab_line(input integer line, input bit blank);
+begin
+    @(posedge clk28);
+    g_line = line; g_arm = 1; g_req = ~g_req;
+/* the line before is let go first (the ESP32's next command comes far later than that) */
+    repeat (G_RD_CLOCKS) @(posedge clk28);
+    wait (g_held);
+    if (g_vbl !== blank)
+    begin
+        g_bad = g_bad + 1;
+    end
+/* pixels a red step apart, from inside the picture */
+    for (gi = 0; gi < G_PIXELS; gi++)
+    begin
+        @(posedge clk28);
+        g_x = g_first + 4 + gi * G_STEP;
+        repeat (G_RD_CLOCKS) @(posedge clk28);
+        g_got[gi] = g_q;
+    end
+/* a picture line: its own green, red one level up per step */
+    for (gi = 0; gi < G_PIXELS && !blank; gi++)
+    begin
+        if (g_got[gi][5:3] !== line[5:3])
+        begin
+            g_bad = g_bad + 1;
+        end
+        if (gi > 0 && g_got[gi][8:6] !== ((g_got[gi - 1][8:6] + 1) % RED_LEVELS))
+        begin
+            g_bad = g_bad + 1;
+        end
+    end
+/* still the same a few lines later */
+    repeat (4 * H_TOTAL) @(posedge clk28);
+    for (gi = 0; gi < G_PIXELS; gi++)
+    begin
+        @(posedge clk28);
+        g_x = g_first + 4 + gi * G_STEP;
+        repeat (G_RD_CLOCKS) @(posedge clk28);
+        g_again = g_q;
+        if (g_again !== g_got[gi])
+        begin
+            g_bad = g_bad + 1;
+        end
+    end
+end
+endtask
 
 next_video #(.FONT_HEX("../../../AMenu/ep4_ce15/rtl/menu_font.hex")) dut (
     .clk14(clk14), .rgb(rgb), .hs_n(hs_n), .vs_n(vs_n), .hb_n(hb_n), .vb_n(vb_n),
     .clk28(clk28),
     .osd_wclk(osd_clk), .osd_we(osd_we), .osd_waddr(osd_addr), .osd_wdata(osd_data),
-    .osd_on(1'b1), .osd_full(1'b1),
+    .osd_on(osd_on), .osd_full(1'b1),
+    .g_on(g_on), .g_req(g_req), .g_arm(g_arm), .g_line(g_line), .g_x(g_x), .g_q(g_q),
+    .g_held(g_held), .g_vbl(g_vbl), .g_first(g_first), .g_end(g_end), .g_lines(g_lines),
     .vga_r(vr), .vga_g(vg), .vga_b(vb), .vga_hs(vhs), .vga_vs(vvs)
 );
 
@@ -180,6 +255,34 @@ begin
     end
     $display("lines per frame %0d, pixel times per line %0d, pixels not doubled %0d", lines, pixels, twice_bad);
     if (lines != 2 * V_TOTAL || pixels != H_TOTAL || twice_bad != 0)
+    begin
+        errors = errors + 1;
+    end
+/* the grabber: the OSD off, so only the picture could light the monitor */
+    osd_on = 0;
+    @(posedge clk28);
+    g_on = 1; g_arm = 0; g_req = ~g_req;
+    grab_line(G_LINE_A, 0);
+    grab_line(G_LINE_B, 0);
+    grab_line(G_LINE_VBL, 1);
+/* black on the monitor all the while */
+    for (i = 0; i < G_BLACK_CLOCKS; i++)
+    begin
+        @(posedge clk28);
+        if ({vr, vg, vb} !== 12'd0)
+        begin
+            g_bad = g_bad + 1;
+        end
+    end
+/* let go: the buffer is written again */
+    g_on = 0; g_arm = 0; g_req = ~g_req;
+    repeat (2 * H_TOTAL) @(posedge clk28);
+    if (g_held !== 1'b0)
+    begin
+        g_bad = g_bad + 1;
+    end
+    $display("grabber: picture from %0d to %0d, %0d lines, errors %0d", g_first, g_end, g_lines, g_bad);
+    if (g_bad != 0 || (g_end - g_first) != H_ACT || g_lines != V_TOTAL)
     begin
         errors = errors + 1;
     end

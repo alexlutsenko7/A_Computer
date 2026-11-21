@@ -58,6 +58,7 @@
 #include "bt.h"
 #include "c64.h"
 #include "shot.h"
+#include "nextshot.h"
 /* LTari, the restart */
 #include "atari.h"
 /* the cartridge machines */
@@ -410,6 +411,8 @@ static uint32_t g_ui32_note_until;
 /* Print Screen: when it was polled last, and whether it was down then */
 static uint32_t g_ui32_prt_time;
 static int32_t g_i32_prt_was;
+/* the console asked for a screenshot (loader_shot) */
+static int32_t g_i32_shot_ask;
 /* when the update's progress bar was drawn last */
 static uint32_t g_ui32_upd_time;
 
@@ -3173,6 +3176,40 @@ static int32_t name_prompt(char ac_name11[FAT_NAME11_LEN], int32_t i32_snap)
     return i32_result;
 }
 
+/* the console's "shot": a screenshot as if Print Screen had been pressed */
+void loader_shot(void)
+{
+    g_i32_shot_ask = YES;
+}
+
+/* LNext's picture: what was taken and how it ended (0 = saved), for the console */
+static void next_shot_log(int32_t i32_result)
+{
+/* local variables */
+    char ac_line[TEXT_MAX + YES];
+    char *pc_end;
+    int32_t i32_lines;
+    int32_t i32_width;
+    uint32_t ui32_ms;
+
+/* start values */
+    i32_lines = 0;
+    i32_width = 0;
+    ui32_ms = 0;
+    next_shot_info(&i32_lines, &i32_width, &ui32_ms);
+    pc_end = u_strcpy(ac_line, "shot ");
+    pc_end = u_utoa(pc_end, (uint32_t)i32_width);
+/* pixels x lines, the time the machine waited */
+    pc_end = u_strcpy(pc_end, " x ");
+    pc_end = u_utoa(pc_end, (uint32_t)i32_lines);
+    pc_end = u_strcpy(pc_end, ", ms ");
+    pc_end = u_utoa(pc_end, ui32_ms);
+/* the result as a positive number */
+    pc_end = u_strcpy(pc_end, ", r ");
+    u_utoa(pc_end, (uint32_t)(-i32_result));
+    log_line(ac_line);
+}
+
 /* Print Screen: the picture as SCRNnnnn.BMP in the browser's current folder (no OSD in it) */
 static void screenshot(void)
 {
@@ -3204,11 +3241,30 @@ static void screenshot(void)
     }
     else
     {
+/* LNext: NextZXOS uses the card too and may have changed it since it was last looked at, so */
+/* the file system is read again; the file's clusters are taken far from where the Next's */
+/* own new files go (fat.h) */
+        if (g_i32_machine_next != 0)
+        {
+            if (fat_mount() == FAT_OK)
+            {
+                fat_alloc_high();
+            }
+/* black for a moment: say why */
+            osd_text(OSD_ROWS - YES, 0, " Saving the picture ...", OSD_COLS, YES);
+            osd_show(0);
+        }
 /* the first free name, then the machine's picture */
         i32_result = shot_name(g_ui32_dir_clus, ac_name11);
         if (i32_result == FAT_OK)
         {
-            if (g_i32_machine_c64 != 0)
+            if (g_i32_machine_next != 0)
+            {
+/* LNext */
+                i32_result = next_screenshot(g_ui32_dir_clus, ac_name11);
+                next_shot_log(i32_result);
+            }
+            else if (g_i32_machine_c64 != 0)
             {
 /* L64 */
                 i32_result = c64_screenshot(g_ui32_dir_clus, ac_name11);
@@ -3244,6 +3300,11 @@ static void screenshot(void)
         {
             note("Card or folder full", "");
         }
+/* LNext: the FPGA gave no picture */
+        else if (i32_result == NEXT_ESHOT)
+        {
+            note("No picture from the machine", "");
+        }
         else
         {
 /* the card failed */
@@ -3275,6 +3336,13 @@ static int32_t prtsc_pressed(void)
             (((ui32_report >> RAW_KEY1_SHIFT) & RAW_KEY_MASK) == HID_PRINT_SCREEN) ||
             ((ui32_report & RAW_KEY_MASK) == HID_PRINT_SCREEN))
         {
+            i32_now = YES;
+        }
+/* the console's "shot" counts as a press */
+        if (g_i32_shot_ask != 0)
+        {
+            g_i32_shot_ask = 0;
+            g_i32_prt_was = 0;
             i32_now = YES;
         }
 /* a new press */
@@ -4381,6 +4449,15 @@ static void next_main(void)
             i32_uart = i32_uart_want;
             espnet_mode(i32_uart);
             next_uart(i32_uart);
+        }
+/* Print Screen, not while the Bluetooth menu is open; the screen is drawn again after it */
+        if (prtsc_pressed() != 0)
+        {
+            if (g_i32_bt_on == 0)
+            {
+                screenshot();
+                i32_last_state = NO_STATE;
+            }
         }
 /* the tape; lines from the ESP32's Bluetooth part */
         player_service();

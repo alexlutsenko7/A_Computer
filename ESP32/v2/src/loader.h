@@ -11,6 +11,8 @@ void loader_poll(void);
 bool loader_running(void);
 /* loop(): a stuck loader task is reported, after 15 s the ESP32 restarts */
 void loader_check(void);
+/* the console's "shot": a screenshot as Print Screen makes it */
+void loader_shot(void);
 #ifdef __cplusplus
 class Print;
 /* "loader" command: task state, last link frame, stack code addresses */

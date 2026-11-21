@@ -108,6 +108,10 @@ int32_t ff_update(FFILE *ps_file, uint32_t ui32_pos, const uint8_t *pui8_data, u
 int32_t fat_exists(uint32_t ui32_dir_clus, const char ac_name11[FAT_NAME11_LEN]);
 /* delete a file; FAT_OK also if there is no such file */
 int32_t fat_delete(uint32_t ui32_dir_clus, const char ac_name11[FAT_NAME11_LEN]);
+/* The next files' clusters are looked for from the last eighth of the card on. For a card */
+/* that another system uses at the same time (LNext: NextZXOS has the same card and keeps */
+/* parts of the FAT in its memory): its new files start at the card's front, ours far from them. */
+void fat_alloc_high(void);
 /* create an empty file for writing */
 int32_t fw_create(FWFILE *ps_file, uint32_t ui32_dir_clus, const char ac_name11[FAT_NAME11_LEN]);
 /* append one byte */

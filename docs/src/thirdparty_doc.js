@@ -54,7 +54,7 @@ const LE = {
   alex: 6989, t65a: 1096,
   nes: 6852, t65n: 1045,
   mega: 17569, fx68k: 5153, jt12: 2468, jt89: 318, vdp: 3001, t80m: 2528,
-  next: 18789, zxnext: 15017, sdcard: 408,
+  next: 18826, zxnext: 15017, sdcard: 408,
 };
 const pct = (a, t) => Math.round(100 * a / t) + " %";
 const n = v => v.toLocaleString("en-US");

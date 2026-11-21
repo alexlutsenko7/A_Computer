@@ -40,7 +40,7 @@
 /* memory commands: read, write, and one that only empties esp_hw.cpp's read cache */
 #define C_MRD 1u
 #define C_MWR 2u
-#define C_NONE 3u
+#define C_NONE 15u
 /* where a command's number is in SNAPCMD */
 #define CMD_SHIFT 28
 /* polls without a request before next_service returns (a poll takes about 50 microseconds) */

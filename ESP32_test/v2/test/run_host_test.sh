@@ -148,6 +148,15 @@ ${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/next/next_test.exe next_test.cpp \
 echo "LNext sector server:"
 (cd $W/next && ./next_test.exe card.img > next.log) || fail=1
 sed 's/^/  /' $W/next/next.log
+# LNext's Print Screen (nextshot.cpp): a model of the FPGA's screenshot grabber, the BMP files read back from a card image
+rm -rf $W/nextshot && mkdir -p $W/nextshot/tree
+echo ours > $W/nextshot/tree/OUTSIDE.TXT
+python3 -I ../tools/mkimg.py $W/nextshot/card.img $W/nextshot/tree --fat 32 --mbr --spc 1 --mb 64 > /dev/null
+${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/nextshot/nextshot_test.exe nextshot_test.cpp \
+    ../../../ESP32/v2/src/nextshot.cpp ../../../ESP32/v2/src/shot.cpp ../../../ESP32/v2/src/fat.cpp ../../../ESP32/v2/src/util.cpp
+echo "LNext Print Screen:"
+(cd $W/nextshot && ./nextshot_test.exe card.img > nextshot.log) || fail=1
+sed 's/^/  /' $W/nextshot/nextshot.log
 # LNext's Wi-Fi module (espat.cpp): a model of the UART, the clock and the network
 rm -rf $W/espat && mkdir -p $W/espat
 ${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/espat/espat_test.exe espat_test.cpp ../../../ESP32/v2/src/espat.cpp

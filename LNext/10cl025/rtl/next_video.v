@@ -15,6 +15,13 @@
 /* and the VGA outputs. */
 /* OSD (as the other machines'): 32 x 24 characters of 16 x 16 pixels in the middle of the */
 /* picture, white on blue, bit 7 of a character = inverse; osd_full = 0 shows the bottom row. */
+/* */
+/* Screenshots (next_grab.v, Print Screen): the picture exists nowhere but in this buffer, one */
+/* line at a time, so the ESP32 takes it line by line. While g_on is set the monitor gets a */
+/* black picture (the OSD stays) and the buffer's read side belongs to the grabber: g_x is the */
+/* pixel's place in the line, g_q its colour one clock later. A change of g_req lets the buffer */
+/* be written again; with g_arm set, the writing stops at the end of line g_line (counted from */
+/* the vertical sync) and that line stays in the buffer (g_held) until the next change. */
 `default_nettype none
 
 module next_video #(
@@ -37,6 +44,21 @@ module next_video #(
     input  wire [7:0] osd_wdata,
     input  wire       osd_on,
     input  wire       osd_full,
+
+/* the screenshot grabber (clk28; see above) */
+    input  wire       g_on,
+    input  wire       g_req,
+    input  wire       g_arm,
+    input  wire [9:0] g_line,
+    input  wire [9:0] g_x,
+    output wire [8:0] g_q,
+/* a line is held; it lies in the vertical blanking */
+    output reg        g_held = 1'b0,
+    output reg        g_vbl = 1'b0,
+/* the picture's first pixel in a line, the first one after it, the lines of a frame */
+    output wire [9:0] g_first,
+    output wire [9:0] g_end,
+    output reg  [9:0] g_lines = 10'd0,
 
     output reg  [3:0] vga_r,
     output reg  [3:0] vga_g,
@@ -71,13 +93,56 @@ reg  [9:0] m_first = 10'd0, m_end = 10'd0;
 reg        vbl_cur = 1'b1, vbl_prev = 1'b1;
 /* the line buffer */
 reg  [8:0] lbuf [0:1023];
+/* the grabber: the request as seen, a line is waited for; the line's number in the frame, */
+/* the vertical sync a clock ago, a vertical sync started in this line */
+reg        g_req_q = 1'b0, g_wait = 1'b0;
+reg  [9:0] wy = 10'd0;
+reg        vs_d = 1'b1, vs_seen = 1'b0;
 
 wire       w_blank = !hb_n;
 
 always @(posedge clk14)
 begin
     hs_d <= hs_n;
-    lbuf[wx] <= rgb;
+    vs_d <= vs_n;
+/* a held line is not written over */
+    if (!g_held)
+    begin
+        lbuf[wx] <= rgb;
+    end
+/* a vertical sync starts in this line: the next line is line 0 */
+    if (vs_d && !vs_n)
+    begin
+        vs_seen <= 1'b1;
+    end
+/* the grabber asks: the buffer is written again, and it waits for a line or not */
+    if (g_req != g_req_q)
+    begin
+        g_req_q <= g_req;
+        g_held  <= 1'b0;
+        g_wait  <= g_arm;
+    end
+/* the line it waits for ends: that line stays in the buffer */
+    else if (hs_d && !hs_n && g_wait && wy == g_line)
+    begin
+        g_held <= 1'b1;
+        g_wait <= 1'b0;
+        g_vbl  <= vbl_cur;
+    end
+/* the lines of a frame are counted from the vertical sync */
+    if (hs_d && !hs_n)
+    begin
+        if (vs_seen || (vs_d && !vs_n))
+        begin
+            vs_seen <= 1'b0;
+            wy      <= 10'd0;
+            g_lines <= wy + 10'd1;
+        end
+        else
+        begin
+            wy <= wy + 10'd1;
+        end
+    end
 /* a line ends where the next sync pulse starts */
     if (hs_d && !hs_n)
     begin
@@ -212,8 +277,8 @@ begin
         end
     end
 
-/* the picture, its blanking and sync */
-    lq   <= lbuf[rx];
+/* the picture, its blanking and sync; the grabber reads the buffer at its own place */
+    lq   <= lbuf[g_on ? g_x : rx];
     lq_d <= lq;
     bl_d <= {bl_d[0], r_blank};
     hs_p <= {hs_p[0], rx < hs_len};
@@ -235,6 +300,10 @@ begin
 end
 
 wire osd_here = in_d[1] && on_s[1] && (full_s[1] || row_d[1]);
+/* the grabber: the buffer's colour, the picture's place in a line */
+assign g_q     = lq;
+assign g_first = a_first;
+assign g_end   = a_end;
 /* its pixel */
 wire opix     = fq[~col_d2[3:1]] ^ inv_d;
 
@@ -254,6 +323,13 @@ begin
         vga_r <= {DAC_BITS{opix}};
         vga_g <= {DAC_BITS{opix}};
         vga_b <= opix ? 4'hF : BLUE_BACK;
+    end
+    else if (g_on)
+    begin
+/* a screenshot is taken: black */
+        vga_r <= 4'd0;
+        vga_g <= 4'd0;
+        vga_b <= 4'd0;
     end
     else
     begin

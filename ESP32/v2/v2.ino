@@ -1862,6 +1862,7 @@ static void help(Print &r_out)
         "OK commands:\r\n"
         "  status                  connection, target, audio (i2s peak since last status)\r\n"
         "  loader                  SD loader task: state, last link frame, code addresses on its stack\r\n"
+        "  shot                    a screenshot, as the Print Screen key makes it\r\n"
         "  wifi [trace on|off]     LNext's Wi-Fi module: state; trace = its answers on this port too\r\n"
         "  at <line>               a line for the Wi-Fi module as if the Next had sent it (AT+CWLAP ...)\r\n"
         "  wifi bt off|on          test: Bluetooth shut down / started again\r\n"
@@ -2322,6 +2323,11 @@ static void command(char *pc_line, Print &r_out)
         else if (strcasecmp(pc_cmd, "loader") == 0)
         {
             loader_info(r_out);
+        }
+/* a screenshot as Print Screen makes it */
+        else if (strcasecmp(pc_cmd, "shot") == 0)
+        {
+            loader_shot();
         }
 /* LNext's Wi-Fi module: its state, its answers on this port too, a command line for it */
         else if (strcasecmp(pc_cmd, "wifi") == 0)

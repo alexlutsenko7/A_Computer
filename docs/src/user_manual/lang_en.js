@@ -342,6 +342,7 @@ module.exports = {
       ["**F12**", "List of tape files (.tap, .tzx) on the card, for the 48K and 128K Spectrum (see below)"],
       ["**F7**", "Stops the tape"],
       ["**F11**", "Pauses / continues the tape"],
+      ["**Print Screen**", "Saves the picture as `SCRNnnnn.BMP`. The screen is black for about a second and the Next waits meanwhile"],
       ["**Ctrl + Alt + Del**", "Back to the machine menu"],
     ], [34, 66]],
     ["p", "The PC keyboard is the Next's keyboard: letters, digits, cursor keys, Backspace and punctuation act as on a Spectrum Next. Ctrl is the Spectrum's Symbol Shift and Shift its Caps Shift: for example, Ctrl + 0 types an underscore."],
@@ -354,7 +355,7 @@ module.exports = {
     ["ul", [
       "The picture has the Next's own timing, about 49 Hz or 58 Hz (F8). If the monitor shows nothing, press F8.",
       "The sound is the same on both channels.",
-      "Not available: the mouse, the real-time clock, the expansion port, saving to tape, Print Screen, snapshots with F2, and updating the Next's core from NextZXOS.",
+      "Not available: the mouse, the real-time clock, the expansion port, saving to tape, snapshots with F2, and updating the Next's core from NextZXOS.",
     ]],
     ["h2", "Tapes for the 48K and 128K Spectrum"],
     ["p", "The Next's own files (.nex, snapshots, .tap) are started from its Browser. Besides that, the board can play tape files into the Next's tape input, as into a real Spectrum. This is for the 48K and 128K Spectrum that NextZXOS offers, and for .tzx files with their own loaders."],

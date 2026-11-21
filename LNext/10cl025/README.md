@@ -37,8 +37,10 @@ card port answers at once, and the core must not send its next command meanwhile
 
 ## Status (2026-11-19)
 
-Built for the 10CL025 (2026-11-21, with the tape player and the Wi-Fi UART): 18,789 logic elements (76 %), all 66
-block RAMs, timing met. On hardware 2026-11-21: the tape browser lists the card's tape files (user); the Wi-Fi
+Built for the 10CL025 (2026-11-21, with the tape player, the Wi-Fi UART and the screenshot grabber): 18,826 logic
+elements (76 %), all 66 block RAMs, timing met. Print Screen on hardware 2026-11-21 (asked for on the ESP32's
+console, the pictures read back over the console): the welcome screen, the menu, the Browser and the game
+Warhawk (title and play) came out right, the game ran on afterwards. The Print Screen key: works (user, 2026-11-21). On hardware 2026-11-21: the tape browser lists the card's tape files (user); the Wi-Fi
 module answers the Next (a BASIC program in the 128K machine sent `AT` to the UART's ports and printed the
 echo and `OK`, keys and picture over JTAG); the network joined with `WIFI.BAS` and a page fetched with `.http`
 (user; `.http` wants a server that sends a Content-Length, for example `info.cern.ch`); NXtel online with its
@@ -97,8 +99,21 @@ Open points are in `../../docs/PLAN.md`.
   a connection. **Bluetooth audio keeps playing while the radio is on** (a gap of about 0.2 s is counted
   when the radio starts and joins the network).
   The module's reset line and its firmware update (`.espupdate`) are not there.
+- **Print Screen:** the Next's picture is mixed from its layers on the way to the monitor and stored nowhere,
+  and no block RAM is left for a frame. The ESP32 therefore takes it line by line out of the line doubler's
+  buffer (`rtl/next_grab.v`, `rtl/next_video.v`): it names a line, the buffer stops being written when that line
+  is in it, and the pixels are read with the loader's memory read commands (9 bits each, at 14 MHz: 720 per
+  line, about 303 lines at 50 Hz). The CPU waits meanwhile (`CPU_WAIT`), so all lines are of one picture, and the
+  monitor shows black with the OSD's "Saving the picture ...". The firmware (`../../ESP32/v2/src/nextshot.cpp`)
+  asks for the lines in the order in which the picture reaches them, several per frame: about 1.2 s in all.
+  It keeps the picture in the PSRAM, lets the machine run and then writes a 24-bit BMP: 360 x 303 when every
+  pixel is there twice (the usual 7 MHz pixels), else 720 x 606 with every line twice. What changes by itself
+  while the lines are taken is not of one moment: flashing characters can come out in stripes.
+  NextZXOS has the same card open, so the file's clusters are taken from the card's last eighth, far from where
+  the Next's own new files go, and the file system is read again before every picture. I/O board revision 2
+  only (`ESP32/v2`: the picture needs the PSRAM).
 - **Not there:** HDMI, the Raspberry Pi port, the expansion bus, the mouse, the real-time clock, saving to
-  tape, Print Screen, core updates from NextZXOS.
+  tape, core updates from NextZXOS.
 
 ## Keys
 
@@ -117,6 +132,7 @@ punctuation ...; the core maps them onto the Spectrum's matrix).
 | F12 | tape browser (ESP32): a TAP / TZX file from the card plays into the EAR input |
 | F7 | stop the tape |
 | F11 | pause the tape / go on |
+| Print Screen | the picture as `SCRNnnnn.BMP` into the tape browser's folder (the card's root unless it was changed) |
 | Ctrl+Alt+Del, KEY1 | back to the machine menu |
 | KEY0 | reset everything (the ESP32 restarts, the Next starts again from the card) |
 
@@ -172,10 +188,11 @@ cd ../../AMenu/10cl025 && python3 ../ep4_ce15/tools/mk_flash.py     # output_fil
 | `LNext.qpf/.qsf/.sdc` | Quartus project (top `LNext`) |
 | `rtl/LNext.v` | board top level: PLLs, resets, remote update (KEY1), keyboard, joysticks, the core, SDRAM, SD card, audio, loader + ESP32 link, video |
 | `rtl/next_sdram.v` | SDRAM controller: the CPU's port with wait, Layer 2's port, bursts of two words kept for the next reads |
-| `rtl/next_sd.v` | the SD card of logic and the ESP32's side of it (machine word, memory commands) |
+| `rtl/next_sd.v` | the SD card of logic and the ESP32's side of it (machine word, memory commands; passes the grabber's commands on) |
 | `rtl/next_bram.vhd` | the core's memories for the Cyclone 10 LP |
 | `rtl/next_keyboard.v` | USB keyboard reports -> key events (PS/2 codes) for the core, loader keys |
-| `rtl/next_video.v` | line doubler with one line buffer, OSD |
+| `rtl/next_video.v` | line doubler with one line buffer, OSD; holds a line for the screenshot grabber |
+| `rtl/next_grab.v` | screenshots: the grabber's memory commands (line to hold, state, pixels) |
 | `rtl/next_loader.v` | copy of the shared tape loader; its command memory (128 commands) and UART receive memory share one block RAM |
 | `rtl/next_pll.v`, `rtl/next_pll2.v` | the two PLLs |
 | `rtl/next_sprites.vhd`, `rtl/next_bootrom.vhd`, `rtl/next_bootrom_*.mif` | made by `tools/mk_c10_files.py` from the files in `ZXNEXT/` |

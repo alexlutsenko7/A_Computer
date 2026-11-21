@@ -340,6 +340,7 @@ module.exports = {
       ["**F12**", "카드에 있는 테이프 파일(.tap, .tzx)의 목록, 48K와 128K Spectrum용(아래 참조)"],
       ["**F7**", "테이프를 정지합니다"],
       ["**F11**", "테이프 일시 정지 / 계속"],
+      ["**Print Screen**", "화면을 `SCRNnnnn.BMP`로 저장. 화면이 약 1초 동안 검게 되고 그동안 Next는 기다립니다"],
       ["**Ctrl + Alt + Del**", "머신 메뉴로 돌아가기"],
     ], [34, 66]],
     ["p", "PC 키보드가 Next의 키보드입니다: 글자, 숫자, 방향키, Backspace, 문장 부호는 Spectrum Next에서와 같이 동작합니다. Ctrl은 Spectrum의 Symbol Shift이고 Shift는 Caps Shift입니다. 예를 들어 Ctrl + 0은 밑줄을 입력합니다."],
@@ -352,7 +353,7 @@ module.exports = {
     ["ul", [
       "화면은 Next 고유의 타이밍으로, 약 49 Hz 또는 58 Hz입니다(F8). 모니터에 아무것도 나오지 않으면 F8을 누르십시오.",
       "소리는 두 채널이 같습니다.",
-      "지원하지 않는 것: 마우스, 실시간 시계, 확장 포트, 테이프에 저장, Print Screen, F2 스냅샷, NextZXOS에서 Next의 코어를 업데이트하는 기능.",
+      "지원하지 않는 것: 마우스, 실시간 시계, 확장 포트, 테이프에 저장, F2 스냅샷, NextZXOS에서 Next의 코어를 업데이트하는 기능.",
     ]],
     ["h2", "48K와 128K Spectrum용 테이프"],
     ["p", "Next 자체의 파일(.nex, 스냅샷, .tap)은 Next의 Browser에서 시작합니다. 그 밖에 보드는 실제 Spectrum에 하듯이 테이프 파일을 Next의 테이프 입력으로 재생할 수 있습니다. NextZXOS가 제공하는 48K와 128K Spectrum, 그리고 자체 로더가 있는 .tzx 파일을 위한 것입니다."],

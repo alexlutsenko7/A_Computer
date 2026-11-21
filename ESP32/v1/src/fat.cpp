@@ -69,6 +69,8 @@
 #define PART_FAT16_LBA 0x0E
 /* cluster numbers: the first data cluster, and the limits that tell FAT12 / FAT16 / FAT32 apart */
 #define CLUS_FIRST 2u
+/* fat_alloc_high: the card's last part is 1 / 2^3 of its clusters */
+#define HIGH_PART_SHIFT 3
 #define CLUS_MIN_FAT16 4086u
 #define CLUS_MIN_FAT32 65526u
 /* FAT entries: bytes per entry as a shift, the used bits of FAT32, end-of-chain marks */
@@ -1024,6 +1026,12 @@ int32_t ff_update(FFILE *ps_file, uint32_t ui32_pos, const uint8_t *pui8_data, u
 }
 
 /* writing */
+
+/* the next free cluster is looked for from the last eighth of the card on (fat.h) */
+void fat_alloc_high(void)
+{
+    g_ui32_free_hint = g_ui32_max_clus - (g_ui32_max_clus >> HIGH_PART_SHIFT);
+}
 
 /* a free cluster, marked end-of-chain and linked after ui32_prev (0: none); 0 = full or error */
 static uint32_t fat_alloc(uint32_t ui32_prev)

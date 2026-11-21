@@ -94,6 +94,12 @@ In LNext the firmware moves the SD card's sectors for the machine (`src/next.cpp
   download (lowest 23 KB); 51 KB after the radio went off (the network stack stays). Keep it above 20 KB.
   The radio goes off 60 s after the last command, with no connection open. When it starts and joins, one audio
   step of about 200 ms is counted (`status`: late).
+- **Print Screen** (this version only: the picture needs the PSRAM): `src/nextshot.cpp` takes the Next's picture
+  line by line from the FPGA while the CPU waits (about 1.2 s), then writes a 24-bit BMP (`shot_begin24` in
+  `src/shot.cpp`). NextZXOS has the same card open: the file system is read again first and the file's clusters
+  come from the card's last eighth (`fat_alloc_high`). PC test `../../ESP32_test/v2/test/nextshot_test.cpp`.
+  Console: `shot` takes a picture as the key does and prints its size and time; the test option
+  `-DNEXT_SHOT_DUMP` also prints the pixels (`tmp/shot/dump2png.py` makes a PNG of them).
 - Console: `wifi` (state, memory), `wifi trace on|off` (the module's answers on the USB port too), `at <line>`
   (a line for the module as if the Next had sent it, for example `at AT+CWLAP`), `wifi bt off|on` (test: Bluetooth shut down and started again, `btaudio_pause()` / `btaudio_resume()`).
 
