@@ -12,14 +12,14 @@ ROOT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else '.')
 DST = os.path.join(ROOT, 'github')
 
 TOP = ['AMenu', 'LSpectrum', 'L64', 'LTari', 'LNES', 'LMega', 'LNext', 'ZXNEXT', 'FX68K', 'JT12', 'JT89', 'ESP32', 'ESP32_test', 'T65', 'T80', 'DDR_TEST', 'VGA_TEST', 'FirstLight', 'docs', 'tests', 'tools',
-       'Extra_PCB_CycloneIV', 'Extra_PCB_CycloneIV_R2', '3D_case', 'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md', 'IP_BLOCKS.txt']
+       'Extra_PCB_CycloneIV', 'Extra_PCB_CycloneIV_R2', 'Extra_PCB_Pads_U7', '3D_case', 'README.md', 'LICENSE', 'BUILDING_AND_LICENSES.md', 'IP_BLOCKS.txt']
 
 SKIP_DIRS = {'db', 'incremental_db', 'greybox_tmp', '.qsys_edit', '__pycache__', 'node_modules', '.git',
              'roms_local',          # C64 ROMs (copyright)
              'ref',                 # LTari/ep4_ce15/ref: Altirra manual PDF + files from atari800
              'syn_check',           # LTari scratch synthesis check
              'a7g_scratch',         # scratch builds for the 10CL025YU256A7G (docs/SINGLE_BOARD.md)
-             '.history', 'Extra_PCB_CycloneIV-backups', 'Extra_PCB_CycloneIV_R2-backups',   # KiCad history / backups
+             '.history', 'Extra_PCB_CycloneIV-backups', 'Extra_PCB_CycloneIV_R2-backups', 'Extra_PCB_Pads_U7-backups',   # KiCad history / backups
              'archive',             # Extra_PCB_CycloneIV_R2/archive: earlier local states (the repository has the history)
              'old',                 # Extra_PCB_CycloneIV/old: a superseded routing
              'src_sim'}             # LMega/10cl025/sim: patched copies of third-party files, made by run_sim.sh
@@ -49,7 +49,8 @@ KEEP_OUTPUT = ['*.sof']                      # (L.jic, the machine files, LUPDAT
 
 # own documents that are PDFs (the '*.pdf' rule above is for third-party files)
 KEEP_PDF = ['Extra_PCB_CycloneIV/Extra_PCB_CycloneIV.pdf',         # the I/O boards' schematics, plotted by KiCad
-            'Extra_PCB_CycloneIV_R2/Extra_PCB_CycloneIV_R2.pdf']
+            'Extra_PCB_CycloneIV_R2/Extra_PCB_CycloneIV_R2.pdf',
+            'Extra_PCB_Pads_U7/Extra_PCB_Pads_U7.pdf']
 
 def skip_file(rel, name):
     if rel in KEEP_PDF:

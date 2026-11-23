@@ -74,6 +74,7 @@ yourself): [BUILDING_AND_LICENSES.md](BUILDING_AND_LICENSES.md).**
 | QMTECH Cyclone IV core board | EP4CE15F23C8N, 50 MHz oscillator, W9825G6KH-6 SDRAM (32 MB), W25Q64 configuration flash |
 | I/O board (own design, `Extra_PCB_CycloneIV/`) | 4-bit-per-colour VGA DAC, two Kempston DB9, 3.5 mm audio jack (AY + beeper, line level), USB keyboard module (UART, 3.3 V), microSD socket, sockets for the ESP32; wired to the core board's U8 |
 | I/O board revision 2 (own design, `Extra_PCB_CycloneIV_R2/`, ordered 2026-11-03) | as revision 1, with everything on the board: ESP32-WROVER-E module, CP2102N USB-C console / 5 V input, CH9350L with a USB-A keyboard socket, a second USB-A (5 V for a VGA2HDMI dongle); 4 layers; same J1 to the core board's U8 |
+| Pad board (own design, `Extra_PCB_Pads_U7/`, designed and ordered 2026-11-23, not built yet) | on the 10CL025 core board's second header (U7): two DB9 sockets for Sega Mega Drive pads (3 and 6 buttons) on 5 V, level shifters to the FPGA pins (74LVC245, 74HCT2G34), 84.1 x 19.5 mm; no FPGA logic for it yet |
 | ESP32-WROOM-32 dev board | system controller on the I/O board: SD card, tape loader, Bluetooth audio (`ESP32/v2/README.md`) |
 
 Pin assignments: `docs/BOARD_PINOUT.md`.

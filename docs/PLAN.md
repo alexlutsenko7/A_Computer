@@ -1954,3 +1954,14 @@ back at the numbers such a board would sell in).
   out again: `BUILDING_AND_LICENSES.md` 1.5 removed, the build document's section 8 as before, `INSTALL/README.txt`,
   the user manual's note and the installation guide's first section (9 languages) as before. The FTP server and the
   EP4CE15 notes stay. `L_loader.jic` (the menu alone) stays as a tool, as it was before.
+
+## 2026-11-23 (night): pad board for header U7 (`Extra_PCB_Pads_U7/`)
+
+For Sega Mega Drive pads (user): the pads need a supply and a select line, which the I/O board's DB9 sockets do not
+have, and they are 5 V parts. A second small board on the free header U7: 84.1 x 19.5 mm, 2 layers, two DB9 sockets on
+top, on the bottom a 74LVC245 per socket (pad to FPGA, 3.3 V supply, 5 V tolerant inputs), one dual buffer 74HCT2G34
+for the two select lines (5 V supply) and 3k3 pull-ups to 5 V; the pad supply is the 5 V directly (the user took the
+fuses out and asked for one select chip). It lies under the core board's U7 edge
+as the I/O board lies under the U8 edge. Routed with FreeRouting, rules check without errors. Pins: its README.
+Gerbers made; the user ordered bare boards and the parts separately and assembles them by hand.
+Not done: the pad reader in the machines, the pin entries in `tools/mk_10cl025_qsf.py`, the case.
