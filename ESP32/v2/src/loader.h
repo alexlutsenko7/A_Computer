@@ -13,6 +13,8 @@ bool loader_running(void);
 void loader_check(void);
 /* the console's "shot": a screenshot as Print Screen makes it */
 void loader_shot(void);
+/* the console's "ftp": in the machine menu, the SD card's FTP server as F4 starts it; once more: it stops */
+void loader_ftp(void);
 #ifdef __cplusplus
 class Print;
 /* "loader" command: task state, last link frame, stack code addresses */

@@ -103,6 +103,47 @@ In LNext the firmware moves the SD card's sectors for the machine (`src/next.cpp
 - Console: `wifi` (state, memory), `wifi trace on|off` (the module's answers on the USB port too), `at <line>`
   (a line for the module as if the Next had sent it, for example `at AT+CWLAP`), `wifi bt off|on` (test: Bluetooth shut down and started again, `btaudio_pause()` / `btaudio_resume()`).
 
+## SD card over Wi-Fi (FTP server, machine menu F4)
+
+In the machine menu (no machine running) **F4** opens "SD card over Wi-Fi": the ESP32 joins a Wi-Fi network and
+runs an FTP server on the card, so games and machine files can be copied to and from a computer without taking
+the card out.
+
+- **Network:** the remembered one (the same that LNext's Wi-Fi uses, NVS namespace `wifi`) is joined without asking.
+  Without one, or when joining fails, the networks in reach are listed (strongest first, `*` = password): Up / Down,
+  Enter; the password is typed on the keyboard (US layout, capitals and signs with Shift) and remembered after a
+  successful join. 2.4 GHz networks only (the ESP32 has no 5 GHz radio).
+- **Server screen:** network, signal, the address to use in Windows File Explorer's address bar or in an FTP program
+  (`ftp://` + the address the network gave the ESP32, port 21; web browsers no longer open FTP), clients connected,
+  files and kilobytes received / sent, the last action, the clock. **Enter** = choose another network, **F4 / Esc** = stop.
+- **Access:** anonymous. Any user name and password are taken, none is needed. Everybody in the same network can
+  read, write and delete the card's files while the screen is open; there is no encryption (plain FTP).
+- **Clients:** up to 3 connections at a time (FileZilla: one to browse, two to transfer; set "maximum simultaneous
+  transfers" to 2 or less). Passive (PASV / EPSV) and active (PORT) mode, binary transfers, resume (REST, APPE),
+  rename / move, delete, new folders, long file names. Windows Explorer (`ftp://address` in the address bar),
+  FileZilla, WinSCP, `curl`, Python's `ftplib` are the kinds of clients it is written for.
+- **Bluetooth is switched off while the screen is open** and starts again (and reconnects) when it is left: Wi-Fi
+  gets the whole radio. (With Bluetooth calling headphones that are switched off, Wi-Fi could not even join.)
+- **The card:** mounted through the core's FatFs (`sdcard_mount` on the driver that the raw sector calls use,
+  `sd_fs_mount()` in `esp_hw.cpp`) only while the screen is open; `src/fat.cpp` is not used meanwhile. FAT16 / FAT32.
+- **Clock:** the ESP32 has none, so after the join the time is asked from web servers (`net_time_sync()` in
+  `espnet.cpp`: the `Date:` line of a plain HTTP answer from www.google.com, www.cloudflare.com, www.microsoft.com,
+  tried in turn for 5 seconds). Without an answer a message says that the clock (RTC) is unavailable and new
+  files get the date 1980-01-01. The clock runs on until the power goes.
+- **Time zone:** the user's setting on the server screen, optional: Left / Right change the offset from UTC by an
+  hour, Page Up / Page Down by 15 minutes (UTC-12 to UTC+14). It is remembered when the screen is left (NVS
+  `wifi` / `zone`) and applied at every later start; never set: UTC. The clock is moved by the offset
+  (`net_zone_*` in `espnet.cpp`), so new files get local dates. The screen shows `Time: ... UTC-5`. No service
+  is asked for the zone.
+- **Measured on the board** (10CL025 + rev 2, 2.4 GHz, -47 dBm): about 215 to 250 KB/s in both directions.
+
+Code: `src/ftp.cpp` / `ftp.h` = the server (portable: sockets + the C library's file calls; one task, nothing
+waits: every client gets a turn in `ftp_poll()`, each with its own 16 KB transfer buffer in the PSRAM),
+`src/netmenu.cpp` = the screens, `net_*` in `src/espnet.cpp` = the radio. Console: `ftp` starts the screens as F4
+does (machine menu only) and stops the running server; log lines `ftp: ...` tell the address.
+PC test: `ESP32_test/v2/test/ftp_test.cpp` + `ftp_client.py` (the server on the PC, Python's FTP client against
+it; part of `run_host_test.sh`). `ESP32/v1` (no PSRAM, rev 1 board) does not have it.
+
 ## Control
 
 Normal use: **F3 on the LSpectrum keyboard** opens the Bluetooth menu (scan, connect, disconnect, forget, PIN,

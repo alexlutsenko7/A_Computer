@@ -52,6 +52,8 @@
 #define BT_PAUSE_WAIT_MS 5000u
 #define BT_PAUSE_STEP_MS 50u
 #define BT_PAUSE_SETTLE_MS 1000u
+/* another task waits at most this long for Bluetooth to go off or come back (btaudio_ask) */
+#define BT_ASK_WAIT_MS 10000u
 /* memory blocks of this size and above come from the PSRAM, smaller ones from the internal RAM */
 /* (the core's default is 4096): Bluetooth and LNext's Wi-Fi fit into the internal RAM together */
 #define PSRAM_MALLOC_MIN 256u
@@ -1574,8 +1576,10 @@ protected:
 
 /* the A2DP source */
 ZxA2DP g_s_a2dp;
-/* Bluetooth is switched off (console test "wifi bt off", see btaudio_pause) */
+/* Bluetooth is switched off (the machine menu's FTP screens, console test "wifi bt off"; see btaudio_pause) */
 static bool g_b_bt_paused;
+/* Bluetooth is wanted off (btaudio_ask); the loop makes it so */
+static volatile bool g_b_bt_off_want;
 
 /* Console test "wifi bt off": Bluetooth is shut down while the ESP32 runs. The link ends, the */
 /* profiles, the host stack and the controller are shut down (the library's end() without its */
@@ -1628,6 +1632,22 @@ void btaudio_resume(void)
 /* the loop looks after the link again */
         g_b_bt_paused = false;
         Serial.print("EV bluetooth on\r\n");
+    }
+}
+
+/* Bluetooth off (1) or on again (0), asked for by another task (the loader's: the machine menu's FTP */
+/* screens give the whole radio to Wi-Fi). The loop makes the change; this waits for it, but not forever. */
+void btaudio_ask(int32_t i32_off)
+{
+/* local variables */
+    uint32_t ui32_start;
+
+/* start values */
+    ui32_start = millis();
+    g_b_bt_off_want = i32_off != 0;
+    while ((g_b_bt_paused != g_b_bt_off_want) && ((millis() - ui32_start) < BT_ASK_WAIT_MS))
+    {
+        delay(BT_PAUSE_STEP_MS);
     }
 }
 esp_err_t ZxA2DP::s_e_tx_power_err = ESP_FAIL;
@@ -1863,6 +1883,7 @@ static void help(Print &r_out)
         "  status                  connection, target, audio (i2s peak since last status)\r\n"
         "  loader                  SD loader task: state, last link frame, code addresses on its stack\r\n"
         "  shot                    a screenshot, as the Print Screen key makes it\r\n"
+        "  ftp                     machine menu: the SD card's FTP server as F4 starts it; again: stop\r\n"
         "  wifi [trace on|off]     LNext's Wi-Fi module: state; trace = its answers on this port too\r\n"
         "  at <line>               a line for the Wi-Fi module as if the Next had sent it (AT+CWLAP ...)\r\n"
         "  wifi bt off|on          test: Bluetooth shut down / started again\r\n"
@@ -2270,7 +2291,7 @@ static void command(char *pc_line, Print &r_out)
     pc_end = nullptr;
 /* while Bluetooth is off only the commands that do not touch it are taken */
     if ((pc_cmd != nullptr) && g_b_bt_paused && (strcasecmp(pc_cmd, "wifi") != 0) && (strcasecmp(pc_cmd, "at") != 0) &&
-        (strcasecmp(pc_cmd, "loader") != 0) && (strcasecmp(pc_cmd, "help") != 0))
+        (strcasecmp(pc_cmd, "loader") != 0) && (strcasecmp(pc_cmd, "help") != 0) && (strcasecmp(pc_cmd, "ftp") != 0))
     {
         if (strcasecmp(pc_cmd, "status") == 0)
         {
@@ -2329,6 +2350,11 @@ static void command(char *pc_line, Print &r_out)
         {
             loader_shot();
         }
+/* the machine menu's FTP server as F4 starts it; once more: it stops */
+        else if (strcasecmp(pc_cmd, "ftp") == 0)
+        {
+            loader_ftp();
+        }
 /* LNext's Wi-Fi module: its state, its answers on this port too, a command line for it */
         else if (strcasecmp(pc_cmd, "wifi") == 0)
         {
@@ -2343,10 +2369,12 @@ static void command(char *pc_line, Print &r_out)
 /* tests: Bluetooth off and on without the radio */
             else if ((pc_arg != nullptr) && (strcasecmp(pc_arg, "bt off") == 0))
             {
+                g_b_bt_off_want = true;
                 btaudio_pause();
             }
             else if ((pc_arg != nullptr) && (strcasecmp(pc_arg, "bt on") == 0))
             {
+                g_b_bt_off_want = false;
                 btaudio_resume();
             }
             else
@@ -2845,6 +2873,19 @@ void loop()
     if (espnet_machine() == 0)
     {
         g_s_uart_in.poll();
+    }
+/* Bluetooth off or on again, as asked for (btaudio_ask, console "wifi bt off|on") */
+    if (g_b_bt_off_want && !g_b_bt_paused)
+    {
+        btaudio_pause();
+    }
+    else if (!g_b_bt_off_want && g_b_bt_paused)
+    {
+        btaudio_resume();
+    }
+    else
+    {
+/* as wanted */
     }
     if (!g_b_bt_paused)
     {

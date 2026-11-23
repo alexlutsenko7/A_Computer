@@ -4,8 +4,10 @@ The board's flash holds the machine menu and three machines at a time. You choos
 
 1. Format a microSD card as FAT32 or FAT16 (not exFAT).
 2. Copy the folder MACHINES to the root folder of the card. It holds one file per machine and core board:
-   ..._ep4ce15.LMC for the Cyclone IV EP4CE15 board, ..._10cl025.LMC for the Cyclone 10 LP 10CL025 board.
+   ..._10cl025.LMC for the Cyclone 10 LP 10CL025 board, ..._ep4ce15.LMC for the Cyclone IV EP4CE15 board.
    The menu lists only the files made for its own board.
+   The EP4CE15 board (with I/O board revision 1 and ESP32 firmware v1) is no longer supported: its files here
+   are the last ones made for it and are not updated any more.
 3. Put the card into the board and switch it on. In the machine menu press F12, choose a machine and then
    the position (1 to 3) it goes into. Wait for "Installed." (about 15 seconds). Repeat for the other positions.
 

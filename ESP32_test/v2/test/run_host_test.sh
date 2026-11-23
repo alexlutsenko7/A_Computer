@@ -163,4 +163,12 @@ ${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/espat/espat_test.exe espat_test.cp
 echo "LNext Wi-Fi module:"
 (cd $W/espat && ./espat_test.exe > espat.log) || fail=1
 sed 's/^/  /' $W/espat/espat.log
+# the machine menu's FTP server (ftp.cpp): the server on this PC with a folder as its card, Python's FTP client
+# against it (ftp_client.py; a Windows Python, because the server is a Windows program)
+PYWIN=${PYWIN:-/mnt/c/Tools/cadquery_env/Scripts/python.exe}
+rm -rf $W/ftp && mkdir -p $W/ftp
+${GCC%gcc.exe}g++.exe -O2 -Wall -Wextra -o $W/ftp/ftp_test.exe ftp_test.cpp ../../../ESP32/v2/src/ftp.cpp -lws2_32
+echo "FTP server:"
+(cd $W/ftp && $PYWIN -I -u ../../ftp_client.py ftp_test.exe . > ftp.log 2>&1) || fail=1
+grep -v "^  ok" $W/ftp/ftp.log | sed 's/^/  /'; echo "  $(grep -c '^  ok' $W/ftp/ftp.log) checks ok"
 [ $fail = 0 ] && echo "HOST TEST PASSED" || { echo "HOST TEST FAILED"; exit 1; }

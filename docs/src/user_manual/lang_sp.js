@@ -2,7 +2,7 @@
 /* Same block structure as lang_en.js; on-screen messages stay as the board shows them. */
 module.exports = {
   title: "L — Manual de usuario",
-  subtitle: "Una placa, las máquinas clásicas que usted elija: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive y ZX Spectrum Next. Cómo conectarla, elegir las máquinas y jugar. Edición del 21 de noviembre de 2026.",
+  subtitle: "Una placa, las máquinas clásicas que usted elija: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive y ZX Spectrum Next. Cómo conectarla, elegir las máquinas y jugar. Edición del 23 de noviembre de 2026.",
   page: "página",
   blocks: [
     /* ------------------------------------------------------------ 1 */
@@ -48,6 +48,7 @@ module.exports = {
       "                                ",
       " Up/Down + Enter, 1-3, joystick ",
       "      F3: Bluetooth audio       ",
+      "  F4: SD card over Wi-Fi (FTP)  ",
       " F12: install from the SD card  ",
     ]],
     ["table", ["Tecla", "Qué hace"], [
@@ -56,6 +57,7 @@ module.exports = {
       ["**1**, **2**, **3**", "Inicia esa máquina directamente"],
       ["Joystick (cualquier conector)", "Arriba / abajo mueve, disparo inicia"],
       ["**F3**", "Menú de audio Bluetooth (sección 7)"],
+      ["**F4**", "Copia archivos entre un ordenador y la tarjeta SD por Wi-Fi (sección 5)"],
       ["**F12**", "Instala una máquina desde la tarjeta SD (sección 4)"],
     ], [36, 64]],
     ["p", "Para salir de una máquina y volver al menú, pulse **Ctrl + Alt + Supr** (actúa al soltar las teclas). La selección queda en la máquina que dejó. Lo que esa máquina estuviera haciendo se pierde, así que guarde antes si lo necesita. Bluetooth sigue conectado."],
@@ -116,6 +118,26 @@ module.exports = {
     ]],
 
     /* ------------------------------------------------------------ 6 */
+    ["h2", "Copiar archivos por Wi-Fi (F4 en el menú de máquinas)"],
+    ["p", "No hace falta sacar la tarjeta para añadir juegos. En el menú de máquinas, **F4** conecta la placa a su red Wi-Fi; un ordenador de la misma red puede entonces leer y escribir los archivos de la tarjeta."],
+    ["ol", [
+      "Pulse **F4** en el menú de máquinas. La primera vez aparece la lista de redes al alcance: elija la suya con Arriba / Abajo y Enter, escriba su contraseña (mayúsculas y signos con Shift) y pulse Enter. La placa recuerda la red.",
+      "La pantalla muestra una dirección como **ftp://192.168.1.50**. En el ordenador, escríbala en la barra de direcciones del administrador de archivos (Explorador de archivos en Windows) o use un programa FTP como FileZilla. No se necesita nombre de usuario ni contraseña.",
+      "Copie, renombre y borre archivos y carpetas como en cualquier unidad.",
+      "Pulse **F4** o **Esc** al terminar. La placa sale de la red.",
+    ]],
+    ["table", ["Tecla", "Qué hace"], [
+      ["**Enter**", "Elige otra red"],
+      ["**Izquierda / Derecha**", "Zona horaria: una hora antes / después (**Page Up / Page Down**: 15 minutos). Ajústela una vez para que los archivos nuevos tengan la fecha y la hora correctas; la placa la recuerda."],
+      ["**F4**, **Esc**", "Termina la conexión"],
+    ], [36, 64]],
+    ["ul", [
+      "La red debe funcionar a 2,4 GHz (casi todos los routers la ofrecen).",
+      "Los navegadores web ya no abren direcciones ftp://: use el administrador de archivos o un programa FTP. En FileZilla permita como máximo 2 transferencias a la vez.",
+      "Mientras esta pantalla está abierta, cualquiera en su red puede leer y cambiar los archivos de la tarjeta. Ciérrela al terminar.",
+      "El sonido Bluetooth se apaga mientras esta pantalla está abierta y vuelve después.",
+      "La placa toma la fecha y la hora de internet. Sin internet, la pantalla dice que el reloj no está disponible y los archivos nuevos reciben la fecha 1980.",
+    ]],
     ["h1", "6. Teclas que funcionan en todas las máquinas"],
     ["table", ["Tecla", "Qué hace"], [
       ["**F12** (también **/** numérica o **Bloq Num**)", "Abre / cierra la lista de archivos de la tarjeta SD"],

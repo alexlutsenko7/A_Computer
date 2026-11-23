@@ -85,7 +85,7 @@ def convert(folder, rev):
     text += '# flash_if.v: the Cyclone 10 LP variant of the active-serial block\nset_global_assignment -name VERILOG_MACRO "CYCLONE10LP=1"\n'
     if rev == 'AMenu':                                # AMenu.v's defaults are relative to its own project folder
         text += ('set_parameter -name FONT_HEX "../ep4_ce15/rtl/menu_font.hex"\n'
-                 'set_parameter -name TEXT_HEX "../ep4_ce15/rtl/menu_text.hex"\n')
+                 'set_parameter -name TEXT_HEX "../ep4_ce15/rtl/menu_text_10cl025.hex"\n')
     if 'KEY1' in used.values():
         text += 'set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to KEY1\n'
     extra = os.path.join(ROOT, folder, '10cl025', rev + '.extra.qsf')      # hand-written additions, kept by the tool

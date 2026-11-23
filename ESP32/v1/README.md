@@ -1,7 +1,8 @@
 # ESP32/v1 — the system controller (ESP32) for all machines
 
-**Version 1: for I/O board revision 1** (`Extra_PCB_CycloneIV/`, ESP32-WROOM-32 DevKit on sockets). Kept as it is
-apart from fixes; new work goes into `../v2/` (I/O board revision 2).
+**Version 1: for I/O board revision 1** (`Extra_PCB_CycloneIV/`, ESP32-WROOM-32 DevKit on sockets). **No longer
+supported (2026-11-23):** kept as it was last built and tested, because the book describes it; no new functions, no
+fixes, no tests. All work goes into `../v2/` (I/O board revision 2, the 10CL025 core board).
 
 `v1.ino` runs on an ESP32-WROOM-32 dev board (CP2102, USB-C) next to the FPGA board. It serves whichever machine
 the menu started (LSpectrum = ZX Spectrum 128K, L64 = Commodore 64), and does two jobs:

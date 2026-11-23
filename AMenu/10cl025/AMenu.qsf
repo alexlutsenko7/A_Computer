@@ -110,4 +110,4 @@ set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ESP_MISO
 # flash_if.v: the Cyclone 10 LP variant of the active-serial block
 set_global_assignment -name VERILOG_MACRO "CYCLONE10LP=1"
 set_parameter -name FONT_HEX "../ep4_ce15/rtl/menu_font.hex"
-set_parameter -name TEXT_HEX "../ep4_ce15/rtl/menu_text.hex"
+set_parameter -name TEXT_HEX "../ep4_ce15/rtl/menu_text_10cl025.hex"

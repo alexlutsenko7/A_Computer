@@ -80,6 +80,21 @@ int32_t net_read(int32_t i32_link, uint8_t *pui8_data, int32_t i32_max);
 /* 1 = the link's connection stands; close it */
 int32_t net_up(int32_t i32_link);
 void net_close(int32_t i32_link);
+/* a date and time as text ("2026-11-23 11:40 UTC-5:30"), with its terminator */
+#define NET_TIME_BUF 28
+/* The clock (the ESP32 has none of its own): asked from web servers, whose answers carry the */
+/* date and time (UTC) in their "Date:" line; the network must be joined. The servers are tried in */
+/* turn for 5 seconds. 0 = the clock is set (now, or already before), below 0 = no server answered */
+int32_t net_time_sync(void);
+/* The time zone: the user's setting, kept in the NVS (never set: UTC); the clock shows local time. */
+/* net_zone_load reads it (once since power-up) and moves the clock; call it after net_time_sync. */
+void net_zone_load(void);
+/* the offset from UTC in seconds; change it by so many seconds (UTC-12 to UTC+14); remember it */
+int32_t net_zone_get(void);
+void net_zone_step(int32_t i32_seconds);
+void net_zone_save(void);
+/* the clock as text with its offset from UTC ("2026-11-23 11:40 UTC-5"); empty while it is not set */
+void net_time_text(char *pc_text);
 /* the network remembered for the next start (an empty name: none) */
 void net_store_get(char *pc_ssid, char *pc_password);
 void net_store_put(const char *pc_ssid, const char *pc_password);
@@ -101,6 +116,9 @@ void espnet_trace(int32_t i32_on);
 /* the sketch's console test: Bluetooth shut down and started again */
 void btaudio_pause(void);
 void btaudio_resume(void);
+/* Bluetooth off (1) or on again (0), asked for by the loader's task and done by the sketch's loop; */
+/* returns when it is done (the machine menu's FTP screens: the whole radio for Wi-Fi) */
+void btaudio_ask(int32_t i32_off);
 #ifdef ARDUINO
 class Print;
 /* console: the module's state */

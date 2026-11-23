@@ -1788,3 +1788,169 @@ User: "Can prt scr functionality be added to Next?" - yes, built and tried on th
   Build_and_Install, Third_Party (LNext 18,826), READMEs; `github/` rebuilt, not committed.
 - Later: the Print Screen key on the real keyboard saves the picture properly (user).
 - User, same evening: Bluetooth sound with Wi-Fi in use is tested (works). Flashing characters in a screenshot: the user does not mind which state is saved; left as it is (a flashing cell can hold lines of both states).
+
+## 2026-11-23: SD card over Wi-Fi: FTP server in the machine menu (v2 firmware)
+
+User: an FTP server in the ESP32, reached from the machine menu (no machine loaded, so the sound does not matter),
+over Wi-Fi with a network selection menu, anonymous, to give access to the SD card.
+
+- **F4 in the machine menu** (`src/netmenu.cpp`; the menu's keyboard already sends F4 as a loader key, so no FPGA
+  change): the remembered network (LNext's, NVS `wifi`) is joined, else a list of the networks in reach, password
+  typed on the keyboard, remembered after a join. Then the server's screen: `ftp://address`, clients, files and KB
+  received / sent, last action; Enter = another network, F4 / Esc = stop.
+- **Server** `src/ftp.cpp` (new, portable: BSD sockets + the C library's file calls under a root folder): anonymous
+  (any name, any password, none needed), 3 clients at a time, PASV / EPSV / PORT, LIST / NLST, RETR / STOR / APPE /
+  REST, DELE, MKD / RMD, RNFR / RNTO, SIZE, MDTM, ABOR. One task, all sockets non-blocking, each client its own
+  16 KB buffer (PSRAM): a slow client holds up nobody. Paths are made clean first: nothing above the root.
+- **The card** is mounted through the core's FatFs (long names) only while the screen is open: `sd_fs_mount()` /
+  `sd_fs_unmount()` in `esp_hw.cpp` call `sdcard_mount` on the driver of the raw sector calls; `fat.cpp` is not
+  used meanwhile.
+- **Bluetooth is off while the screen is open** (`btaudio_ask()`, done by the sketch's loop; back on and
+  reconnecting when the screen is left). Found on the board: with Bluetooth calling headphones that are switched
+  off, Wi-Fi did not join. `net_scan()` (`espnet.cpp`) now stops a join that is still being tried before it
+  searches (a network out of reach is tried again for ever and the search then fails with -2); a joined network stays.
+- Link: the C library's time functions are in IRAM in this core; `strftime` + `gmtime` overflowed it by 676 bytes
+  and were replaced (`localtime` + `snprintf`); about 2.4 KB of IRAM are left. Firmware 1,810,384 bytes.
+- PC test `ESP32_test/v2/test/ftp_test.cpp` + `ftp_client.py` (the server as a Windows program, Python's `ftplib`
+  against it: 53 checks, among them two transfers side by side, a fourth client sent away, ABOR, a vanished client,
+  paths above the root); part of `run_host_test.sh`: HOST TEST PASSED.
+- **Clock** (user, same day): after the join the time is asked from web servers (`net_time_sync()`, `espnet.cpp`:
+  the `Date:` line of a plain HTTP `HEAD` answer; google / cloudflare / microsoft in turn, 5 s in all), so new files
+  get a real date (UTC). No answer: a message "The clock (RTC) is unavailable", files dated 1980, the server runs.
+- **Time zone** (user, same day): first built as an automatic lookup (worldtimeapi.org, then ip-api.com, 3 s), then
+  taken out again: ip-api.com's free endpoint is for non-commercial use, worldtimeapi.org was not answering, the
+  other free ones found (time.now, freeipapi.com) are HTTPS only, and a service on the user's own web site would need
+  MaxMind's database (the user: its terms do not fit either). **Now a manual, optional setting** on the server
+  screen: Left / Right one hour, Page Up / Page Down 15 minutes, UTC-12 to UTC+14, saved in the NVS (`wifi` /
+  `zone`) when the screen is left; never set: UTC. The clock is moved by the offset (FAT dates are local time).
+  On the board with the remembered -5 h: a new file's date 12:09:00 against the PC's 12:09:06 local; transfer
+  test PASS again (about 250 KB/s both ways). The keys themselves: the user's test.
+- Two faults of the join found on the board, both in `espnet.cpp` and both also LNext's (`AT+CWJAP` after a
+  remembered network out of reach): the library's `disconnect()` does not stop a join that is being tried
+  ("sta is connecting, cannot set config"; now `esp_wifi_disconnect()` + auto-reconnect off for that moment), and
+  the library keeps the last join's failure until the new join has a result, which `net_fail()` took for the new
+  one's (a "wrong password" after 0.7 s; now a failure counts only after the state was seen without one, or after 12 s).
+- **On the board** (10CL025 + rev 2, console `ftp` = F4; the user's network, WPA2, channel 6, -47 dBm, joined from the
+  console with the user's password, address from DHCP): `tmp/ftp_hw/hw_test.py` PASS: listing of the
+  card, files of 0 / 1 / 511 / 513 / 100,000 / 4,194,427 bytes up and down and compared, long name, rename, two
+  clients at once (2 MB each, up and down), delete, folder made and removed; dates right (clock from the web).
+  **Speed: about 215 KB/s up, 250 KB/s down** (not looked into). Server stopped from the console: Bluetooth back.
+  Not done by hand: F4 key, the list and the password typed on the keyboard, Windows Explorer / FileZilla (user).
+  Final firmware exported (`ESP32/v2/build/`) and uploaded.
+- **Works on hardware by hand (user, 2026-11-23):** F4, the server, the time zone keys.
+- **Everything rebuilt** (user, same day): the menu's screen has the line "F4: SD card over Wi-Fi (FTP)" on the
+  10CL025 only: `tools/menu_text.py` writes `rtl/menu_text.hex` (EP4CE15: unchanged byte for byte, so that board's
+  menu is not rebuilt; its rev 1 I/O board has no Wi-Fi) and `rtl/menu_text_10cl025.hex` (the 10CL025's .qsf and
+  `tools/mk_10cl025_qsf.py` name it). AMenu 10CL025: 13,088 LEs, timing clean (worst +0.136 ns); `mk_flash.py` +
+  `mk_update.py`: `L.jic`, `LUPDATE.BIN` (label "L 2026-11-23"), machine files. Host tests PASS. User manual in 9
+  languages (new part of section 5 "Copying files over Wi-Fi", F4 in the menu's table and screen, edition of 23
+  November 2026; Word + PDF), `L_Build_and_Install.docx` (section 5, checklist), `github/` rebuilt, not committed.
+- **The board's menu updated the same day** (user): the new menu started over JTAG (`AMenu.sof`), the FTP server
+  started from the console, `LUPDATE.BIN` sent to the card's root folder over FTP and read back; the menu then
+  updated itself (machines and the C64 ROMs untouched). After the power cycle everything works (user).
+- Last firmware changes: the server screen's `ftp://` line has an empty line above and below (user); a join that
+  fails is tried a second time (`JOIN_TRIES`): during the update the right password was refused once
+  ("reason 2" after 3.5 s) and taken at the next try. Firmware 1,813,216 bytes, exported and on the board;
+  example address in the manuals 192.168.1.50; manuals and `github/` rebuilt, not committed.
+- **Open:** transfer speed (about 250 KB/s); `ESP32/v1` has no Wi-Fi and does not get the server; the manuals'
+  translations of the new part were not read by native speakers.
+
+## 2026-11-23: the EP4CE15 boards are no longer supported
+
+User: the EP4CE15 boards are not needed (too small: the ESP32 without PSRAM, and the FPGA); they stay for the book,
+which is published, but support for them ends now.
+
+- **Supported from now on:** the 10CL025 core board + I/O board revision 2 + `ESP32/v2`.
+- **Frozen, kept for the book:** the EP4CE15 core board + I/O board revision 1 + `ESP32/v1` + `ESP32_test/v1`: the
+  `ep4_ce15/` Quartus projects and their last bitstreams, `AMenu/ep4_ce15/output_files` (L.jic, LUPDATE.BIN, machine
+  files), the v1 firmware binary. No new functions, no ports of v2 changes, no rebuilds, no tests, no hardware runs.
+- **Nothing was deleted or moved.** The `<machine>/ep4_ce15/` folders are also the source folders of the 10CL025
+  projects (rtl, simulations, tools, ROM images), so they stay in use; a change there is built and tried for the
+  10CL025 only, and the EP4CE15 revisions are not proven against it any more.
+- Said in `README.md` (top), `ESP32/v1/README.md` and `INSTALL/README.txt` (`tools/make_github.py`); `github/` still
+  carries the EP4CE15 files as they are. Not done: the rest of `README.md` and the machines' READMEs still read as
+  if the Cyclone IV board were the main one.
+
+## 2026-11-23: how the board is distributed
+
+User's decisions, after going through the licences:
+
+- **A board is shipped as a general FPGA board: the machine menu alone in the flash** (`L_loader.jic`) + the ESP32
+  firmware. No machine, no ROM, no game on it.
+- **The machines are a free download** from the repository (`INSTALL/MACHINES`); the user installs them (F12; the
+  card can be filled over Wi-Fi with F4). LSpectrum's and LTari's files carry their ROMs (Amstrad's permission for
+  free distribution; AltirraOS).
+- **L64 and LNext are offered as machines alone** (user: "a"): the Commodore ROMs and the Spectrum Next distribution
+  are never offered or shipped; the user obtains and installs them.
+- Reason: nothing that is sold then carries the Spectrum ROMs or a GPL-3 bitstream; the GPL-3 machine files are
+  given away beside their source. Still to be minded: tag the commit of every release (source of the published
+  files), ship the notices, use the original machines' names only to say what a machine is compatible with. Not
+  looked into: whether the Next's system software may be used on other hardware (its own licence), the Bluetooth
+  SIG listing, the radio module's labelling rules. Not legal advice; a lawyer's look before boards are sold was
+  suggested.
+- Written down in `BUILDING_AND_LICENSES.md` 1.5, `L_Build_and_Install.docx` section 8, `INSTALL/README.txt`,
+  the user manual's note and the installation guide's first section (9 languages); `AMenu/10cl025/output_files/
+  L_loader.jic` made with today's menu.
+
+## 2026-11-23: Bluetooth taken out of everything that is published
+
+User, after the licence talk: a product with Bluetooth needs a listing with the Bluetooth SIG (about $12,000 per
+product, also with a pre-qualified module, and - the cautious reading - also when the seller only offers the
+firmware as a download). "Build the BT-less option. Keep the BT option only as my development in the local folder
+and remove it anywhere in the documentation / firmware / Verilog." Answers to my questions: the audio hardware
+stays in the machines under neutral names; ESP32/v1 and the EP4CE15 binaries are no longer published;
+`docs/PLAN.md` and `CLAUDE.md` are no longer published; the book gets a new edition without Bluetooth.
+
+- **Firmware `ESP32/v2`:** `v2.ino` is a small sketch now (start, loop, console: help, status, loader, shot, ftp,
+  wifi, at). `src/ext.h` = the place of an optional extension (menu on F3, console commands, the radio's hold for
+  Wi-Fi); `src/ext_none.cpp` = no extension (every call does nothing; F3 does nothing). **The Bluetooth part lives
+  in `ESP32/v2/src/local/` (`ext_bt.cpp` = the old sketch's body, `bt.cpp` = the F3 menu), compiled only with
+  `-DL_EXT`** (`--build-property "compiler.cpp.extra_flags=-DL_EXT" --build-property "compiler.c.extra_flags=-DL_EXT"`),
+  never published, as is `ESP32/v2/libraries/` (AAudioLinkFix). Normal build: 1,086,096 bytes (was 1,813,216), no
+  Bluetooth stack in the binary. Identifiers renamed in the shared files (`bt_*` -> `ext_menu_*`, `K_BT` -> `K_F3`,
+  `btaudio_ask` -> `ext_radio_hold`), comments reworded.
+- **FPGA sources:** pins `BT_BCLK / BT_LRCK / BT_DATA` -> `I2S_BCLK / I2S_LRCK / I2S_DATA`, `BT_TX / BT_RX` ->
+  `CON_TX / CON_RX`, module `bt_i2s` -> `audio_i2s` (file, testbench, sim script), signals `bt_*` -> `aud_*` /
+  `con_*`, comments; the menu's text has no F3 line. The hardware function is unchanged (the I2S output and the
+  UART stay for the local extension). All eight 10CL025 revisions rebuilt (`tmp/bt_backup_2026-11-23/build_all.sh`,
+  results in `build_all.log` there). The EP4CE15 revisions' sources carry the new names too but are not rebuilt.
+- **Publishing (`tools/make_github.py`):** left out now: `ESP32/v1`, `ESP32_test/v1`, `tests/Test_wires`, every
+  `ep4_ce15/output_files`, `ESP32/vN/src/local`, `ESP32/vN/libraries`, `docs/PLAN.md`; only 10CL025 flash images and
+  the v2 firmware in `INSTALL/`; a check at the end lists every published file (text, .docx / .xlsx contents,
+  binaries) that still holds the word.
+- **Documents:** user manual + installation guide (9 languages; section 7 is "Sound" now, numbering kept), the
+  generated reference documents, READMEs, licence files: reworked (see the results below when they are in).
+- Backups of the state with Bluetooth: `tmp/bt_backup_2026-11-23/` (firmware, FPGA sources, .sof files, KiCad files).
+- **Open:** the I/O boards' KiCad files (net names `BT_*`, the module's description, a note on the rev 1 sheet):
+  not touched, KiCad was open; whether the rev 1 board's folder stays published; the book; hardware test of the
+  rebuilt machines and of both firmware builds.
+
+## 2026-11-23 (evening): the Bluetooth removal reverted; the project stays a hobby project
+
+User: "Revert everything back to the way it was. I will make this thing for myself only and make it available as a
+hobby project": the Bluetooth listing (about $12,000) and the radio tests for a product with Wi-Fi cannot be earned
+back at the numbers such a board would sell in).
+
+- **Everything of the entry above is undone.** Firmware `ESP32/v2` (sketch with the Bluetooth part, `src/bt.cpp`,
+  no `ext.h` / `src/local`), the FPGA sources (pins `BT_*`, module `bt_i2s`, the menu's F3 line), the manuals (9
+  languages, section 7 Bluetooth sound), the generated documents and their sources, the READMEs and licence files and
+  `tools/make_github.py` are as they were before it: restored from `tmp/bt_backup_2026-11-23/`, from the helpers'
+  backups, and (the hand-written documents) from the copies in `github/`, which had not been rebuilt since.
+  The tested bitstreams were put back; the revisions rebuilt with the renamed pins are built again from the restored
+  sources (`tmp/bt_backup_2026-11-23/restore_builds.sh`). Six of the eight renamed builds had given bit-identical
+  bitstreams (LSpectrum, L64, LTari, LTari800, LNES; AMenu differed only by its text), which is worth knowing: pin
+  and module names do not change the fit here.
+- The abandoned state is kept in `tmp/bt_removed_state_2026-11-23/` (firmware without Bluetooth, with the
+  `ext.h` hook) in case it is ever wanted.
+- **The board was never touched** by the removal (the upload failed: the USB port was gone): it holds the firmware
+  with Bluetooth and the menu with the F3 and F4 lines.
+- **Not reverted, because they were separate decisions of the same day:** the FTP server and its menu line; the
+  EP4CE15 boards no longer supported; the texts about how a board is shipped (menu alone, machines as a free
+  download) in `BUILDING_AND_LICENSES.md` 1.5, the build document's section 8, `INSTALL/README.txt`, the user
+  manual's note and the installation guide's first section. With no boards being sold these texts describe a plan
+  that is off; asked the user whether they should go back too.
+- The book is left as published.
+- Later (user: "FTP server stays, EP4CE15 - correct, no longer supported. Texts - yes"): the distribution texts are
+  out again: `BUILDING_AND_LICENSES.md` 1.5 removed, the build document's section 8 as before, `INSTALL/README.txt`,
+  the user manual's note and the installation guide's first section (9 languages) as before. The FTP server and the
+  EP4CE15 notes stay. `L_loader.jic` (the menu alone) stays as a tool, as it was before.

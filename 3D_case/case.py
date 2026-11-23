@@ -89,19 +89,22 @@ TNG_T = 1.20
 TNG_DOWN = 2.50
 TNG_PLAY = 0.20
 TNG_UP = 3.00
-# tongues on the far wall (between the ribs) and on both side walls beside the core board; the side
-# ones pass under the core board's edge, so their glued part is lower
-TNG_FAR = [(20.0, 34.0), (50.0, 64.0)]
-TNG_SIDE = (-58.0, -42.0)
-TNG_UP_SIDE = 2.50
+# tongues on the far wall only: each fills the space between two of the bottom half's ribs (with play
+# at both ends), so the two halves are lined up along the wall and across it. No tongues on the side
+# walls: the core board is as wide as the case inside, the top half could not pass it
+TNG_FAR = [(RIB_X[0] + RIB_W * 0.5 + TNG_PLAY, RIB_X[1] - RIB_W * 0.5 - TNG_PLAY),
+           (RIB_X[1] + RIB_W * 0.5 + TNG_PLAY, RIB_X[2] - RIB_W * 0.5 - TNG_PLAY)]
 
 # ---------------------------------------------------------------- openings
 # every opening is cut through the wall; a pocket thins the wall around it to POCKET_LEFT so that a
-# plug's body comes close to the socket
+# plug's body comes close to the socket. No wall of the case is thinner than WALL_MIN (user):
+# check_walls.py measures the two printed halves
+WALL_MIN = 1.00
 POCKET_LEFT = 1.00
 # lower edge of the pockets (below the joint: plug bodies are taller than the sockets)
 POCKET_Z0 = -1.00
-# D-sub (DB9 male, VGA): flange 30.8 wide, shell top 10.4 above the board
+# D-sub (DB9 male, VGA): flange 30.8 wide, shell top 10.4 above the board; the opening is DSUB_H high
+# in the model's data, but it is cut up to the ceiling: no thin strip of wall above the socket (user)
 DSUB_W = 31.40
 DSUB_H = 10.90
 DSUB_POCKET_W = 35.60
@@ -119,6 +122,9 @@ USBC_ZC = 1.63
 SD_W = 14.56
 SD_Z0 = -1.40
 SD_Z1 = 5.60
+# the sliver of wall between the microSD opening and the VGA opening is cut away
+J7_J2_Y0 = 20.60
+J7_J2_Y1 = 21.10
 # audio jack PJ-320D: barrel centre 2.5 above the board
 JACK35_W = 6.40
 JACK35_ZC = 2.50
@@ -199,8 +205,11 @@ def wall_cut(c_wall, f_c, f_w, f_z0, f_z1, f_left):
     s_cut = None
     f_a = f_c - f_w * HALF
     f_b = f_c + f_w * HALF
-    f_in = f_left - EDGE_GAP
-# the box starts inside the wall (pocket) or inside the case (opening) and ends far outside
+    f_in = -EDGE_GAP
+# the box starts inside the wall, f_left from its inner face (pocket), or inside the case (opening)
+# and ends far outside
+    if f_left > 0:
+        f_in = f_left
     if c_wall == "T":
         s_cut = box(f_a, f_b, YT + f_in, YT + BIG, f_z0, f_z1)
     elif c_wall == "L":
@@ -217,7 +226,7 @@ def cutters():
     f_zb = Z_SPLIT
 # the two joystick sockets and the VGA socket: opening for flange, shell and jack screws + pocket
     for (c_wall, f_c) in (("T", J4_X), ("T", J6_X), ("L", J2_Y)):
-        as_cut.append(wall_cut(c_wall, f_c, DSUB_W, f_zb, f_zb + DSUB_H, 0))
+        as_cut.append(wall_cut(c_wall, f_c, DSUB_W, f_zb, Z_CEIL, 0))
         as_cut.append(wall_cut(c_wall, f_c, DSUB_POCKET_W, POCKET_Z0, f_zb + DSUB_POCKET_H, POCKET_LEFT))
 # the two USB-A sockets
     for (c_wall, f_c) in (("L", J9_Y), ("R", J8_Y)):
@@ -228,6 +237,7 @@ def cutters():
     as_cut.append(wall_cut("R", (J8_J5_Y0 + J8_J5_Y1) * HALF, J8_J5_Y1 - J8_J5_Y0, f_zb, f_zb + USBA_H, 0))
 # microSD card
     as_cut.append(wall_cut("L", J7_Y, SD_W, SD_Z0, SD_Z1, 0))
+    as_cut.append(wall_cut("L", (J7_J2_Y0 + J7_J2_Y1) * HALF, J7_J2_Y1 - J7_J2_Y0, f_zb, SD_Z1, 0))
 # audio jack: slot with a round top around the barrel + pocket for the plug
     as_cut.append(wall_cut("T", J3_X, JACK35_W, f_zb, f_zb + JACK35_ZC, 0))
     as_cut.append(cq.Solid.makeCylinder(JACK35_W * HALF, BIG, cq.Vector(J3_X, YT - EDGE_GAP, f_zb + JACK35_ZC),
@@ -272,14 +282,6 @@ def top_half(s_shell, s_cut):
         as_add.append(box(f_a, f_b, YT - RIB_IN, YT, RIB_Z0, Z_CEIL))
     for (f_a, f_b) in RIB_L:
         as_add.append(box(XL, XL + RIB_IN, f_a, f_b, RIB_Z0, Z_CEIL))
-# the same on the two side walls, under the core board's edges
-    f_t = TNG_PLAY + TNG_T
-    f_zu = Z_SPLIT + TNG_UP_SIDE
-    f_zd = Z_SPLIT - TNG_DOWN
-    as_add.append(box(XL, XL + f_t, TNG_SIDE[0], TNG_SIDE[1], Z_SPLIT, f_zu))
-    as_add.append(box(XL + TNG_PLAY, XL + f_t, TNG_SIDE[0], TNG_SIDE[1], f_zd, Z_SPLIT))
-    as_add.append(box(XR - f_t, XR, TNG_SIDE[0], TNG_SIDE[1], Z_SPLIT, f_zu))
-    as_add.append(box(XR - f_t, XR - TNG_PLAY, TNG_SIDE[0], TNG_SIDE[1], f_zd, Z_SPLIT))
     s_part = fuse_all([s_part] + as_add).cut(s_cut).clean()
     return s_part
 

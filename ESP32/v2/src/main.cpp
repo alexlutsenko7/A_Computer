@@ -56,6 +56,7 @@
 #include "espupd.h"
 /* the Bluetooth menu, L64, screenshots */
 #include "bt.h"
+#include "netmenu.h"
 #include "c64.h"
 #include "shot.h"
 #include "nextshot.h"
@@ -413,6 +414,8 @@ static uint32_t g_ui32_prt_time;
 static int32_t g_i32_prt_was;
 /* the console asked for a screenshot (loader_shot) */
 static int32_t g_i32_shot_ask;
+/* the console asked for the machine menu's F4 screens, or for their end (loader_ftp) */
+static volatile int32_t g_i32_ftp_ask;
 /* when the update's progress bar was drawn last */
 static uint32_t g_ui32_upd_time;
 
@@ -493,6 +496,33 @@ static uint32_t key_events(void)
         }
         g_ui32_key_prev = ui32_now;
     }
+    return ui32_events;
+}
+
+/* the console's "ftp": as F4 in the machine menu (the server starts; once more: it stops) */
+void loader_ftp(void)
+{
+    g_i32_ftp_ask = YES;
+}
+
+/* netmenu.h: 1 = the console asked since the last call */
+int32_t loader_ftp_asked(void)
+{
+/* local variables */
+    int32_t i32_asked;
+
+    i32_asked = g_i32_ftp_ask;
+    g_i32_ftp_ask = 0;
+    return i32_asked;
+}
+
+/* netmenu.h: the same key presses for the machine menu's Wi-Fi screens */
+uint32_t loader_keys(void)
+{
+/* local variables */
+    uint32_t ui32_events;
+
+    ui32_events = key_events();
     return ui32_events;
 }
 
@@ -4038,6 +4068,13 @@ static void menu_main(void)
             {
                 menu_install();
 /* "no machines" is looked at again, at once */
+                i32_shown = 0;
+                ui32_check_time = TIMER - (UPD_CHECK_MS * CLK_PER_MS);
+            }
+/* F4: the card over Wi-Fi (FTP server); the card may hold other files after it */
+            else if (((ui32_keys & K_JOY) != 0) || (loader_ftp_asked() != 0))
+            {
+                net_menu();
                 i32_shown = 0;
                 ui32_check_time = TIMER - (UPD_CHECK_MS * CLK_PER_MS);
             }

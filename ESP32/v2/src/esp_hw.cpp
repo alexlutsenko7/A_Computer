@@ -52,6 +52,8 @@
 #define SD_HZ_FAST 20000000u
 #define SD_HZ_SLOW 4000000u
 #define SD_NO_DRIVE 0xFF
+/* files open at a time while the card's file system is mounted (one per FTP client, one spare) */
+#define SD_FS_FILES 4
 /* for the report */
 #define HZ_PER_MHZ 1000000u
 #define SHIFT_MB 20
@@ -284,6 +286,8 @@ static uint8_t *g_pui8_fls_rx;
 /* the SD card is ready; its drive number in the SD library's driver */
 static bool g_b_sd_ok;
 static uint8_t g_ui8_sd_pdrv = SD_NO_DRIVE;
+/* the card's file system is mounted for the C library's file calls (sd_fs_mount) */
+static bool g_b_sd_fs;
 /* when the link was probed last; when a stall was reported last */
 static uint32_t g_ui32_probe_ms;
 static uint32_t g_ui32_stall_report_ms;
@@ -903,6 +907,8 @@ void osd_hide(void)
 /* memory is what the Bluetooth audio needs (see `status`, heap). */
 static void sd_stop(void)
 {
+/* a mounted file system goes first */
+    sd_fs_unmount();
     if (g_ui8_sd_pdrv != SD_NO_DRIVE)
     {
         sdcard_uninit(g_ui8_sd_pdrv);
@@ -958,6 +964,45 @@ int32_t sd_init(void)
         Serial.print("loader: no SD card\r\n");
     }
     return i32_result;
+}
+
+/* the card's file system for the C library's file calls under SD_FS_ROOT: SD_OK = mounted. Its */
+/* memory (a sector buffer for the volume and for every open file) is taken only while it is mounted. */
+int32_t sd_fs_mount(void)
+{
+/* local variables */
+    int32_t i32_result;
+
+/* start values */
+    i32_result = SD_ERROR;
+    if (g_b_sd_fs)
+    {
+        i32_result = SD_OK;
+    }
+    else if (g_b_sd_ok)
+    {
+/* the driver is the one the raw sector calls use */
+        if (sdcard_mount(g_ui8_sd_pdrv, SD_FS_ROOT, SD_FS_FILES, false))
+        {
+            g_b_sd_fs = true;
+            i32_result = SD_OK;
+        }
+    }
+    else
+    {
+/* no card */
+    }
+    return i32_result;
+}
+
+/* the file system is given back; the card stays ready */
+void sd_fs_unmount(void)
+{
+    if (g_b_sd_fs)
+    {
+        sdcard_unmount(g_ui8_sd_pdrv);
+        g_b_sd_fs = false;
+    }
 }
 
 /* 1 = the card is ready */

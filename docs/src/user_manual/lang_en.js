@@ -4,7 +4,7 @@
 /* ['table', header, rows, column widths in percent] */
 module.exports = {
   title: "L — User Manual",
-  subtitle: "One board, your choice of classic machines: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive and ZX Spectrum Next. How to connect it, choose the machines and play. Edition of 21 November 2026.",
+  subtitle: "One board, your choice of classic machines: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive and ZX Spectrum Next. How to connect it, choose the machines and play. Edition of 23 November 2026.",
   page: "page",
   blocks: [
     /* ------------------------------------------------------------ 1 */
@@ -50,6 +50,7 @@ module.exports = {
       "                                ",
       " Up/Down + Enter, 1-3, joystick ",
       "      F3: Bluetooth audio       ",
+      "  F4: SD card over Wi-Fi (FTP)  ",
       " F12: install from the SD card  ",
     ]],
     ["table", ["Key", "What it does"], [
@@ -58,6 +59,7 @@ module.exports = {
       ["**1**, **2**, **3**", "Starts that machine at once"],
       ["Joystick (either socket)", "Up / down moves, fire starts"],
       ["**F3**", "Bluetooth audio menu (section 7)"],
+      ["**F4**", "Copies files between a computer and the SD card over Wi-Fi (section 5)"],
       ["**F12**", "Installs a machine from the SD card (section 4)"],
     ], [36, 64]],
     ["p", "To leave a machine and come back to the menu, press **Ctrl + Alt + Del** (it acts when you let the keys go). The highlight is then on the machine you left. Whatever that machine was doing is lost, so save first if you need to. Bluetooth stays connected."],
@@ -118,6 +120,26 @@ module.exports = {
     ]],
 
     /* ------------------------------------------------------------ 6 */
+    ["h2", "Copying files over Wi-Fi (F4 in the machine menu)"],
+    ["p", "The card does not have to come out to get new games. In the machine menu, **F4** joins the board to your Wi-Fi network; a computer in the same network can then read and write the card's files."],
+    ["ol", [
+      "Press **F4** in the machine menu. The first time, the networks in reach are listed: choose yours with Up / Down and Enter, then type its password (capitals and signs with Shift) and press Enter. The board remembers the network.",
+      "The screen shows an address such as **ftp://192.168.1.50**. On the computer, type it into the address bar of the file manager (File Explorer in Windows), or use an FTP program such as FileZilla. No user name and no password are needed.",
+      "Copy, rename and delete files and folders as on any drive.",
+      "Press **F4** or **Esc** when you are done. The board leaves the network.",
+    ]],
+    ["table", ["Key", "What it does"], [
+      ["**Enter**", "Chooses another network"],
+      ["**Left / Right**", "Time zone: one hour earlier / later (**Page Up / Page Down**: 15 minutes). Set it once so that new files get the right date and time; the board remembers it."],
+      ["**F4**, **Esc**", "Ends the connection"],
+    ], [36, 64]],
+    ["ul", [
+      "The network must work at 2.4 GHz (nearly every router offers this).",
+      "Web browsers no longer open ftp:// addresses: use the file manager or an FTP program. In FileZilla, allow at most 2 transfers at a time.",
+      "While this screen is open, everybody in your network can read and change the card's files. Close it when you are done.",
+      "Bluetooth sound is off while this screen is open and comes back afterwards.",
+      "The board takes the date and time from the internet. Without it, the screen says that the clock is unavailable and new files get the date 1980.",
+    ]],
     ["h1", "6. Keys that work in every machine"],
     ["table", ["Key", "What it does"], [
       ["**F12** (also keypad **/** or **NumLock**)", "Opens / closes the list of files on the SD card"],

@@ -2,7 +2,7 @@
 /* Same block structure as lang_en.js; on-screen messages stay as the board shows them. */
 module.exports = {
   title: "L — Manual do utilizador",
-  subtitle: "Uma placa, as máquinas clássicas que escolher: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive e ZX Spectrum Next. Como ligá-la, escolher as máquinas e jogar. Edição de 21 de novembro de 2026.",
+  subtitle: "Uma placa, as máquinas clássicas que escolher: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive e ZX Spectrum Next. Como ligá-la, escolher as máquinas e jogar. Edição de 23 de novembro de 2026.",
   page: "página",
   blocks: [
     /* ------------------------------------------------------------ 1 */
@@ -48,6 +48,7 @@ module.exports = {
       "                                ",
       " Up/Down + Enter, 1-3, joystick ",
       "      F3: Bluetooth audio       ",
+      "  F4: SD card over Wi-Fi (FTP)  ",
       " F12: install from the SD card  ",
     ]],
     ["table", ["Tecla", "O que faz"], [
@@ -56,6 +57,7 @@ module.exports = {
       ["**1**, **2**, **3**", "Inicia essa máquina de imediato"],
       ["Joystick (qualquer conector)", "Cima / baixo move, disparo inicia"],
       ["**F3**", "Menu de áudio Bluetooth (secção 7)"],
+      ["**F4**", "Copia ficheiros entre um computador e o cartão SD por Wi-Fi (secção 5)"],
       ["**F12**", "Instala uma máquina a partir do cartão SD (secção 4)"],
     ], [36, 64]],
     ["p", "Para sair de uma máquina e voltar ao menu, carregue em **Ctrl + Alt + Del** (atua quando larga as teclas). A seleção fica na máquina que deixou. O que essa máquina estava a fazer perde-se, por isso guarde primeiro se precisar. O Bluetooth mantém-se ligado."],
@@ -116,6 +118,26 @@ module.exports = {
     ]],
 
     /* ------------------------------------------------------------ 6 */
+    ["h2", "Copiar ficheiros por Wi-Fi (F4 no menu de máquinas)"],
+    ["p", "Não é preciso tirar o cartão para acrescentar jogos. No menu de máquinas, **F4** liga a placa à sua rede Wi-Fi; um computador na mesma rede pode então ler e escrever os ficheiros do cartão."],
+    ["ol", [
+      "Prima **F4** no menu de máquinas. Da primeira vez aparece a lista das redes ao alcance: escolha a sua com Cima / Baixo e Enter, escreva a palavra-passe (maiúsculas e sinais com Shift) e prima Enter. A placa lembra-se da rede.",
+      "O ecrã mostra um endereço como **ftp://192.168.1.50**. No computador, escreva-o na barra de endereço do gestor de ficheiros (Explorador de Ficheiros no Windows) ou use um programa FTP como o FileZilla. Não é preciso nome de utilizador nem palavra-passe.",
+      "Copie, mude o nome e apague ficheiros e pastas como em qualquer unidade.",
+      "Prima **F4** ou **Esc** quando terminar. A placa sai da rede.",
+    ]],
+    ["table", ["Tecla", "O que faz"], [
+      ["**Enter**", "Escolhe outra rede"],
+      ["**Esquerda / Direita**", "Fuso horário: uma hora antes / depois (**Page Up / Page Down**: 15 minutos). Acerte-o uma vez para que os ficheiros novos fiquem com a data e a hora certas; a placa lembra-se dele."],
+      ["**F4**, **Esc**", "Termina a ligação"],
+    ], [36, 64]],
+    ["ul", [
+      "A rede tem de funcionar a 2,4 GHz (quase todos os routers a oferecem).",
+      "Os navegadores web já não abrem endereços ftp://: use o gestor de ficheiros ou um programa FTP. No FileZilla permita no máximo 2 transferências de cada vez.",
+      "Enquanto este ecrã está aberto, qualquer pessoa na sua rede pode ler e alterar os ficheiros do cartão. Feche-o quando terminar.",
+      "O som Bluetooth fica desligado enquanto este ecrã está aberto e volta depois.",
+      "A placa obtém a data e a hora da internet. Sem internet, o ecrã diz que o relógio não está disponível e os ficheiros novos ficam com a data 1980.",
+    ]],
     ["h1", "6. Teclas que funcionam em todas as máquinas"],
     ["table", ["Tecla", "O que faz"], [
       ["**F12** (também **/** numérica ou **NumLock**)", "Abre / fecha a lista de ficheiros do cartão SD"],

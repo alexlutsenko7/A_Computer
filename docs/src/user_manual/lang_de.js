@@ -2,7 +2,7 @@
 /* Same block structure as lang_en.js; on-screen messages stay as the board shows them. */
 module.exports = {
   title: "L — Benutzerhandbuch",
-  subtitle: "Eine Platine, klassische Maschinen nach Ihrer Wahl: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive und ZX Spectrum Next. Anschließen, Maschinen auswählen und spielen. Ausgabe vom 21. November 2026.",
+  subtitle: "Eine Platine, klassische Maschinen nach Ihrer Wahl: ZX Spectrum 128K, Commodore 64, Atari 800XL / 130XE, Nintendo Entertainment System, Sega Mega Drive und ZX Spectrum Next. Anschließen, Maschinen auswählen und spielen. Ausgabe vom 23. November 2026.",
   page: "Seite",
   blocks: [
     /* ------------------------------------------------------------ 1 */
@@ -48,6 +48,7 @@ module.exports = {
       "                                ",
       " Up/Down + Enter, 1-3, joystick ",
       "      F3: Bluetooth audio       ",
+      "  F4: SD card over Wi-Fi (FTP)  ",
       " F12: install from the SD card  ",
     ]],
     ["table", ["Taste", "Was sie tut"], [
@@ -56,6 +57,7 @@ module.exports = {
       ["**1**, **2**, **3**", "Startet diese Maschine sofort"],
       ["Joystick (beliebige Buchse)", "Hoch / runter bewegt, Feuer startet"],
       ["**F3**", "Bluetooth-Audio-Menü (Abschnitt 7)"],
+      ["**F4**", "Kopiert Dateien zwischen einem Computer und der SD-Karte über WLAN (Abschnitt 5)"],
       ["**F12**", "Installiert eine Maschine von der SD-Karte (Abschnitt 4)"],
     ], [36, 64]],
     ["p", "Um eine Maschine zu verlassen und ins Menü zurückzukehren, drücken Sie **Strg + Alt + Entf** (es wirkt beim Loslassen der Tasten). Die Markierung steht dann auf der verlassenen Maschine. Was diese Maschine gerade tat, geht verloren; speichern Sie also vorher, wenn nötig. Bluetooth bleibt verbunden."],
@@ -116,6 +118,26 @@ module.exports = {
     ]],
 
     /* ------------------------------------------------------------ 6 */
+    ["h2", "Dateien über WLAN kopieren (F4 im Maschinenmenü)"],
+    ["p", "Für neue Spiele muss die Karte nicht herausgenommen werden. Im Maschinenmenü verbindet **F4** die Platine mit Ihrem WLAN; ein Computer im selben Netz kann dann die Dateien der Karte lesen und schreiben."],
+    ["ol", [
+      "Drücken Sie **F4** im Maschinenmenü. Beim ersten Mal erscheint die Liste der erreichbaren Netze: Wählen Sie Ihres mit Auf / Ab und Enter, tippen Sie das Passwort ein (Großbuchstaben und Zeichen mit Shift) und drücken Sie Enter. Die Platine merkt sich das Netz.",
+      "Der Bildschirm zeigt eine Adresse wie **ftp://192.168.1.50**. Geben Sie sie am Computer in die Adressleiste des Dateimanagers ein (unter Windows der Explorer) oder verwenden Sie ein FTP-Programm wie FileZilla. Benutzername und Passwort sind nicht nötig.",
+      "Kopieren, umbenennen und löschen Sie Dateien und Ordner wie auf jedem Laufwerk.",
+      "Drücken Sie zum Schluss **F4** oder **Esc**. Die Platine verlässt das Netz.",
+    ]],
+    ["table", ["Taste", "Was sie tut"], [
+      ["**Enter**", "Wählt ein anderes Netz"],
+      ["**Links / Rechts**", "Zeitzone: eine Stunde früher / später (**Bild auf / Bild ab**: 15 Minuten). Einmal einstellen, damit neue Dateien das richtige Datum und die richtige Uhrzeit bekommen; die Platine merkt sie sich."],
+      ["**F4**, **Esc**", "Beendet die Verbindung"],
+    ], [36, 64]],
+    ["ul", [
+      "Das Netz muss mit 2,4 GHz arbeiten (fast jeder Router bietet das an).",
+      "Webbrowser öffnen keine ftp://-Adressen mehr: Verwenden Sie den Dateimanager oder ein FTP-Programm. Erlauben Sie in FileZilla höchstens 2 gleichzeitige Übertragungen.",
+      "Solange dieser Bildschirm offen ist, kann jeder in Ihrem Netz die Dateien der Karte lesen und ändern. Schließen Sie ihn, wenn Sie fertig sind.",
+      "Der Bluetooth-Ton ist aus, solange dieser Bildschirm offen ist, und kommt danach wieder.",
+      "Die Platine holt Datum und Uhrzeit aus dem Internet. Ohne Internet meldet der Bildschirm, dass die Uhr nicht verfügbar ist, und neue Dateien bekommen das Datum 1980.",
+    ]],
     ["h1", "6. Tasten, die in jeder Maschine gelten"],
     ["table", ["Taste", "Was sie tut"], [
       ["**F12** (auch **/** am Ziffernblock oder **Num**)", "Öffnet / schließt die Liste der Dateien auf der SD-Karte"],

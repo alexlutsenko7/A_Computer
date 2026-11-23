@@ -278,6 +278,9 @@ C.push(code([
 ]));
 
 // ------------------------------------------------------------------ 6
+C.push(h2("The card over Wi-Fi (F4 in the machine menu, I/O board revision 2)"));
+C.push(b("With no machine running, **F4** in the machine menu makes the ESP32 join a Wi-Fi network (2.4 GHz; the remembered one, or one chosen from a list with its password typed on the keyboard) and run an anonymous FTP server on the card (`ESP32/v2/src/ftp.cpp`, screens in `netmenu.cpp`). The screen shows the address (`ftp://` and the address the network gave the ESP32) for the file manager's address bar or an FTP program: up to three connections at a time, no user name, no password, no encryption. The card is mounted through the core's FatFs while the screen is open, and Bluetooth is off for that time."));
+C.push(b("The ESP32 has no clock: after the join it reads the date and time from the `Date:` line of an ordinary web answer (www.google.com, www.cloudflare.com, www.microsoft.com in turn, 5 seconds in all); without an answer new files get the date 1980. The time zone is a setting on that screen (Left / Right one hour, Page Up / Page Down 15 minutes), kept in the ESP32. Measured: about 250 KB/s in both directions."));
 C.push(h1("6. How the ROMs are used"));
 C.push(h2("6.1 ZX Spectrum"));
 C.push(b("The 128K ROMs and the F1 diagnostics slot (48 KB) are in the ROM area of the position LSpectrum is installed in (from the .jic or its machine file). The public image has a copy of the 48K BASIC ROM in the F1 slot (DiagROM's licence is not known); `LSpectrum/ep4_ce15/tools/mk_roms48k.py` builds the image with your own DiagROM."));
@@ -354,6 +357,7 @@ C.push(table([3800, 5560], ["Check", "Expected"], [
   ["Start LNext (10CL025, folder `ZXNEXT` on the card)", "The Next's firmware starts from the card, then NextZXOS"],
   ["F8 in a computer", "The picture switches between 60 Hz and 50 Hz"],
   ["F3", "The Bluetooth menu (the ESP32's Bluetooth part answers)"],
+  ["F4 in the menu (10CL025, I/O board revision 2)", "The network is joined and the screen shows an `ftp://` address; a computer can list the card"],
 ]));
 C.push(gap());
 C.push(p("Licences, our own work and the same build steps in one file: `BUILDING_AND_LICENSES.md` in the repository root. Each machine's README (`<Machine>/<board>/README.md`) has its details. Keys and usage: `docs/L_User_Manual.docx`, `docs/LSpectrum_Keys.docx`, `docs/L64_Keys.docx` and `docs/LTari_Keys.docx`. Wiring of the boards: `docs/LSpectrum_Connection.docx`. Third-party parts and licences: `docs/L_Third_Party.docx` and `IP_BLOCKS.txt`."));

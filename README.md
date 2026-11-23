@@ -1,5 +1,13 @@
 # L
 
+**Supported hardware (since 2026-11-23): the QMTECH Cyclone 10 LP core board (10CL025) with I/O board revision 2
+and the firmware `ESP32/v2`.** The first set, the Cyclone IV EP4CE15 core board with I/O board revision 1 and the
+firmware `ESP32/v1`, is **no longer supported**: its FPGA and the ESP32 module without extra memory are too small
+for the newer machines and functions. Everything for it stays in this repository as it was last built and tested
+(sources, `ep4_ce15/` projects, `ESP32/v1`, the files in `INSTALL/`), because the book describes it; it gets no
+new functions and is not built or tested any more. The `<machine>/ep4_ce15/` folders also hold the sources that the
+10CL025 projects use, so they go on changing; a change there is tried on the 10CL025 only.
+
 Retro computers in an FPGA: an Intel/Altera Cyclone IV E (EP4CE15F23C8) on a QMTECH core board, with the RAM and
 ROMs in the board's SDRAM, VGA output, a USB keyboard and an ESP32 system controller (SD card loader, on-screen
 menus, Bluetooth audio). A machine menu at power-up chooses the machine:
